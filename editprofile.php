@@ -38,6 +38,7 @@ if ($result->num_rows > 0) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Profile</title>
     <link rel="stylesheet" href="editprofile.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
     document.addEventListener("DOMContentLoaded", function () {
         const profileInput = document.getElementById("profile_picture");
@@ -54,6 +55,23 @@ if ($result->num_rows > 0) {
                 profilePreview.src = URL.createObjectURL(file);
             }
         });
+
+        // SweetAlert2 for success message with redirect
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has("message")) {
+            Swal.fire({
+                title: "Success!",
+                text: urlParams.get("message"),
+                icon: "success",
+                timer: 2000,
+                showConfirmButton: false
+            }).then(() => {
+                window.location.href = "dashboard.php"; // Redirect to dashboard
+            });
+
+            // Remove the message from URL after showing the alert
+            window.history.replaceState(null, "", window.location.pathname);
+        }
     });
     </script>
     <style>
