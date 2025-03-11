@@ -2,43 +2,77 @@
 session_start();
 include 'db.php';
 
-header('Content-Type: application/json'); 
+header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $username = trim($_POST['username']);
     $password = trim($_POST['password']);
+    $userFound = false;
 
-    // Prepare SQL query to fetch user data including full name, email, address, etc.
-    $stmt = $conn->prepare("SELECT id, username, password, first_name, middle_name, last_name, course, year_level, email, address FROM users WHERE username = ?");
+    // Default Admin Credentials (FOR DEVELOPMENT ONLY! REMOVE BEFORE GOING LIVE!)
+    $defaultAdminUsername = "admin";
+    $defaultAdminPassword = "password"; 
+
+    if ($username === $defaultAdminUsername && $password === $defaultAdminPassword) {
+        $_SESSION['admin_id'] = 0; 
+        $_SESSION['username'] = $defaultAdminUsername;
+        $_SESSION['admin_name'] = "Super Admin"; // Added Fix
+        $_SESSION['role'] = 'admin';
+
+        echo json_encode(["status" => "success", "message" => "Admin login successful!", "role" => "admin"]);
+        exit();
+    }
+
+    // Check Users Table
+    $stmt = $conn->prepare("SELECT id, username, password, first_name, last_name FROM users WHERE username = ?");
     $stmt->bind_param("s", $username);
     $stmt->execute();
     $result = $stmt->get_result();
-    
+
     if ($result->num_rows > 0) {
+        $userFound = true;
         $row = $result->fetch_assoc();
 
-        // Check if the password is correct
         if (password_verify($password, $row['password'])) {
-            // Store user data in session
+            session_regenerate_id(true); // Security improvement
+
             $_SESSION['user_id'] = $row['id'];
             $_SESSION['username'] = $row['username'];
             $_SESSION['first_name'] = $row['first_name'];
-            $_SESSION['middle_name'] = $row['middle_name'];
             $_SESSION['last_name'] = $row['last_name'];
-            $_SESSION['course'] = $row['course'];
-            $_SESSION['year_level'] = $row['year_level'];
-            $_SESSION['email'] = $row['email'];
-            $_SESSION['address'] = $row['address'];
+            $_SESSION['role'] = 'user';
 
-            echo json_encode(["status" => "success", "message" => "Login successful!"]);
-        } else {
-            echo json_encode(["status" => "error", "message" => "Invalid username or password!"]);
+            echo json_encode(["status" => "success", "message" => "Login successful!", "role" => "user"]);
+            exit();
         }
-    } else {
-        echo json_encode(["status" => "error", "message" => "Invalid username or password!"]);
     }
-
     $stmt->close();
+
+    // Check Admin Table
+    $stmt = $conn->prepare("SELECT id, username, password, admin_name FROM admin WHERE username = ?");
+    $stmt->bind_param("s", $username);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($result->num_rows > 0) {
+        $userFound = true;
+        $row = $result->fetch_assoc();
+
+        if (password_verify($password, $row['password'])) {
+            session_regenerate_id(true);
+
+            $_SESSION['admin_id'] = $row['id'];
+            $_SESSION['username'] = $row['username'];
+            $_SESSION['admin_name'] = $row['admin_name']; // FIXED
+            $_SESSION['role'] = 'admin';
+
+            echo json_encode(["status" => "success", "message" => "Admin login successful!", "role" => "admin"]);
+            exit();
+        }
+    }
+    $stmt->close();
+
+    echo json_encode(["status" => "error", "message" => $userFound ? "Invalid password!" : "Invalid username or password!"]);
     $conn->close();
 }
 ?>
