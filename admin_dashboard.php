@@ -23,6 +23,12 @@ $students = $conn->query("SELECT COUNT(*) AS total FROM users")->fetch_assoc()['
 $current_sit_in = $conn->query("SELECT COUNT(*) AS total FROM sit_in WHERE date = CURDATE()")->fetch_assoc()['total'];
 $total_sit_in = $conn->query("SELECT COUNT(*) AS total FROM sit_in")->fetch_assoc()['total'];
 
+// Add after existing statistics queries
+$first_year = $conn->query("SELECT COUNT(*) AS total FROM users WHERE year_level = '1st Year'")->fetch_assoc()['total'];
+$second_year = $conn->query("SELECT COUNT(*) AS total FROM users WHERE year_level = '2nd Year'")->fetch_assoc()['total'];
+$third_year = $conn->query("SELECT COUNT(*) AS total FROM users WHERE year_level = '3rd Year'")->fetch_assoc()['total'];
+$fourth_year = $conn->query("SELECT COUNT(*) AS total FROM users WHERE year_level = '4th Year'")->fetch_assoc()['total'];
+
 // Handle announcement submission
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $announcement = trim($_POST['announcement']);
@@ -46,74 +52,297 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="admin_dashboard.css">
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Add this in the head section -->
+    <style>
+        .chart-container {
+            background-color: #2c343c;
+            border-radius: 0.5rem;
+            padding: 1rem;
+        }
+    </style>
 </head>
-<body>
-
+<body class="bg-gray-100">
+    
     <!-- ✅ Admin Navbar -->
-    <nav class="navbar">
-        <div class="logo">College of Computer Studies Admin</div>
-        <ul>
-            <li><a href="admin_dashboard.php">Home</a></li>
-            <li><a href="search.php">Search</a></li>
-            <li><a href="students.php">Students</a></li>
-            <li><a href="sit_in.php">Sit-in</a></li>
-            <li><a href="view_sit_in.php">View Sit-in Records</a></li>
-            <li><a href="reports.php">Generate Reports</a></li>
-            <li><a href="reservation.php">Reservation</a></li>
-        </ul>
-        <a href="logout.php" class="logout-button">Log out</a>
+    <nav class="bg-gradient-to-r from-blue-600 to-blue-800 px-6 py-4 shadow-lg">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <!-- Logo Section -->
+            <div class="flex items-center space-x-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+                <span class="text-2xl font-bold text-white">College of Computer Studies Admin</span>
+            </div>
+
+            <!-- Center Navigation Links -->
+            <div class="flex-1 flex justify-center">
+                <ul class="flex items-center space-x-6">
+                    <li>
+                        <a href="admin_dashboard.php" 
+                           class="text-white hover:text-yellow-200 transition-colors duration-200 font-medium flex items-center space-x-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                            </svg>
+                            <span>Home</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="search.php" 
+                           class="text-white hover:text-yellow-200 transition-colors duration-200 font-medium flex items-center space-x-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            <span>Search</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="students.php" 
+                           class="text-white hover:text-yellow-200 transition-colors duration-200 font-medium flex items-center space-x-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                            <span>Students</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="sit_in.php" 
+                           class="text-white hover:text-yellow-200 transition-colors duration-200 font-medium flex items-center space-x-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                            </svg>
+                            <span>Sit-in</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="reports.php" 
+                           class="text-white hover:text-yellow-200 transition-colors duration-200 font-medium flex items-center space-x-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span>Reports</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Right-aligned Logout Button -->
+            <div class="flex-shrink-0 ml-6">
+                <a href="logout.php" 
+                   class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2 font-medium">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    <span>Log out</span>
+                </a>
+            </div>
+        </div>
     </nav>
-
-    <div class="container mt-5">
-        <h2>Welcome, <?php echo htmlspecialchars($first_name . " " . $last_name); ?>!</h2>
-
-        <div class="row g-4">
+    
+    <div class="container mx-auto mt-8 p-4">
+        <h2 class="text-2xl font-bold">Welcome, <?php echo htmlspecialchars($first_name . " " . $last_name); ?>!</h2>
+        
+        <div class="grid md:grid-cols-2 gap-6 mt-6">
             <!-- ✅ Statistics Section -->
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header bg-primary text-white">📊 Statistics</div>
-                    <div class="card-body">
-                        <p><strong>Students Registered:</strong> <?= $students; ?></p>
-                        <p><strong>Currently Sit-in:</strong> <?= $current_sit_in; ?></p>
-                        <p><strong>Total Sit-in:</strong> <?= $total_sit_in; ?></p>
-                        <canvas id="statsChart"></canvas>
+            <div class="col-span-1">
+                <!-- Statistics Cards -->
+                <div class="grid grid-cols-3 gap-4 mb-6">
+                    <div class="bg-white p-4 rounded-lg shadow-md border-l-4 border-blue-500">
+                        <div class="text-gray-500 text-sm">Students Registered</div>
+                        <div class="text-2xl font-bold text-blue-600"><?= $students ?></div>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow-md border-l-4 border-green-500">
+                        <div class="text-gray-500 text-sm">Currently Sit-in</div>
+                        <div class="text-2xl font-bold text-green-600"><?= $current_sit_in ?></div>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow-md border-l-4 border-yellow-500">
+                        <div class="text-gray-500 text-sm">Total Sit-in</div>
+                        <div class="text-2xl font-bold text-yellow-600"><?= $total_sit_in ?></div>
+                    </div>
+                </div>
+
+                <!-- Pie Chart Card -->
+                <div class="bg-white p-4 shadow-md rounded-lg">
+                    <h3 class="text-lg font-semibold mb-4">📊 Programming Language Usage</h3>
+                    <div class="chart-container">
+                        <canvas id="statsChart" class="w-full"></canvas>
                     </div>
                 </div>
             </div>
 
             <!-- ✅ Announcements Section -->
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header bg-warning">📢 Announcements</div>
-                    <div class="card-body">
-                        <form method="POST">
-                            <textarea name="announcement" class="form-control mb-2" placeholder="Write an announcement..." required></textarea>
-                            <button type="submit" class="btn btn-success btn-sm">Post</button>
-                        </form>
-                        <hr>
-                        <h5>Recent Announcements</h5>
-                        <div id="announcementContainer">
-                            <!-- Announcements will load here -->
-                        </div>
-                    </div>
+            <div class="bg-white p-4 shadow-md rounded-md max-h-[500px]">
+                <h3 class="text-lg font-semibold">📢 Announcements</h3>
+                <form method="POST" class="mb-4">
+                    <textarea 
+                        name="announcement" 
+                        class="w-full p-2 border rounded-md resize-none h-24" 
+                        placeholder="Write an announcement..." 
+                        required
+                    ></textarea>
+                    <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-700 mt-2">Post</button>
+                </form>
+                <h5 class="font-semibold">Recent Announcements</h5>
+                <div id="announcementContainer" class="mt-2 border-t pt-2 h-[200px] overflow-y-auto">
+                    <!-- Announcements will load here -->
                 </div>
             </div>
+        </div> <!-- End of grid md:grid-cols-2 -->
+        
+        <!-- Bar Graph Card - Full Width -->
+        <div class="mt-6 bg-white p-6 shadow-md rounded-lg">
+            <h3 class="text-lg font-semibold mb-4">📊 Student Year Level Distribution</h3>
+            <div class="h-[300px]">
+                <canvas id="yearLevelChart"></canvas>
+            </div>
         </div>
-    </div>
-
+    </div> <!-- End of container -->
     <script>
         // ✅ Pie Chart for Statistics
         new Chart(document.getElementById('statsChart'), {
             type: 'pie',
             data: {
-                labels: ['Registered Students', 'Currently Sit-in', 'Total Sit-in'],
+                labels: ['C#', 'C', 'Java', 'ASP.Net', 'Php'],
                 datasets: [{
-                    data: [<?= $students; ?>, <?= $current_sit_in; ?>, <?= $total_sit_in; ?>],
-                    backgroundColor: ['#007bff', '#28a745', '#ffc107']
+                    data: [1, 0, 0, 0, 4],
+                    backgroundColor: [
+                        '#c23531',
+                        '#2f4554',
+                        '#61a0a8',
+                        '#d48265',
+                        '#91c7ae'
+                    ]
                 }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Programming Language Distribution',
+                        color: '#ccc',
+                        position: 'top',
+                        align: 'center',
+                        padding: 20,
+                        font: {
+                            size: 16
+                        }
+                    },
+                    tooltip: {
+                        enabled: true
+                    },
+                    legend: {
+                        labels: {
+                            color: 'rgba(255, 255, 255, 0.7)'
+                        }
+                    }
+                },
+                elements: {
+                    arc: {
+                        borderWidth: 0,
+                        shadowBlur: 10,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                    }
+                },
+                animation: {
+                    animateScale: true,
+                    animateRotate: true,
+                    easing: 'easeOutElastic',
+                    duration: 2000,
+                    delay: (context) => context.dataIndex * 100
+                }
+            }
+        });
+
+        // Add after the pie chart initialization
+        new Chart(document.getElementById('yearLevelChart'), {
+            type: 'bar',
+            data: {
+                labels: ['1st Year', '2nd Year', '3rd Year', '4th Year'],
+                datasets: [{
+                    label: 'Number of Students',
+                    data: [<?= $first_year ?>, <?= $second_year ?>, <?= $third_year ?>, <?= $fourth_year ?>],
+                    backgroundColor: [
+                        'rgba(59, 130, 246, 0.8)', // blue
+                        'rgba(16, 185, 129, 0.8)', // green
+                        'rgba(251, 191, 36, 0.8)', // yellow
+                        'rgba(239, 68, 68, 0.8)'   // red
+                    ],
+                    borderColor: [
+                        'rgb(59, 130, 246)',
+                        'rgb(16, 185, 129)',
+                        'rgb(251, 191, 36)',
+                        'rgb(239, 68, 68)'
+                    ],
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    borderSkipped: false,
+                    barPercentage: 0.6,
+                    categoryPercentage: 0.8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    title: {
+                        display: true,
+                        text: 'Student Year Level Distribution',
+                        color: '#1f2937',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        },
+                        padding: 20
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1,
+                            font: {
+                                size: 12
+                            }
+                        },
+                        grid: {
+                            display: true,
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            font: {
+                                size: 12,
+                                weight: 'bold'
+                            }
+                        },
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                animation: {
+                    duration: 2000,
+                    easing: 'easeInOutQuart',
+                    delay: (context) => context.dataIndex * 300
+                },
+                hover: {
+                    mode: 'index',
+                    intersect: false
+                },
+                elements: {
+                    bar: {
+                        shadowOffsetX: 3,
+                        shadowOffsetY: 3,
+                        shadowBlur: 10,
+                        shadowColor: 'rgba(0, 0, 0, 0.2)'
+                    }
+                }
             }
         });
 
@@ -127,11 +356,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     if (data.status === 'success') {
                         data.announcements.forEach(announcement => {
                             const announcementDiv = document.createElement('div');
-                            announcementDiv.innerHTML = `<div class="announcement-box">
-                                <h3>${announcement.admin_name} | ${announcement.date}</h3>
-                                <p>${announcement.message}</p>
-                                <hr>
-                            </div>`;
+                            announcementDiv.classList.add('p-2', 'border-b');
+                            announcementDiv.innerHTML = `<strong>${announcement.admin_name}</strong> | ${announcement.date}<p>${announcement.message}</p>`;
                             container.appendChild(announcementDiv);
                         });
                     } else {
@@ -145,6 +371,5 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         window.onload = loadAnnouncements;
         setInterval(loadAnnouncements, 60000);
     </script>
-
 </body>
 </html>
