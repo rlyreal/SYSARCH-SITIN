@@ -19,15 +19,52 @@ $stmt->fetch();
 $stmt->close();
 
 // Fetch statistics
-$students = $conn->query("SELECT COUNT(*) AS total FROM users")->fetch_assoc()['total'];
-$current_sit_in = $conn->query("SELECT COUNT(*) AS total FROM sit_in WHERE date = CURDATE()")->fetch_assoc()['total'];
-$total_sit_in = $conn->query("SELECT COUNT(*) AS total FROM sit_in")->fetch_assoc()['total'];
+$students = $conn->query("SELECT COUNT(DISTINCT id_no) AS total FROM users WHERE id_no IS NOT NULL")->fetch_assoc()['total'];
+$current_sit_in = $conn->query("SELECT COUNT(*) AS total FROM sit_in WHERE time_out IS NULL")->fetch_assoc()['total'];
+$total_sit_in = $conn->query("SELECT COUNT(id) AS total FROM sit_in")->fetch_assoc()['total'];
 
-// Add after existing statistics queries
-$first_year = $conn->query("SELECT COUNT(*) AS total FROM users WHERE year_level = '1st Year'")->fetch_assoc()['total'];
-$second_year = $conn->query("SELECT COUNT(*) AS total FROM users WHERE year_level = '2nd Year'")->fetch_assoc()['total'];
-$third_year = $conn->query("SELECT COUNT(*) AS total FROM users WHERE year_level = '3rd Year'")->fetch_assoc()['total'];
-$fourth_year = $conn->query("SELECT COUNT(*) AS total FROM users WHERE year_level = '4th Year'")->fetch_assoc()['total'];
+// Remove any existing year level queries and add this one
+$yearLevelQuery = "SELECT year_level, COUNT(*) as count 
+                   FROM users 
+                   WHERE year_level IS NOT NULL 
+                   GROUP BY year_level 
+                   ORDER BY FIELD(year_level, '1st Year', '2nd Year', '3rd Year', '4th Year')";
+$yearLevelResult = $conn->query($yearLevelQuery);
+
+$yearLevels = [];
+$yearLevelCounts = [];
+while($row = $yearLevelResult->fetch_assoc()) {
+    $yearLevels[] = $row['year_level'];
+    $yearLevelCounts[] = $row['count'];
+}
+
+// Add after your existing statistics queries
+$programmingQuery = "SELECT purpose, COUNT(*) as count 
+                    FROM sit_in 
+                    GROUP BY purpose 
+                    ORDER BY count DESC";
+$programmingResult = $conn->query($programmingQuery);
+
+$languages = [];
+$languageCounts = [];
+while($row = $programmingResult->fetch_assoc()) {
+    $languages[] = $row['purpose'];
+    $languageCounts[] = $row['count'];
+}
+
+// Add after your existing queries at the top of the file
+$purposeQuery = "SELECT purpose, COUNT(*) as count 
+                FROM sit_in 
+                GROUP BY purpose 
+                ORDER BY count DESC";
+$purposeResult = $conn->query($purposeQuery);
+
+$purposes = [];
+$purposeCounts = [];
+while($row = $purposeResult->fetch_assoc()) {
+    $purposes[] = $row['purpose'];
+    $purposeCounts[] = $row['count'];
+}
 
 // Handle announcement submission
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
@@ -73,7 +110,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
-                <span class="text-2xl font-bold text-white">College of Computer Studies Admin</span>
+                <span class="text-2xl font-bold text-white">Admin Dashboard</span>
             </div>
 
             <!-- Center Navigation Links -->
@@ -110,9 +147,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         <a href="sit_in.php" 
                            class="text-white hover:text-yellow-200 transition-colors duration-200 font-medium flex items-center space-x-1">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                             </svg>
-                            <span>Sit-in</span>
+                            <span>View Records</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="reservation.php" 
+                           class="text-white hover:text-yellow-200 transition-colors duration-200 font-medium flex items-center space-x-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <span>Reservation</span>
                         </a>
                     </li>
                     <li>
@@ -203,15 +249,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         new Chart(document.getElementById('statsChart'), {
             type: 'pie',
             data: {
-                labels: ['C#', 'C', 'Java', 'ASP.Net', 'Php'],
+                labels: <?php echo json_encode($purposes); ?>,
                 datasets: [{
-                    data: [1, 0, 0, 0, 4],
+                    data: <?php echo json_encode($purposeCounts); ?>,
                     backgroundColor: [
                         '#c23531',
                         '#2f4554',
                         '#61a0a8',
                         '#d48265',
-                        '#91c7ae'
+                        '#91c7ae',
+                        '#749f83',
+                        '#ca8622',
+                        '#bda29a'
                     ]
                 }]
             },
@@ -230,7 +279,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         }
                     },
                     tooltip: {
-                        enabled: true
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                let value = context.raw || 0;
+                                let total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                let percentage = ((value / total) * 100).toFixed(1);
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
+                        }
                     },
                     legend: {
                         labels: {
@@ -255,14 +312,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
         });
 
-        // Add after the pie chart initialization
+        // Replace the existing yearLevelChart initialization
         new Chart(document.getElementById('yearLevelChart'), {
             type: 'bar',
             data: {
-                labels: ['1st Year', '2nd Year', '3rd Year', '4th Year'],
+                labels: <?php echo json_encode($yearLevels); ?>,
                 datasets: [{
                     label: 'Number of Students',
-                    data: [<?= $first_year ?>, <?= $second_year ?>, <?= $third_year ?>, <?= $fourth_year ?>],
+                    data: <?php echo json_encode($yearLevelCounts); ?>,
                     backgroundColor: [
                         'rgba(59, 130, 246, 0.8)', // blue
                         'rgba(16, 185, 129, 0.8)', // green

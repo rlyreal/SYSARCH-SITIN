@@ -16,25 +16,39 @@ if (isset($_POST['search']) && !empty($_POST['idno'])) {
     $user = $result->fetch_assoc();
     $stmt->close();
 
+    // Replace the existing active sit-in check with this:
     if ($user) {
-        // Fetch last sit-in record
-        $stmt = $conn->prepare("SELECT id, session_count FROM sit_in WHERE idno = ? ORDER BY id DESC LIMIT 1");
+        // Check for active sit-in status with no time_out
+        $stmt = $conn->prepare("SELECT status FROM sit_in WHERE idno = ? AND status = 'active' AND time_out IS NULL LIMIT 1");
         $stmt->bind_param("s", $idno);
         $stmt->execute();
-        $result = $stmt->get_result();
-        $last_record = $result->fetch_assoc();
+        $active_result = $stmt->get_result();
+        $active_sitin = $active_result->fetch_assoc();
         $stmt->close();
 
-        $session_count = $last_record['session_count'] ?? 30; // Default session count
+        if ($active_sitin) {
+            $message = '<div class="hidden" id="activeSitInError">active</div>';
+            $showModal = false;
+        } else {
+            // Fetch last sit-in record
+            $stmt = $conn->prepare("SELECT id, session_count FROM sit_in WHERE idno = ? ORDER BY id DESC LIMIT 1");
+            $stmt->bind_param("s", $idno);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $last_record = $result->fetch_assoc();
+            $stmt->close();
 
-        $sit_in = [
-            'id' => $last_record['id'] ?? null,
-            'idno' => $user['id_no'],
-            'fullname' => $user['last_name'] . ', ' . $user['first_name'],
-            'remaining_sessions' => $session_count
-        ];
-        
-        $showModal = true;
+            $session_count = $last_record['session_count'] ?? 30; // Default session count
+
+            $sit_in = [
+                'id' => $last_record['id'] ?? null,
+                'idno' => $user['id_no'],
+                'fullname' => $user['last_name'] . ', ' . $user['first_name'],
+                'remaining_sessions' => $session_count
+            ];
+            
+            $showModal = true;
+        }
     } else {
         $message = '<div class="alert alert-danger">User not found!</div>';
     }
@@ -71,8 +85,9 @@ if (isset($_POST['sit_in_submit']) && !empty($_POST['idno'])) {
         
         $stmt->bind_param("sssi", $purpose, $laboratory, $status, $last_record['id']);
 
+        // Replace the success message in the sit_in_submit handler
         if ($stmt->execute()) {
-            $message = '<div class="alert alert-success">Sit-in updated successfully! Remaining Sessions: ' . $session_count . '</div>';
+            $message = '<div class="hidden" id="sitInSuccess" data-sessions="' . $session_count . '">success</div>';
         } else {
             $message = '<div class="alert alert-danger">Error: ' . $conn->error . '</div>';
         }
@@ -84,8 +99,9 @@ if (isset($_POST['sit_in_submit']) && !empty($_POST['idno'])) {
                                VALUES (?, ?, ?, ?, ?, ?, NOW(), CURRENT_DATE())");
         $stmt->bind_param("sssssi", $idno, $_POST['fullname'], $purpose, $laboratory, $status, $session_count);
 
+        // Replace the success message in the sit_in_submit handler
         if ($stmt->execute()) {
-            $message = '<div class="alert alert-success">New sit-in recorded successfully! Sessions: 30</div>';
+            $message = '<div class="hidden" id="sitInSuccess" data-sessions="' . $session_count . '">success</div>';
         } else {
             $message = '<div class="alert alert-danger">Error: ' . $conn->error . '</div>';
         }
@@ -116,7 +132,7 @@ $conn->close();
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
-                <span class="text-2xl font-bold text-white">College of Computer Studies Admin</span>
+                <span class="text-2xl font-bold text-white">Admin Dashboard</span>
             </div>
 
             <!-- Center Navigation Links -->
@@ -156,6 +172,24 @@ $conn->close();
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                             </svg>
                             <span>Sit-in</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="sit_in_records.php" 
+                           class="text-white hover:text-yellow-200 transition-colors duration-200 font-medium flex items-center space-x-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                            </svg>
+                            <span>View Records</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="reservation.php" 
+                           class="text-white hover:text-yellow-200 transition-colors duration-200 font-medium flex items-center space-x-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <span>Reservation</span>
                         </a>
                     </li>
                     <li>
@@ -241,11 +275,11 @@ $conn->close();
                             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500" 
                             required>
                         <option value="">Select Purpose</option>
-                        <option value="Research">Research</option>
-                        <option value="Assignment">Assignment</option>
-                        <option value="Project">Project</option>
-                        <option value="Practice">Practice</option>
-                        <option value="Others">Others</option>
+                        <option value="C# Programming">C# Programming</option>
+                        <option value="C Programming">C Programming</option>
+                        <option value="Java Programming">Java Programming</option>
+                        <option value="ASP.Net Programming">ASP.Net Programming</option>
+                        <option value="Php Programming">Php Programming</option>
                     </select>
                 </div>
                 <div>
@@ -254,10 +288,11 @@ $conn->close();
                             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500" 
                             required>
                         <option value="">Select Laboratory</option>
-                        <option value="ComLab 1">ComLab 1</option>
-                        <option value="ComLab 2">ComLab 2</option>
-                        <option value="ComLab 3">ComLab 3</option>
-                        <option value="ComLab 4">ComLab 4</option>
+                        <option value="524">524</option>
+                        <option value="526">526</option>
+                        <option value="528">528</option>
+                        <option value="530">530</option>
+                        <option value="542">542</option>
                     </select>
                 </div>
             </div>
@@ -282,6 +317,76 @@ $conn->close();
     <?php endif; ?>
 </div>
 
+<!-- Add this before </body> -->
+<div id="popup" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Cannot Start Sit-in</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500">
+                    This student already has an active sit-in session. Please time-out the current session before starting a new one.
+                </p>
+            </div>
+            <div class="items-center px-4 py-3">
+                <button id="closePopup" class="px-4 py-2 bg-red-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-300">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add this new success popup div before </body> -->
+<div id="successPopup" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
+                <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Success!</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500" id="successMessage"></p>
+            </div>
+            <div class="items-center px-4 py-3">
+                <button id="closeSuccessPopup" class="px-4 py-2 bg-green-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300">
+                    Continue
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const errorDiv = document.getElementById('activeSitInError');
+        const popup = document.getElementById('popup');
+        const closePopup = document.getElementById('closePopup');
+
+        // Only show popup if there's an active error and time_out is null
+        if (errorDiv && errorDiv.textContent === 'active') {
+            popup.classList.remove('hidden');
+        }
+
+        closePopup.addEventListener('click', function() {
+            popup.classList.add('hidden');
+        });
+
+        // Close popup when clicking outside
+        window.addEventListener('click', function(event) {
+            if (event.target === popup) {
+                popup.classList.add('hidden');
+            }
+        });
+    });
+</script>
+
 <script>
     function timeOutStudent() {
         if (confirm("Are you sure you want to time out this student?")) {
@@ -290,6 +395,37 @@ $conn->close();
             })
         }
     }
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // ... existing popup code ...
+
+        // Success popup handling
+        const successDiv = document.getElementById('sitInSuccess');
+        const successPopup = document.getElementById('successPopup');
+        const closeSuccessPopup = document.getElementById('closeSuccessPopup');
+        const successMessage = document.getElementById('successMessage');
+
+        if (successDiv) {
+            const sessions = successDiv.getAttribute('data-sessions');
+            successMessage.textContent = `Sit-in session started successfully! You have ${sessions} remaining sessions.`;
+            successPopup.classList.remove('hidden');
+        }
+
+        closeSuccessPopup.addEventListener('click', function() {
+            successPopup.classList.add('hidden');
+            window.location.href = 'search.php'; // Optional: refresh the page
+        });
+
+        // Close success popup when clicking outside
+        window.addEventListener('click', function(event) {
+            if (event.target === successPopup) {
+                successPopup.classList.add('hidden');
+                window.location.href = 'search.php'; // Optional: refresh the page
+            }
+        });
+    });
 </script>
 
 </body>
