@@ -125,7 +125,7 @@ $conn->close();
 <body class="bg-gray-100">
     
     <!-- ✅ Admin Navbar -->
-    <nav class="bg-gradient-to-r from-blue-600 to-blue-800 px-6 py-4 shadow-lg">
+    <nav class="bg-[#2c343c] px-6 py-4 shadow-lg">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
             <!-- Logo Section -->
             <div class="flex items-center space-x-2">

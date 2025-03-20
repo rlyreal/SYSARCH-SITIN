@@ -103,7 +103,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <body class="bg-gray-100">
     
     <!-- ✅ Admin Navbar -->
-    <nav class="bg-gradient-to-r from-blue-600 to-blue-800 px-6 py-4 shadow-lg">
+    <nav class="bg-[#2c343c] px-6 py-4 shadow-lg">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
             <!-- Logo Section -->
             <div class="flex items-center space-x-2">
@@ -147,44 +147,53 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         <a href="sit_in.php" 
                            class="text-white hover:text-yellow-200 transition-colors duration-200 font-medium flex items-center space-x-1">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                            </svg>
-                            <span>View Records</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="reservation.php" 
-                           class="text-white hover:text-yellow-200 transition-colors duration-200 font-medium flex items-center space-x-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            <span>Reservation</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="reports.php" 
-                           class="text-white hover:text-yellow-200 transition-colors duration-200 font-medium flex items-center space-x-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            <span>Reports</span>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-
-            <!-- Right-aligned Logout Button -->
-            <div class="flex-shrink-0 ml-6">
-                <a href="logout.php" 
-                   class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2 font-medium">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                    <span>Log out</span>
-                </a>
-            </div>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                        </svg>
+                        <span>Sit-in</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="sit_in_records.php" 
+                       class="text-white hover:text-yellow-200 transition-colors duration-200 font-medium flex items-center space-x-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                        </svg>
+                        <span>View Records</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="reservation.php" 
+                       class="text-white hover:text-yellow-200 transition-colors duration-200 font-medium flex items-center space-x-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span>Reservation</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="reports.php" 
+                       class="text-white hover:text-yellow-200 transition-colors duration-200 font-medium flex items-center space-x-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span>Reports</span>
+                    </a>
+                </li>
+            </ul>
         </div>
-    </nav>
+
+        <!-- Right-aligned Logout Button -->
+        <div class="flex-shrink-0 ml-6">
+            <a href="logout.php" 
+               class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2 font-medium">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                <span>Log out</span>
+            </a>
+        </div>
+    </div>
+</nav>
     
     <div class="container mx-auto mt-8 p-4">
         <h2 class="text-2xl font-bold">Welcome, <?php echo htmlspecialchars($first_name . " " . $last_name); ?>!</h2>
@@ -403,7 +412,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
         });
 
-        // ✅ Load Announcements
+        // Replace the existing loadAnnouncements function
         function loadAnnouncements() {
             fetch('get_announcements.php')
                 .then(response => response.json())
@@ -413,17 +422,94 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     if (data.status === 'success') {
                         data.announcements.forEach(announcement => {
                             const announcementDiv = document.createElement('div');
-                            announcementDiv.classList.add('p-2', 'border-b');
-                            announcementDiv.innerHTML = `<strong>${announcement.admin_name}</strong> | ${announcement.date}<p>${announcement.message}</p>`;
+                            announcementDiv.classList.add('p-2', 'border-b', 'relative', 'group');
+                            announcementDiv.innerHTML = `
+                                <div class="flex justify-between items-start">
+                                    <div class="flex-1">
+                                        <div class="flex items-center gap-2">
+                                            <strong class="text-blue-600">${announcement.admin_name}</strong>
+                                            <span class="text-gray-500">${announcement.date}</span>
+                                        </div>
+                                        <p class="mt-1">${announcement.message}</p>
+                                    </div>
+                                    <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button onclick="editAnnouncement(${announcement.id})" 
+                                                class="text-blue-600 hover:text-blue-800 p-1">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" 
+                                                 viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            </svg>
+                                        </button>
+                                        <button onclick="deleteAnnouncement(${announcement.id})" 
+                                                class="text-red-600 hover:text-red-800 p-1">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" 
+                                                 viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>`;
                             container.appendChild(announcementDiv);
                         });
                     } else {
-                        container.innerHTML = '<p>No announcements available.</p>';
+                        container.innerHTML = '<p class="text-gray-500">No announcements available.</p>';
                     }
                 })
                 .catch(error => console.error('Error loading announcements:', error));
         }
-        
+
+        // Add these new functions for edit and delete functionality
+        function editAnnouncement(id) {
+            if (confirm('Do you want to edit this announcement?')) {
+                fetch(`get_announcement.php?id=${id}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            const newMessage = prompt('Edit announcement:', data.message);
+                            if (newMessage !== null && newMessage.trim() !== '') {
+                                fetch('update_announcement.php', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/x-www-form-urlencoded',
+                                    },
+                                    body: `id=${id}&message=${encodeURIComponent(newMessage)}`
+                                })
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.status === 'success') {
+                                        loadAnnouncements();
+                                    } else {
+                                        alert('Failed to update announcement');
+                                    }
+                                });
+                            }
+                        }
+                    });
+            }
+        }
+
+        function deleteAnnouncement(id) {
+            if (confirm('Are you sure you want to delete this announcement?')) {
+                fetch('delete_announcement.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `id=${id}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        loadAnnouncements();
+                    } else {
+                        alert('Failed to delete announcement');
+                    }
+                });
+            }
+        }
+
         // Load announcements on page load & refresh every minute
         window.onload = loadAnnouncements;
         setInterval(loadAnnouncements, 60000);

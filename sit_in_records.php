@@ -48,7 +48,7 @@ while($row = $roomResult->fetch_assoc()) {
 <body class="bg-gray-100">
     
     <!-- ✅ Admin Navbar -->
-    <nav class="bg-gradient-to-r from-blue-600 to-blue-800 px-6 py-4 shadow-lg">
+    <nav class="bg-[#2c343c] px-6 py-4 shadow-lg">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
             <!-- Logo Section -->
             <div class="flex items-center space-x-2">
@@ -195,16 +195,19 @@ while($row = $roomResult->fetch_assoc()) {
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Date
                         </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Sessions
+                        </th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200" id="records-table">
                     <?php
-                    // Update the SQL query to format the time fields
+                    // Update the SQL query to include session_count
                     $sql = "SELECT *, 
                             DATE_FORMAT(time_in, '%l:%i %p') as formatted_time_in,
                             DATE_FORMAT(time_out, '%l:%i %p') as formatted_time_out 
                             FROM sit_in 
-                            ORDER BY date DESC, time_in DESC";
+                            ORDER BY STR_TO_DATE(CONCAT(date, ' ', time_in), '%Y-%m-%d %H:%i:%s') DESC";
 
                     $result = $conn->query($sql);
 
@@ -221,10 +224,16 @@ while($row = $roomResult->fetch_assoc()) {
                                  '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Active</span>';
                             echo '</td>';
                             echo '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' . htmlspecialchars($row['date']) . '</td>';
+                            // Add the new session count column
+                            echo '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">';
+                            echo '<span class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full bg-green-100 text-green-800">' 
+                                 . htmlspecialchars($row['session_count']) 
+                                 . '</span>';
+                            echo '</td>';
                             echo '</tr>';
                         }
                     } else {
-                        echo '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">No records found</td></tr>';
+                        echo '<tr><td colspan="8" class="px-6 py-4 text-center text-gray-500">No records found</td></tr>';
                     }
                     ?>
                 </tbody>

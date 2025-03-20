@@ -94,24 +94,37 @@ $user_profile = (!empty($profile_picture) && file_exists($profile_picture)) ? $p
     </div>
 
     <script>
+        // Replace the existing loadAnnouncements function
         function loadAnnouncements() {
             fetch('get_announcements.php')
                 .then(response => response.json())
                 .then(data => {
+                    const container = document.getElementById('announcementContainer');
+                    container.innerHTML = ''; // Clear previous content
                     if (data.status === 'success') {
-                        const container = document.getElementById('announcementContainer');
-                        container.innerHTML = '';
                         data.announcements.forEach(announcement => {
                             const announcementDiv = document.createElement('div');
-                            announcementDiv.innerHTML = `<div class="announcement-box"><h3>${announcement.admin_name} | ${announcement.date}</h3><p>${announcement.message}</p></div>`;
+                            announcementDiv.classList.add('announcement-box', 'mb-4', 'p-4', 'bg-[#2c343c]', 'rounded-lg', 'shadow-md');
+                            announcementDiv.innerHTML = `
+                                <div class="flex flex-col">
+                                    <div class="flex items-center mb-2">
+                                        <span class="text-white font-bold">${announcement.admin_name}</span>
+                                        <span class="text-gray-400 mx-2">|</span>
+                                        <span class="text-gray-400">${announcement.date}</span>
+                                    </div>
+                                    <p class="text-white">${announcement.message}</p>
+                                </div>`;
                             container.appendChild(announcementDiv);
                         });
+                    } else {
+                        container.innerHTML = '<p class="text-gray-500">No announcements available.</p>';
                     }
-                });
+                })
+                .catch(error => console.error('Error loading announcements:', error));
         }
 
+        // Initial load and refresh every 30 seconds
         loadAnnouncements();
-
         setInterval(loadAnnouncements, 30000);
     </script>
 </body>

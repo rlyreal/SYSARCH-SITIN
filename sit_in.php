@@ -72,7 +72,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['logout_id'])) {
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
-<nav class="bg-gradient-to-r from-blue-600 to-blue-800 px-6 py-4 shadow-lg">
+<nav class="bg-[#2c343c] px-6 py-4 shadow-lg">
     <div class="max-w-7xl mx-auto flex justify-between items-center">
         <!-- Logo Section -->
         <div class="flex items-center space-x-2">
@@ -200,11 +200,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['logout_id'])) {
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     <?php
-                    // Fetch sit-in records where time_out is NULL
+                    // Alternative version using created_at timestamp
                     $sql = "SELECT id, idno, fullname, purpose, laboratory, session_count 
                             FROM sit_in 
                             WHERE time_out IS NULL 
-                            ORDER BY created_at DESC";
+                            ORDER BY created_at DESC, id DESC";
                     
                     $result = $conn->query($sql);
                     
