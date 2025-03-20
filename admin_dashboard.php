@@ -460,36 +460,56 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 .catch(error => console.error('Error loading announcements:', error));
         }
 
-        // Add these new functions for edit and delete functionality
+        // Replace the existing editAnnouncement function with this:
         function editAnnouncement(id) {
             if (confirm('Do you want to edit this announcement?')) {
-                fetch(`get_announcement.php?id=${id}`)
+                // First get the announcements data
+                fetch('get_announcements.php')
                     .then(response => response.json())
                     .then(data => {
                         if (data.status === 'success') {
-                            const newMessage = prompt('Edit announcement:', data.message);
-                            if (newMessage !== null && newMessage.trim() !== '') {
-                                fetch('update_announcement.php', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/x-www-form-urlencoded',
-                                    },
-                                    body: `id=${id}&message=${encodeURIComponent(newMessage)}`
-                                })
-                                .then(response => response.json())
-                                .then(data => {
-                                    if (data.status === 'success') {
-                                        loadAnnouncements();
-                                    } else {
-                                        alert('Failed to update announcement');
-                                    }
-                                });
+                            // Find the specific announcement
+                            const announcement = data.announcements.find(a => a.id == id);
+                            if (announcement) {
+                                const newMessage = prompt('Edit announcement:', announcement.message);
+                                if (newMessage !== null && newMessage.trim() !== '') {
+                                    const formData = new FormData();
+                                    formData.append('id', id);
+                                    formData.append('message', newMessage.trim());
+
+                                    fetch('update_announcement.php', {
+                                        method: 'POST',
+                                        body: formData
+                                    })
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        if (data.status === 'success') {
+                                            alert('Announcement updated successfully!');
+                                            loadAnnouncements();
+                                        } else {
+                                            alert('Failed to update announcement: ' + data.message);
+                                        }
+                                    })
+                                    .catch(error => {
+                                        console.error('Error:', error);
+                                        alert('An error occurred while updating the announcement');
+                                    });
+                                }
+                            } else {
+                                alert('Announcement not found');
                             }
+                        } else {
+                            alert('Failed to fetch announcements');
                         }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while fetching the announcements');
                     });
             }
         }
 
+        // Add these new functions for edit and delete functionality
         function deleteAnnouncement(id) {
             if (confirm('Are you sure you want to delete this announcement?')) {
                 fetch('delete_announcement.php', {
