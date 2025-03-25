@@ -9,10 +9,19 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
+// Fetch user details
 $stmt = $conn->prepare("SELECT profile_picture, first_name, middle_name, last_name, course, year_level, email, address FROM users WHERE id = ?");
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $stmt->bind_result($profile_picture, $first_name, $middle_name, $last_name, $course, $year_level, $email, $address);
+$stmt->fetch();
+$stmt->close();
+
+// Fetch session count from sit_in table
+$stmt = $conn->prepare("SELECT session_count FROM sit_in WHERE idno = (SELECT id_no FROM users WHERE id = ?) ORDER BY id DESC LIMIT 1");
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$stmt->bind_result($session_count);
 $stmt->fetch();
 $stmt->close();
 
@@ -52,6 +61,7 @@ $user_profile = (!empty($profile_picture) && file_exists($profile_picture)) ? $p
             <p><strong>Year:</strong> <?php echo htmlspecialchars($year_level); ?></p>
             <p><strong>Email:</strong> <?php echo htmlspecialchars($email); ?></p>
             <p><strong>Address:</strong> <?php echo htmlspecialchars($address); ?></p>
+            <p><strong>Remaining Sessions:</strong> <?php echo htmlspecialchars($session_count ?? 'N/A'); ?></p>
         </div>
 
         <div class="announcements">
