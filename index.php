@@ -1,8 +1,8 @@
 <?php 
-    // PHP code for session handling (if necessary)
     session_start();
 ?>
-
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
 <!DOCTYPE html>
 <html lang="en">
 <head>

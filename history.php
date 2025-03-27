@@ -25,8 +25,8 @@ $sql = "SELECT
     fullname,
     purpose,
     laboratory,
-    time_in,
-    time_out,
+    DATE_FORMAT(time_in, '%h:%i %p') as time_in,
+    DATE_FORMAT(time_out, '%h:%i %p') as time_out,
     DATE(date) as date,
     CASE 
         WHEN time_out IS NOT NULL THEN 'Completed'
@@ -175,8 +175,8 @@ if ($result->num_rows === 0) {
                                     <td>
                                         <div class="badge badge-ghost"><?php echo $row['laboratory']; ?></div>
                                     </td>
-                                    <td class="font-mono"><?php echo $row['time_in']; ?></td>
-                                    <td class="font-mono"><?php echo $row['time_out']; ?></td>
+                                    <td class="font-mono"><?php echo date('h:i A', strtotime($row['time_in'])); ?></td>
+                                    <td class="font-mono"><?php echo $row['time_out'] ? date('h:i A', strtotime($row['time_out'])) : '-'; ?></td>
                                     <td class="font-mono"><?php echo $row['date']; ?></td>
                                     <td>
                                         <div class="<?php echo $statusBadge; ?>">
@@ -239,6 +239,31 @@ if ($result->num_rows === 0) {
                 </button>
                 <button id="closeFeedback" class="mt-3 px-4 py-2 bg-gray-300 text-gray-800 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500">
                     Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Logout confirmation modal -->
+<div id="logoutModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                </svg>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Confirm Logout</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500">Are you sure you want to logout?</p>
+            </div>
+            <div class="flex justify-center gap-4 mt-3">
+                <button id="cancelLogout" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium rounded-md">
+                    Cancel
+                </button>
+                <button id="confirmLogout" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md">
+                    Logout
                 </button>
             </div>
         </div>
@@ -315,11 +340,65 @@ if ($result->num_rows === 0) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert('Feedback submitted successfully!');
+                // Create and show success popup
+                const popup = document.createElement('div');
+                popup.className = 'fixed inset-0 flex items-center justify-center z-50';
+                popup.innerHTML = `
+                    <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity"></div>
+                    <div class="bg-white rounded-lg px-8 py-6 max-w-sm mx-auto relative transform transition-all">
+                        <div class="flex items-center justify-center mb-4">
+                            <div class="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
+                                <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <h3 class="text-center text-lg font-medium text-gray-900 mb-4">Success!</h3>
+                        <p class="text-center text-gray-500 mb-6">Your feedback has been submitted successfully.</p>
+                    </div>
+                `;
+
+                document.body.appendChild(popup);
+
+                // Close feedback modal
                 document.getElementById('feedbackModal').classList.add('hidden');
                 resetFeedbackForm();
+
+                // Remove success popup after 2 seconds
+                setTimeout(() => {
+                    popup.classList.add('opacity-0');
+                    setTimeout(() => {
+                        document.body.removeChild(popup);
+                    }, 300);
+                }, 2000);
             } else {
-                alert(data.message || 'Error submitting feedback');
+                // Create and show error popup
+                const popup = document.createElement('div');
+                popup.className = 'fixed inset-0 flex items-center justify-center z-50';
+                popup.innerHTML = `
+                    <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity"></div>
+                    <div class="bg-white rounded-lg px-8 py-6 max-w-sm mx-auto relative transform transition-all">
+                        <div class="flex items-center justify-center mb-4">
+                            <div class="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center">
+                                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <h3 class="text-center text-lg font-medium text-gray-900 mb-4">Error</h3>
+                        <p class="text-center text-gray-500 mb-6">${data.message || 'Error submitting feedback'}</p>
+                    </div>
+                `;
+
+                document.body.appendChild(popup);
+
+                // Remove error popup after 3 seconds
+                setTimeout(() => {
+                    popup.classList.add('opacity-0');
+                    setTimeout(() => {
+                        document.body.removeChild(popup);
+                    }, 300);
+                }, 3000);
             }
         })
         .catch(error => {
@@ -336,6 +415,29 @@ if ($result->num_rows === 0) {
             checkedStar.checked = false;
         }
     }
+
+    // Update the logout button click handler
+    document.querySelector('a[href="logout.php"]').addEventListener('click', function(e) {
+        e.preventDefault();
+        document.getElementById('logoutModal').classList.remove('hidden');
+    });
+
+    // Handle cancel button
+    document.getElementById('cancelLogout').addEventListener('click', function() {
+        document.getElementById('logoutModal').classList.add('hidden');
+    });
+
+    // Handle confirm logout
+    document.getElementById('confirmLogout').addEventListener('click', function() {
+        window.location.href = 'logout.php';
+    });
+
+    // Close modal when clicking outside
+    document.getElementById('logoutModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.classList.add('hidden');
+        }
+    });
 </script>
 
 </body>
