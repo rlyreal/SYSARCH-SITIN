@@ -557,6 +557,25 @@ $count++;
     </div>
 </div>
 
+<!-- Delete Success Modal -->
+<div id="deleteSuccessModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white animate-fade-in-down">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
+                <svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Student Deleted Successfully!</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500">
+                    The student has been removed from the system.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 // Modal Elements
 const resetModal = document.getElementById('resetModal');
@@ -700,7 +719,13 @@ document.getElementById('editStudentForm').addEventListener('submit', async (e) 
         const result = await response.json();
         if (result.success) {
             editStudentModal.classList.add('hidden');
-            window.location.reload();
+            document.getElementById('editSuccessModal').classList.remove('hidden');
+            
+            // Auto close success modal and reload page after 1.5 seconds
+            setTimeout(() => {
+                document.getElementById('editSuccessModal').classList.add('hidden');
+                window.location.reload();
+            }, 1500);
         } else {
             alert(result.message || 'Error updating student');
         }
@@ -708,6 +733,12 @@ document.getElementById('editStudentForm').addEventListener('submit', async (e) 
         console.error('Error:', error);
         alert('Error updating student');
     }
+});
+
+// Add success modal close handler
+document.getElementById('closeEditSuccessModal').addEventListener('click', () => {
+    document.getElementById('editSuccessModal').classList.add('hidden');
+    window.location.reload();
 });
 
 // Add cancel button handler
@@ -771,7 +802,13 @@ confirmDelete.addEventListener('click', async () => {
         const result = await response.json();
         if (result.success) {
             deleteModal.classList.add('hidden');
-            window.location.reload();
+            document.getElementById('deleteSuccessModal').classList.remove('hidden');
+            
+            // Auto close success modal and reload page after 1.5 seconds
+            setTimeout(() => {
+                document.getElementById('deleteSuccessModal').classList.add('hidden');
+                window.location.reload();
+            }, 1500);
         } else {
             alert(result.message || 'Error deleting student');
         }

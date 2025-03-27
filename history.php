@@ -53,72 +53,164 @@ if ($result->num_rows === 0) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CCS Sit-In Monitoring</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.7.2/dist/full.min.css" rel="stylesheet" type="text/css" />
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            themes: ["light"],
+            plugins: [require("daisyui")],
+        }
+    </script>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="dashboard.css">
 </head>
 <body>
 
 <!-- Add navigation bar -->
-<nav class="navbar">
-    <div class="navbar-title">Dashboard</div>
-    <ul class="nav-links">
-        <li><a href="dashboard.php">Home</a></li>
-        <li><a href="#">Notifications</a></li>
-        <li><a href="editprofile.php">Edit Profile</a></li>
-        <li><a href="history.php">History</a></li>
-        <li><a href="#">Reservation</a></li>
-    </ul>
-    <a href="logout.php" class="logout-btn">Log Out</a>
-</nav>
+<div class="navbar bg-[#2c343c] shadow-lg">
+    <div class="navbar-start">
+        <div class="flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+            <span class="text-xl font-bold text-white ml-2">Dashboard</span>
+        </div>
+    </div>
+    
+    <div class="navbar-center hidden lg:flex">
+        <ul class="menu menu-horizontal px-1 gap-2">
+            <li>
+                <a href="dashboard.php" class="btn btn-ghost text-white hover:bg-white/10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    Home
+                </a>
+            </li>
+            <li>
+                <a href="#" class="btn btn-ghost text-white hover:bg-white/10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
+                    Notifications
+                </a>
+            </li>
+            <li>
+                <a href="editprofile.php" class="btn btn-ghost text-white hover:bg-white/10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Edit Profile
+                </a>
+            </li>
+            <li>
+                <a href="history.php" class="btn btn-ghost text-white hover:bg-white/10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    History
+                </a>
+            </li>
+            <li>
+                <a href="#" class="btn btn-ghost text-white hover:bg-white/10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    Reservation
+                </a>
+            </li>
+        </ul>
+    </div>
+    
+    <div class="navbar-end">
+        <a href="logout.php" class="btn btn-error btn-outline gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            Logout
+        </a>
+    </div>
+</div>
 
 <div class="container mx-auto px-4 py-8">
-    <h2 class="text-3xl font-bold text-center mb-4">CCS SIT-IN MONITORING SYSTEM</h2>
-    <h4 class="text-xl font-semibold mb-6">📜 HISTORY INFORMATION</h4>
+    <div class="text-center mb-8">
+        <div class="flex items-center justify-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h4 class="text-xl font-semibold">HISTORY INFORMATION</h4>
+        </div>
+    </div>
 
-    <div class="overflow-x-auto shadow-md sm:rounded-lg">
-        <table class="w-full text-sm text-left text-gray-800">
-            <thead class="text-xs text-white uppercase bg-blue-600">
-                <tr>
-                    <th class="px-6 py-3">ID Number</th>
-                    <th class="px-6 py-3">Name</th>
-                    <th class="px-6 py-3">Purpose</th>
-                    <th class="px-6 py-3">Laboratory</th>
-                    <th class="px-6 py-3">Time In</th>
-                    <th class="px-6 py-3">Time Out</th>
-                    <th class="px-6 py-3">Date</th>
-                    <th class="px-6 py-3">Status</th>
-                    <th class="px-6 py-3">Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php
-                if ($result->num_rows > 0) {
-                    while($row = $result->fetch_assoc()) {
-                        $statusColor = $row['status'] === 'Completed' ? 'text-green-600' : 'text-yellow-600';
-                        echo "<tr class='bg-white border-b hover:bg-gray-50'>
-                            <td class='px-6 py-4'>{$row['idno']}</td>
-                            <td class='px-6 py-4'>{$row['fullname']}</td>
-                            <td class='px-6 py-4'>{$row['purpose']}</td>
-                            <td class='px-6 py-4'>{$row['laboratory']}</td>
-                            <td class='px-6 py-4'>{$row['time_in']}</td>
-                            <td class='px-6 py-4'>{$row['time_out']}</td>
-                            <td class='px-6 py-4'>{$row['date']}</td>
-                            <td class='px-6 py-4 font-medium {$statusColor}'>{$row['status']}</td>
-                            <td class='px-6 py-4'>
-                                <button class='feedback-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded' 
-                                        data-sitinid='{$row['id']}'>
-                                    Feedback
-                                </button>
-                            </td>
-                        </tr>";
-                    }
-                } else {
-                    echo "<tr><td colspan='9' class='px-6 py-4 text-center'>No records found</td></tr>";
-                }
-                ?>
-            </tbody>
-        </table>
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body p-0">
+            <div class="overflow-x-auto">
+                <table class="table table-zebra">
+                    <!-- Table head -->
+                    <thead class="text-xs uppercase">
+                        <tr class="bg-[#2c343c] text-white"> <!-- Changed to match navbar color -->
+                            <th class="w-28">ID Number</th>
+                            <th>Name</th>
+                            <th>Purpose</th>
+                            <th>Laboratory</th>
+                            <th>Time In</th>
+                            <th>Time Out</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th class="w-24">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        if ($result->num_rows > 0) {
+                            while($row = $result->fetch_assoc()) {
+                                $statusBadge = $row['status'] === 'Completed' 
+                                    ? 'badge bg-green-100 text-green-800 border-none' // Light green for completed
+                                    : 'badge badge-warning';
+                                ?>
+                                <tr class="hover">
+                                    <td class="font-mono"><?php echo $row['idno']; ?></td>
+                                    <td><?php echo $row['fullname']; ?></td>
+                                    <td><?php echo $row['purpose']; ?></td>
+                                    <td>
+                                        <div class="badge badge-ghost"><?php echo $row['laboratory']; ?></div>
+                                    </td>
+                                    <td class="font-mono"><?php echo $row['time_in']; ?></td>
+                                    <td class="font-mono"><?php echo $row['time_out']; ?></td>
+                                    <td class="font-mono"><?php echo $row['date']; ?></td>
+                                    <td>
+                                        <div class="<?php echo $statusBadge; ?>">
+                                            <?php echo $row['status']; ?>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-primary btn-xs feedback-btn" 
+                                                data-sitinid="<?php echo $row['id']; ?>">
+                                            Feedback
+                                        </button>
+                                    </td>
+                                </tr>
+                                <?php
+                            }
+                        } else {
+                            ?>
+                            <tr>
+                                <td colspan="9" class="text-center py-4">
+                                    <div class="flex flex-col items-center justify-center text-gray-500">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                                        </svg>
+                                        <span class="font-medium">No records found</span>
+                                    </div>
+                                </td>
+                            </tr>
+                            <?php
+                        }
+                        ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 
