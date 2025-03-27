@@ -17,8 +17,11 @@ $stmt->bind_result($profile_picture, $first_name, $middle_name, $last_name, $cou
 $stmt->fetch();
 $stmt->close();
 
-// Fetch session count from sit_in table
-$stmt = $conn->prepare("SELECT session_count FROM sit_in WHERE idno = (SELECT id_no FROM users WHERE id = ?) ORDER BY id DESC LIMIT 1");
+// Replace the existing session count fetch code with this:
+$stmt = $conn->prepare("SELECT COALESCE(
+    (SELECT session_count FROM sit_in WHERE idno = (SELECT id_no FROM users WHERE id = ?) ORDER BY id DESC LIMIT 1), 
+    30
+) as session_count");
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $stmt->bind_result($session_count);
@@ -61,7 +64,7 @@ $user_profile = (!empty($profile_picture) && file_exists($profile_picture)) ? $p
             <p><strong>Year:</strong> <?php echo htmlspecialchars($year_level); ?></p>
             <p><strong>Email:</strong> <?php echo htmlspecialchars($email); ?></p>
             <p><strong>Address:</strong> <?php echo htmlspecialchars($address); ?></p>
-            <p><strong>Remaining Sessions:</strong> <?php echo htmlspecialchars($session_count ?? 'N/A'); ?></p>
+            <p><strong>Remaining Sessions:</strong> <?php echo htmlspecialchars($session_count); ?></p>
         </div>
 
         <div class="announcements">

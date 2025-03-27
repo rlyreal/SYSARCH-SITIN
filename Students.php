@@ -16,11 +16,13 @@ if (isset($_GET['reset_session'])) {
     exit();
 }
 
-// Update SQL query to include session count
+// Update SQL query to handle session count with default value of 30 for new users
 $sql = "SELECT u.id, u.id_no, CONCAT(u.first_name, ' ', u.middle_name, ' ', u.last_name) AS full_name,
         u.year_level, u.course, 
-        COALESCE((SELECT session_count FROM sit_in WHERE idno = u.id_no ORDER BY id DESC LIMIT 1), 0) as session_count 
+        COALESCE(s.session_count, 30) as session_count 
         FROM users u 
+        LEFT JOIN sit_in s ON u.id_no = s.idno 
+            AND s.id = (SELECT MAX(id) FROM sit_in WHERE idno = u.id_no)
         ORDER BY u.id DESC";
 $result = $conn->query($sql);
 ?>
@@ -44,7 +46,7 @@ $result = $conn->query($sql);
             <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
-            <span class="text-2xl font-bold text-white">Admin Dashboard</span>
+            <span class="text-2xl font-bold text-white">Admin</span>
         </div>
 
         <!-- Center Navigation Links -->
@@ -108,6 +110,12 @@ $result = $conn->query($sql);
                         <span>Reports</span>
                     </a>
                 </li>
+                <li><a href="feedback.php" class="text-white hover:text-yellow-200 transition-colors duration-200 font-medium flex items-center space-x-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                        </svg>
+                        <span>Feedback Reports</span>
+                    </a></li>
             </ul>
         </div>
 
@@ -210,11 +218,13 @@ $count++;
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
     </svg>
 </button>
-<a href="#" onclick="confirmDelete(<?php echo $row['id']; ?>)" class="w-8 h-8 rounded-full bg-red-100 hover:bg-red-200 flex items-center justify-center transition duration-200" title="Delete">
-<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-</svg>
-</a>
+<button onclick="showDeleteConfirmation(<?php echo $row['id']; ?>)" 
+        class="w-8 h-8 rounded-full bg-red-100 hover:bg-red-200 flex items-center justify-center transition duration-200" 
+        title="Delete">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+    </svg>
+</button>
 </div>
 </td>
 </tr>
@@ -519,268 +529,167 @@ $count++;
     </div>
 </div>
 
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Delete Student</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500">
+                    Are you sure you want to delete this student? This action cannot be undone.
+                </p>
+            </div>
+            <div class="items-center px-4 py-3">
+                <input type="hidden" id="deleteStudentId">
+                <button id="confirmDelete" class="px-4 py-2 bg-red-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-300 mb-2">
+                    Delete Student
+                </button>
+                <button id="cancelDelete" class="px-4 py-2 bg-gray-100 text-gray-700 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
-function confirmDelete(id) {
-if(confirm("Are you sure you want to delete this student?")) {
-window.location.href = "delete_student.php?id=" + id;
-}
-}
+// Modal Elements
+const resetModal = document.getElementById('resetModal');
+const deleteModal = document.getElementById('deleteModal');
+const addStudentModal = document.getElementById('addStudentModal');
+const editStudentModal = document.getElementById('editStudentModal');
+const successModal = document.getElementById('successModal');
 
-// Simple search functionality
-document.getElementById('searchInput').addEventListener('keyup', function() {
-const input = this.value.toLowerCase();
-const table = document.querySelector('table');
-const rows = table.querySelectorAll('tbody tr');
-
-rows.forEach(row => {
-const text = row.textContent.toLowerCase();
-if(text.indexOf(input) > -1) {
-row.style.display = "";
-} else {
-row.style.display = "none";
-}
-});
-});
-
-// Get modal elements
-const modal = document.getElementById('resetModal');
+// Reset Sessions Functionality
 const resetButton = document.getElementById('resetButton');
 const confirmReset = document.getElementById('confirmReset');
 const cancelReset = document.getElementById('cancelReset');
 
-// Show modal
 resetButton.addEventListener('click', () => {
-    modal.classList.remove('hidden');
+    resetModal.classList.remove('hidden');
 });
 
-// Hide modal
 cancelReset.addEventListener('click', () => {
-    modal.classList.add('hidden');
+    resetModal.classList.add('hidden');
 });
 
-// Close modal when clicking outside
-modal.addEventListener('click', (e) => {
-    if (e.target === modal) {
-        modal.classList.add('hidden');
+confirmReset.addEventListener('click', async () => {
+    try {
+        const response = await fetch('Students.php?reset_session=true', {
+            method: 'GET'
+        });
+        
+        if (response.ok) {
+            resetModal.classList.add('hidden');
+            successModal.classList.remove('hidden');
+            
+            // Reload the page after a short delay
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } else {
+            alert('Error resetting sessions');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error resetting sessions');
     }
 });
 
-// Handle reset confirmation
-confirmReset.addEventListener('click', () => {
-    modal.classList.add('hidden');
-    // Show success modal immediately after reset
-    successModal.classList.remove('hidden');
-    // Send request to reset sessions
-    fetch('?reset_session')
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.text();
-        })
-        .catch(error => {
-            console.error('Error:', error);
-        });
-});
-
-// Success modal handling
-const successModal = document.getElementById('successModal');
+// Add close handler for success modal
 const closeSuccessModal = document.getElementById('closeSuccessModal');
-
-// Close success modal when clicking the button
-closeSuccessModal.addEventListener('click', () => {
-    successModal.classList.add('hidden');
-    window.location.reload(); // Reload to show updated session counts
-});
-
-// Close success modal when clicking outside
-successModal.addEventListener('click', (e) => {
-    if (e.target === successModal) {
+if (closeSuccessModal) {
+    closeSuccessModal.addEventListener('click', () => {
         successModal.classList.add('hidden');
         window.location.reload();
+    });
+}
+
+// Make sure the resetButton click handler is properly set
+document.getElementById('resetButton').addEventListener('click', (e) => {
+    e.preventDefault();
+    resetModal.classList.remove('hidden');
+});
+
+// Add click outside handler for reset modal
+resetModal.addEventListener('click', (e) => {
+    if (e.target === resetModal) {
+        resetModal.classList.add('hidden');
     }
 });
 
-// Show success modal if session was reset successfully
-<?php if(isset($_SESSION['message']) && strpos($_SESSION['message'], 'successfully') !== false): ?>
-    document.addEventListener('DOMContentLoaded', () => {
-        successModal.classList.remove('hidden');
-        <?php unset($_SESSION['message']); ?>
-    });
-<?php endif; ?>
+// Delete Functionality
+function showDeleteConfirmation(id) {
+    document.getElementById('deleteStudentId').value = id;
+    deleteModal.classList.remove('hidden');
+}
 
-// Add this to your existing script section
-const addStudentModal = document.getElementById('addStudentModal');
-const addStudentButton = document.querySelector('a[href="#"].bg-green-500'); // Update the selector to match your Add New Student button
+const confirmDelete = document.getElementById('confirmDelete');
+const cancelDelete = document.getElementById('cancelDelete');
+
+cancelDelete.addEventListener('click', () => {
+    deleteModal.classList.add('hidden');
+});
+
+// Add New Student Functionality
+const addStudentButton = document.querySelector('a[href="#"].bg-green-500');
 const cancelAddStudent = document.getElementById('cancelAddStudent');
-const addStudentForm = document.getElementById('addStudentForm');
 
-// Show modal when clicking Add New Student
 addStudentButton.addEventListener('click', (e) => {
     e.preventDefault();
     addStudentModal.classList.remove('hidden');
 });
 
-// Hide modal when clicking Cancel
 cancelAddStudent.addEventListener('click', () => {
     addStudentModal.classList.add('hidden');
     addStudentForm.reset();
 });
 
-// Close modal when clicking outside
-addStudentModal.addEventListener('click', (e) => {
-    if (e.target === addStudentModal) {
-        addStudentModal.classList.add('hidden');
-        addStudentForm.reset();
-    }
-});
-
-// Handle form submission
-addStudentForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const formData = new FormData(addStudentForm);
-    
-    try {
-        const response = await fetch('add_student.php', {
-            method: 'POST',
-            body: formData
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            addStudentModal.classList.add('hidden'); // Hide add student modal
-            addStudentForm.reset();
-            // Show success modal
-            const addSuccessModal = document.getElementById('addSuccessModal');
-            addSuccessModal.classList.remove('hidden');
-            
-            // Handle closing of success modal
-            const closeAddSuccessModal = document.getElementById('closeAddSuccessModal');
-            closeAddSuccessModal.addEventListener('click', () => {
-                addSuccessModal.classList.add('hidden');
-                window.location.reload(); // Reload to show new student
-            });
-            
-            // Close on outside click
-            addSuccessModal.addEventListener('click', (e) => {
-                if (e.target === addSuccessModal) {
-                    addSuccessModal.classList.add('hidden');
-                    window.location.reload();
-                }
-            });
-        } else {
-            alert(result.message || 'Error adding student');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error adding student');
-    }
-});
-
-// Add success modal handling
-const addSuccessModal = document.getElementById('addSuccessModal');
-const closeAddSuccessModal = document.getElementById('closeAddSuccessModal');
-
-// Close add success modal when clicking the button
-closeAddSuccessModal.addEventListener('click', () => {
-    addSuccessModal.classList.add('hidden');
-    window.location.reload(); // Reload to show new student
-});
-
-// Close add success modal when clicking outside
-addSuccessModal.addEventListener('click', (e) => {
-    if (e.target === addSuccessModal) {
-        addSuccessModal.classList.add('hidden');
-        window.location.reload();
-    }
-});
-
-// Update the form submission handler in your existing script section
-addStudentForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const formData = new FormData(addStudentForm);
-    
-    try {
-        const response = await fetch('add_student.php', {
-            method: 'POST',
-            body: formData
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            addStudentModal.classList.add('hidden'); // Hide add student modal
-            addStudentForm.reset();
-            // Show success modal
-            const addSuccessModal = document.getElementById('addSuccessModal');
-            addSuccessModal.classList.remove('hidden');
-            
-            // Handle closing of success modal
-            const closeAddSuccessModal = document.getElementById('closeAddSuccessModal');
-            closeAddSuccessModal.addEventListener('click', () => {
-                addSuccessModal.classList.add('hidden');
-                window.location.reload(); // Reload to show new student
-            });
-            
-            // Close on outside click
-            addSuccessModal.addEventListener('click', (e) => {
-                if (e.target === addSuccessModal) {
-                    addSuccessModal.classList.add('hidden');
-                    window.location.reload();
-                }
-            });
-        } else {
-            alert(result.message || 'Error adding student');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error adding student');
-    }
-});
-
-// Add to your existing script section
-const editStudentModal = document.getElementById('editStudentModal');
-const editStudentForm = document.getElementById('editStudentForm');
-const cancelEditStudent = document.getElementById('cancelEditStudent');
-
-// Update the editStudent function in your script section
+// Edit Student Functionality
 function editStudent(studentData) {
-    // Split the full name into parts (assuming format: "First Middle Last")
-    const nameParts = studentData.full_name.split(' ');
-    const firstName = nameParts[0];
-    const middleName = nameParts.length > 2 ? nameParts[1] : '';
-    const lastName = nameParts.length > 2 ? nameParts[2] : nameParts[1];
+    try {
+        // Populate form fields
+        document.getElementById('edit_student_id').value = studentData.id;
+        document.getElementById('edit_id_no').value = studentData.id_no;
+        
+        // Split full name and handle name parts
+        const fullName = studentData.full_name;
+        const nameParts = fullName.trim().split(' ');
+        
+        // Handle name parts based on length
+        if (nameParts.length === 3) {
+            document.getElementById('edit_first_name').value = nameParts[0];
+            document.getElementById('edit_middle_name').value = nameParts[1];
+            document.getElementById('edit_last_name').value = nameParts[2];
+        } else if (nameParts.length === 2) {
+            document.getElementById('edit_first_name').value = nameParts[0];
+            document.getElementById('edit_middle_name').value = '';
+            document.getElementById('edit_last_name').value = nameParts[1];
+        } else {
+            document.getElementById('edit_first_name').value = nameParts[0] || '';
+            document.getElementById('edit_middle_name').value = '';
+            document.getElementById('edit_last_name').value = nameParts[1] || '';
+        }
+        
+        document.getElementById('edit_year_level').value = studentData.year_level;
+        document.getElementById('edit_course').value = studentData.course;
 
-    // Populate form fields
-    document.getElementById('edit_student_id').value = studentData.id;
-    document.getElementById('edit_id_no').value = studentData.id_no;
-    document.getElementById('edit_first_name').value = firstName;
-    document.getElementById('edit_middle_name').value = middleName;
-    document.getElementById('edit_last_name').value = lastName;
-    document.getElementById('edit_year_level').value = studentData.year_level;
-    document.getElementById('edit_course').value = studentData.course;
-
-    // Show modal
-    editStudentModal.classList.remove('hidden');
+        // Show the modal
+        editStudentModal.classList.remove('hidden');
+    } catch (error) {
+        console.error('Error populating edit form:', error);
+    }
 }
 
-// Hide modal when clicking Cancel
-cancelEditStudent.addEventListener('click', () => {
-    editStudentModal.classList.add('hidden');
-});
-
-// Close modal when clicking outside
-editStudentModal.addEventListener('click', (e) => {
-    if (e.target === editStudentModal) {
-        editStudentModal.classList.add('hidden');
-    }
-});
-
-// Handle form submission
-editStudentForm.addEventListener('submit', async (e) => {
+// Add these event listeners
+document.getElementById('editStudentForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const formData = new FormData(editStudentForm);
+    const formData = new FormData(e.target);
     
     try {
         const response = await fetch('update_student.php', {
@@ -789,27 +698,9 @@ editStudentForm.addEventListener('submit', async (e) => {
         });
         
         const result = await response.json();
-        
         if (result.success) {
             editStudentModal.classList.add('hidden');
-            // Show edit success modal
-            const editSuccessModal = document.getElementById('editSuccessModal');
-            editSuccessModal.classList.remove('hidden');
-            
-            // Handle closing of edit success modal
-            const closeEditSuccessModal = document.getElementById('closeEditSuccessModal');
-            closeEditSuccessModal.addEventListener('click', () => {
-                editSuccessModal.classList.add('hidden');
-                window.location.reload(); // Reload to show updated data
-            });
-            
-            // Close on outside click
-            editSuccessModal.addEventListener('click', (e) => {
-                if (e.target === editSuccessModal) {
-                    editSuccessModal.classList.add('hidden');
-                    window.location.reload();
-                }
-            });
+            window.location.reload();
         } else {
             alert(result.message || 'Error updating student');
         }
@@ -819,46 +710,87 @@ editStudentForm.addEventListener('submit', async (e) => {
     }
 });
 
-// Update the edit form submission handler in your script section
-editStudentForm.addEventListener('submit', async (e) => {
+// Add cancel button handler
+document.getElementById('cancelEditStudent').addEventListener('click', () => {
+    editStudentModal.classList.add('hidden');
+    document.getElementById('editStudentForm').reset();
+});
+
+// Generic modal close on outside click
+[resetModal, deleteModal, addStudentModal, editStudentModal, successModal].forEach(modal => {
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.add('hidden');
+            }
+        });
+    }
+});
+
+// Form submissions
+const addStudentForm = document.getElementById('addStudentForm');
+const editStudentForm = document.getElementById('editStudentForm');
+
+// Add Student Form Submission
+addStudentForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const formData = new FormData(editStudentForm);
+    const formData = new FormData(addStudentForm);
     
     try {
-        const response = await fetch('update_student.php', {
+        const response = await fetch('add_student.php', {
             method: 'POST',
             body: formData
         });
         
         const result = await response.json();
-        
         if (result.success) {
-            editStudentModal.classList.add('hidden'); // Hide edit modal
-            // Show success modal
-            const editSuccessModal = document.getElementById('editSuccessModal');
-            editSuccessModal.classList.remove('hidden');
-            
-            // Handle closing of success modal
-            const closeEditSuccessModal = document.getElementById('closeEditSuccessModal');
-            closeEditSuccessModal.addEventListener('click', () => {
-                editSuccessModal.classList.add('hidden');
-                window.location.reload(); // Reload to show updated data
-            });
-            
-            // Close on outside click
-            editSuccessModal.addEventListener('click', (e) => {
-                if (e.target === editSuccessModal) {
-                    editSuccessModal.classList.add('hidden');
-                    window.location.reload();
-                }
-            });
+            addStudentModal.classList.add('hidden');
+            addStudentForm.reset();
+            window.location.reload();
         } else {
-            alert(result.message || 'Error updating student');
+            alert(result.message || 'Error adding student');
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('Error updating student');
+        alert('Error adding student');
     }
+});
+
+// Delete Confirmation Handler
+confirmDelete.addEventListener('click', async () => {
+    const id = document.getElementById('deleteStudentId').value;
+    try {
+        const response = await fetch('delete_student.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `id=${id}`
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            deleteModal.classList.add('hidden');
+            window.location.reload();
+        } else {
+            alert(result.message || 'Error deleting student');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error deleting student');
+    }
+});
+
+// Search functionality
+const searchInput = document.getElementById('searchInput');
+searchInput.addEventListener('keyup', function() {
+    const input = this.value.toLowerCase();
+    const rows = document.querySelectorAll('tbody tr');
+
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(input) ? "" : "none";
+    });
 });
 </script>
 </body>

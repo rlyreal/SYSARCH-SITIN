@@ -4,19 +4,36 @@ include 'db.php';
 
 header('Content-Type: application/json'); // Set JSON response header
 
+// Set default response
+$response = [
+    'success' => false,
+    'message' => 'An error occurred'
+];
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Get form data
+    $id_no = $_POST['id_no'];
+    $email = $_POST['email'];
+    $username = $_POST['username'];
+    $password = password_hash($_POST['password'], PASSWORD_DEFAULT); // Hash password
+    $first_name = $_POST['first_name'];
+    $middle_name = $_POST['middle_name'];
+    $last_name = $_POST['last_name'];
+    $year_level = $_POST['year_level'];
+    $course = $_POST['course'];
+    $address = $_POST['address'];
+
     try {
         // Sanitize input
-        $id_no = mysqli_real_escape_string($conn, $_POST['id_no']);
-        $last_name = mysqli_real_escape_string($conn, $_POST['last_name']);
-        $first_name = mysqli_real_escape_string($conn, $_POST['first_name']);
-        $middle_name = mysqli_real_escape_string($conn, $_POST['middle_name']);
-        $course = mysqli_real_escape_string($conn, $_POST['course']);
-        $year_level = mysqli_real_escape_string($conn, $_POST['year_level']);
-        $username = mysqli_real_escape_string($conn, $_POST['username']);
-        $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
-        $email = mysqli_real_escape_string($conn, $_POST['email']);
-        $address = mysqli_real_escape_string($conn, $_POST['address']);
+        $id_no = mysqli_real_escape_string($conn, $id_no);
+        $last_name = mysqli_real_escape_string($conn, $last_name);
+        $first_name = mysqli_real_escape_string($conn, $first_name);
+        $middle_name = mysqli_real_escape_string($conn, $middle_name);
+        $course = mysqli_real_escape_string($conn, $course);
+        $year_level = mysqli_real_escape_string($conn, $year_level);
+        $username = mysqli_real_escape_string($conn, $username);
+        $email = mysqli_real_escape_string($conn, $email);
+        $address = mysqli_real_escape_string($conn, $address);
 
         // Check if ID number, username, or email already exists
         $check_sql = "SELECT * FROM users WHERE id_no = ? OR username = ? OR email = ?";
@@ -33,43 +50,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        // Insert into users table
-        $sql = "INSERT INTO users (id_no, last_name, first_name, middle_name, course, year_level, username, password, email, address) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        // Insert into users table only
+        $user_sql = "INSERT INTO users (id_no, email, username, password, first_name, middle_name, last_name, year_level, course, address) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("ssssssssss", $id_no, $last_name, $first_name, $middle_name, $course, $year_level, $username, $password, $email, $address);
+        $user_stmt = $conn->prepare($user_sql);
+        $user_stmt->bind_param("ssssssssss", 
+            $id_no, $email, $username, $password, $first_name, 
+            $middle_name, $last_name, $year_level, $course, $address
+        );
         
-        if ($stmt->execute()) {
-            // Also create initial sit_in record with 30 sessions
-            $sit_in_sql = "INSERT INTO sit_in (idno, session_count) VALUES (?, 30)";
-            $sit_in_stmt = $conn->prepare($sit_in_sql);
-            $sit_in_stmt->bind_param("s", $id_no);
-            $sit_in_stmt->execute();
-
-            echo json_encode([
+        if ($user_stmt->execute()) {
+            $response = [
                 'success' => true,
                 'message' => 'Student added successfully'
-            ]);
-        } else {
-            echo json_encode([
-                'success' => false,
-                'message' => 'Database error: ' . $conn->error
-            ]);
+            ];
         }
-        
-        $stmt->close();
+
+        $user_stmt->close();
         $conn->close();
     } catch (Exception $e) {
-        echo json_encode([
+        $response = [
             'success' => false,
             'message' => 'Error: ' . $e->getMessage()
-        ]);
+        ];
     }
-} else {
-    echo json_encode([
-        'success' => false,
-        'message' => 'Invalid request method'
-    ]);
 }
+
+// Return JSON response
+echo json_encode($response);
 ?>
