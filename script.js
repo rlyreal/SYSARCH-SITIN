@@ -4,21 +4,22 @@ document.addEventListener("DOMContentLoaded", function () {
     const signInForm = document.getElementById("signIn");
     const signUpForm = document.getElementById("signup");
 
-    // 🔄 Switch between Sign-in & Sign-up forms
-    signUpButton.addEventListener("click", function () {
-        signInForm.style.display = "none";
-        signUpForm.style.display = "block";
+    // Form switching
+    signUpButton?.addEventListener("click", function () {
+        signInForm.classList.add("hidden");
+        signUpForm.classList.remove("hidden");
     });
 
-    signInButton.addEventListener("click", function () {
-        signInForm.style.display = "block";
-        signUpForm.style.display = "none";
+    signInButton?.addEventListener("click", function () {
+        signInForm.classList.remove("hidden");
+        signUpForm.classList.add("hidden");
     });
 
-    // ✅ Handle Registration
-    document.getElementById("registerForm").addEventListener("submit", function (e) {
+    // Register form submission
+    const registerForm = document.getElementById("registerForm");
+    registerForm?.addEventListener("submit", function (e) {
         e.preventDefault();
-        let formData = new FormData(this);
+        const formData = new FormData(this);
 
         fetch("register.php", {
             method: "POST",
@@ -27,21 +28,51 @@ document.addEventListener("DOMContentLoaded", function () {
         .then(response => response.json())
         .then(data => {
             if (data.status === "success") {
+                // Show success message
                 Swal.fire({
-                    title: "Success!",
-                    text: data.message,
-                    icon: "success",
+                    icon: 'success',
+                    title: 'Registration Successful!',
+                    text: 'Your account has been created.',
+                    showConfirmButton: false,
                     timer: 2000,
-                    showConfirmButton: false
+                    customClass: {
+                        popup: 'bg-white rounded-lg shadow-xl',
+                        title: 'text-xl font-bold text-gray-900',
+                        text: 'text-gray-600',
+                    }
                 }).then(() => {
-                    signUpForm.style.display = "none";
-                    signInForm.style.display = "block";
+                    // Reset form and switch to login
+                    registerForm.reset();
+                    signUpForm.classList.add("hidden");
+                    signInForm.classList.remove("hidden");
                 });
             } else {
-                Swal.fire({ title: "Error!", text: data.message, icon: "error" });
+                // Show error message
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Registration Failed',
+                    text: data.message,
+                    customClass: {
+                        popup: 'bg-white rounded-lg shadow-xl',
+                        title: 'text-xl font-bold text-gray-900',
+                        text: 'text-gray-600',
+                    }
+                });
             }
         })
-        .catch(error => console.error("Error:", error));
+        .catch(error => {
+            console.error("Error:", error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'An error occurred during registration.',
+                customClass: {
+                    popup: 'bg-white rounded-lg shadow-xl',
+                    title: 'text-xl font-bold text-gray-900',
+                    text: 'text-gray-600',
+                }
+            });
+        });
     });
 
     // ✅ Handle Login
