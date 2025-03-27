@@ -41,10 +41,10 @@ $user_profile = (!empty($profile_picture) && file_exists($profile_picture)) ? $p
     <nav class="navbar">
         <div class="navbar-title">Dashboard</div>
         <ul class="nav-links">
-            <li><a href="#">Home</a></li>
+            <li><a href="dashboard.php">Home</a></li>
             <li><a href="#">Notifications</a></li>
             <li><a href="editprofile.php">Edit Profile</a></li>
-            <li><a href="#">History</a></li>
+            <li><a href="history.php">History</a></li>
             <li><a href="#">Reservation</a></li>
         </ul>
         <a href="logout.php" class="logout-btn">Log Out</a>

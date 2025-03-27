@@ -2,13 +2,18 @@
 session_start();
 include 'db.php';
 
-
-// Reset session if requested
+// Reset all session counts if requested
 if (isset($_GET['reset_session'])) {
-session_unset();
-session_destroy();
-header("Location: Students.php");
-exit();
+    // Update all session counts in sit_in table to 30
+    $reset_sql = "UPDATE sit_in SET session_count = 30";
+    if ($conn->query($reset_sql) === TRUE) {
+        // Add success message to session
+        $_SESSION['message'] = "All session counts have been reset to 30 successfully.";
+    } else {
+        $_SESSION['message'] = "Error resetting session counts: " . $conn->error;
+    }
+    header("Location: Students.php");
+    exit();
 }
 
 // Update SQL query to include session count
@@ -119,14 +124,23 @@ $result = $conn->query($sql);
 </nav>
 
 <div class="container mx-auto px-4 py-8">
+    <?php if (isset($_SESSION['message'])): ?>
+        <div class="mb-4 p-4 rounded-lg <?php echo strpos($_SESSION['message'], 'Error') !== false ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'; ?>">
+            <?php 
+            echo $_SESSION['message'];
+            unset($_SESSION['message']); // Clear the message after displaying
+            ?>
+        </div>
+    <?php endif; ?>
+    
 <!-- Header with title and reset button -->
 <div class="flex justify-between items-center mb-6">
 <h1 class="text-3xl font-bold text-gray-800">Student Information</h1>
-<a href="?reset_session" class="bg-blue-500 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200 flex items-center">
-<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-</svg>
-Reset Session
+<a href="#" class="bg-blue-500 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200 flex items-center" id="resetButton">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+    </svg>
+    Reset All Sessions
 </a>
 </div>
 
@@ -225,6 +239,192 @@ $count++;
 </div>
 </div>
 
+<!-- Reset Sessions Modal -->
+<div id="resetModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100">
+                <svg class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Reset All Sessions</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500">
+                    Are you sure you want to reset ALL session counts to 30? This action cannot be undone.
+                </p>
+            </div>
+            <div class="items-center px-4 py-3">
+                <button id="confirmReset" class="px-4 py-2 bg-yellow-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-300">
+                    Reset All Sessions
+                </button>
+                <button id="cancelReset" class="mt-3 px-4 py-2 bg-gray-100 text-gray-700 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Message Modal -->
+<div id="successModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
+                <svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Reset Successful!</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500">
+                    All session counts have been successfully reset to 30.
+                </p>
+            </div>
+            <div class="items-center px-4 py-3">
+                <button id="closeSuccessModal" class="px-4 py-2 bg-green-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div id="successModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white animate-fade-in-down">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
+                <svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Success!</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500">
+                    All session counts have been reset to 30 successfully.
+                </p>
+            </div>
+            <div class="items-center px-4 py-3">
+                <button id="closeSuccessModal" class="px-4 py-2 bg-green-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300 transition duration-200">
+                    Got it!
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Student Modal -->
+<div id="addStudentModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-10 mx-auto p-5 border w-[450px] shadow-lg rounded-lg bg-white">
+        <!-- Modal Header -->
+        <div class="mb-5">
+            <h2 class="text-xl font-bold text-gray-800 text-center">Add New Student</h2>
+        </div>
+
+        <!-- Form -->
+        <form id="addStudentForm" class="space-y-4">
+            <!-- Basic Information -->
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">ID Number*</label>
+                    <input type="text" name="id_no" required placeholder="Enter ID number"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email*</label>
+                    <input type="email" name="email" required placeholder="Enter email"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Last Name*</label>
+                    <input type="text" name="last_name" required placeholder="Enter last name"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">First Name*</label>
+                    <input type="text" name="first_name" required placeholder="Enter first name"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Middle Name</label>
+                    <input type="text" name="middle_name" placeholder="Enter middle name"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Course*</label>
+                    <select name="course" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Select Course</option>
+                        <option value="BSIT">BSIT</option>
+                        <option value="BSCS">BSCS</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Username*</label>
+                    <input type="text" name="username" required placeholder="Enter username"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Year Level*</label>
+                    <select name="year_level" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Select Year</option>
+                        <option value="1st Year">1st Year</option>
+                        <option value="2nd Year">2nd Year</option>
+                        <option value="3rd Year">3rd Year</option>
+                        <option value="4th Year">4th Year</option>
+                    </select>
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Password*</label>
+                    <input type="password" name="password" required placeholder="Enter password"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                    <input type="text" name="address" placeholder="Enter complete address"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex justify-end space-x-3 pt-4">
+                <button type="button" id="cancelAddStudent"
+                    class="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200">
+                    Cancel
+                </button>
+                <button type="submit"
+                    class="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600">
+                    Add Student
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add Student Success Modal -->
+<div id="addSuccessModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white animate-fade-in-down">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
+                <svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Student Added Successfully!</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500">
+                    The new student has been successfully added to the system.
+                </p>
+            </div>
+            <div class="items-center px-4 py-3">
+                <button id="closeAddSuccessModal" class="px-4 py-2 bg-green-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300 transition duration-200">
+                    Got it!
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 function confirmDelete(id) {
 if(confirm("Are you sure you want to delete this student?")) {
@@ -246,6 +446,203 @@ row.style.display = "";
 row.style.display = "none";
 }
 });
+});
+
+// Get modal elements
+const modal = document.getElementById('resetModal');
+const resetButton = document.getElementById('resetButton');
+const confirmReset = document.getElementById('confirmReset');
+const cancelReset = document.getElementById('cancelReset');
+
+// Show modal
+resetButton.addEventListener('click', () => {
+    modal.classList.remove('hidden');
+});
+
+// Hide modal
+cancelReset.addEventListener('click', () => {
+    modal.classList.add('hidden');
+});
+
+// Close modal when clicking outside
+modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+        modal.classList.add('hidden');
+    }
+});
+
+// Handle reset confirmation
+confirmReset.addEventListener('click', () => {
+    modal.classList.add('hidden');
+    // Show success modal immediately after reset
+    successModal.classList.remove('hidden');
+    // Send request to reset sessions
+    fetch('?reset_session')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.text();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+});
+
+// Success modal handling
+const successModal = document.getElementById('successModal');
+const closeSuccessModal = document.getElementById('closeSuccessModal');
+
+// Close success modal when clicking the button
+closeSuccessModal.addEventListener('click', () => {
+    successModal.classList.add('hidden');
+    window.location.reload(); // Reload to show updated session counts
+});
+
+// Close success modal when clicking outside
+successModal.addEventListener('click', (e) => {
+    if (e.target === successModal) {
+        successModal.classList.add('hidden');
+        window.location.reload();
+    }
+});
+
+// Show success modal if session was reset successfully
+<?php if(isset($_SESSION['message']) && strpos($_SESSION['message'], 'successfully') !== false): ?>
+    document.addEventListener('DOMContentLoaded', () => {
+        successModal.classList.remove('hidden');
+        <?php unset($_SESSION['message']); ?>
+    });
+<?php endif; ?>
+
+// Add this to your existing script section
+const addStudentModal = document.getElementById('addStudentModal');
+const addStudentButton = document.querySelector('a[href="#"].bg-green-500'); // Update the selector to match your Add New Student button
+const cancelAddStudent = document.getElementById('cancelAddStudent');
+const addStudentForm = document.getElementById('addStudentForm');
+
+// Show modal when clicking Add New Student
+addStudentButton.addEventListener('click', (e) => {
+    e.preventDefault();
+    addStudentModal.classList.remove('hidden');
+});
+
+// Hide modal when clicking Cancel
+cancelAddStudent.addEventListener('click', () => {
+    addStudentModal.classList.add('hidden');
+    addStudentForm.reset();
+});
+
+// Close modal when clicking outside
+addStudentModal.addEventListener('click', (e) => {
+    if (e.target === addStudentModal) {
+        addStudentModal.classList.add('hidden');
+        addStudentForm.reset();
+    }
+});
+
+// Handle form submission
+addStudentForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(addStudentForm);
+    
+    try {
+        const response = await fetch('add_student.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            addStudentModal.classList.add('hidden'); // Hide add student modal
+            addStudentForm.reset();
+            // Show success modal
+            const addSuccessModal = document.getElementById('addSuccessModal');
+            addSuccessModal.classList.remove('hidden');
+            
+            // Handle closing of success modal
+            const closeAddSuccessModal = document.getElementById('closeAddSuccessModal');
+            closeAddSuccessModal.addEventListener('click', () => {
+                addSuccessModal.classList.add('hidden');
+                window.location.reload(); // Reload to show new student
+            });
+            
+            // Close on outside click
+            addSuccessModal.addEventListener('click', (e) => {
+                if (e.target === addSuccessModal) {
+                    addSuccessModal.classList.add('hidden');
+                    window.location.reload();
+                }
+            });
+        } else {
+            alert(result.message || 'Error adding student');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error adding student');
+    }
+});
+
+// Add success modal handling
+const addSuccessModal = document.getElementById('addSuccessModal');
+const closeAddSuccessModal = document.getElementById('closeAddSuccessModal');
+
+// Close add success modal when clicking the button
+closeAddSuccessModal.addEventListener('click', () => {
+    addSuccessModal.classList.add('hidden');
+    window.location.reload(); // Reload to show new student
+});
+
+// Close add success modal when clicking outside
+addSuccessModal.addEventListener('click', (e) => {
+    if (e.target === addSuccessModal) {
+        addSuccessModal.classList.add('hidden');
+        window.location.reload();
+    }
+});
+
+// Update the form submission handler in your existing script section
+addStudentForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(addStudentForm);
+    
+    try {
+        const response = await fetch('add_student.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            addStudentModal.classList.add('hidden'); // Hide add student modal
+            addStudentForm.reset();
+            // Show success modal
+            const addSuccessModal = document.getElementById('addSuccessModal');
+            addSuccessModal.classList.remove('hidden');
+            
+            // Handle closing of success modal
+            const closeAddSuccessModal = document.getElementById('closeAddSuccessModal');
+            closeAddSuccessModal.addEventListener('click', () => {
+                addSuccessModal.classList.add('hidden');
+                window.location.reload(); // Reload to show new student
+            });
+            
+            // Close on outside click
+            addSuccessModal.addEventListener('click', (e) => {
+                if (e.target === addSuccessModal) {
+                    addSuccessModal.classList.add('hidden');
+                    window.location.reload();
+                }
+            });
+        } else {
+            alert(result.message || 'Error adding student');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error adding student');
+    }
 });
 </script>
 </body>
