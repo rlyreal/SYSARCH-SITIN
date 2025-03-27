@@ -199,11 +199,17 @@ $count++;
 </td>
 <td class="py-3 px-6 text-center">
 <div class="flex item-center justify-center gap-2">
-<a href="edit_student.php?id=<?php echo $row['id']; ?>" class="w-8 h-8 rounded-full bg-blue-100 hover:bg-blue-200 flex items-center justify-center transition duration-200" title="Edit">
-<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-</svg>
-</a>
+<button onclick="editStudent(<?php echo htmlspecialchars(json_encode([
+    'id' => $row['id'],
+    'id_no' => $row['id_no'],
+    'full_name' => $row['full_name'],
+    'year_level' => $row['year_level'],
+    'course' => $row['course']
+])); ?>)" class="w-8 h-8 rounded-full bg-blue-100 hover:bg-blue-200 flex items-center justify-center transition duration-200" title="Edit">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+    </svg>
+</button>
 <a href="#" onclick="confirmDelete(<?php echo $row['id']; ?>)" class="w-8 h-8 rounded-full bg-red-100 hover:bg-red-200 flex items-center justify-center transition duration-200" title="Delete">
 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -418,6 +424,94 @@ $count++;
             </div>
             <div class="items-center px-4 py-3">
                 <button id="closeAddSuccessModal" class="px-4 py-2 bg-green-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300 transition duration-200">
+                    Got it!
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Student Modal -->
+<div id="editStudentModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-10 mx-auto p-5 border w-[450px] shadow-lg rounded-lg bg-white">
+        <div class="mb-5">
+            <h2 class="text-xl font-bold text-gray-800 text-center">Edit Student</h2>
+        </div>
+
+        <form id="editStudentForm" class="space-y-4">
+            <input type="hidden" id="edit_student_id" name="student_id">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">ID Number*</label>
+                    <input type="text" id="edit_id_no" name="id_no" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Last Name*</label>
+                    <input type="text" id="edit_last_name" name="last_name" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">First Name*</label>
+                    <input type="text" id="edit_first_name" name="first_name" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Middle Name</label>
+                    <input type="text" id="edit_middle_name" name="middle_name"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Year Level*</label>
+                    <select id="edit_year_level" name="year_level" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="1st Year">1st Year</option>
+                        <option value="2nd Year">2nd Year</option>
+                        <option value="3rd Year">3rd Year</option>
+                        <option value="4th Year">4th Year</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Course*</label>
+                    <select id="edit_course" name="course" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="BSIT">BSIT</option>
+                        <option value="BSCS">BSCS</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-3 pt-4">
+                <button type="button" id="cancelEditStudent"
+                    class="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200">
+                    Cancel
+                </button>
+                <button type="submit"
+                    class="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Success Modal -->
+<div id="editSuccessModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white animate-fade-in-down">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
+                <svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Student Updated Successfully!</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500">
+                    The student information has been successfully updated.
+                </p>
+            </div>
+            <div class="items-center px-4 py-3">
+                <button id="closeEditSuccessModal" class="px-4 py-2 bg-green-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300 transition duration-200">
                     Got it!
                 </button>
             </div>
@@ -642,6 +736,128 @@ addStudentForm.addEventListener('submit', async (e) => {
     } catch (error) {
         console.error('Error:', error);
         alert('Error adding student');
+    }
+});
+
+// Add to your existing script section
+const editStudentModal = document.getElementById('editStudentModal');
+const editStudentForm = document.getElementById('editStudentForm');
+const cancelEditStudent = document.getElementById('cancelEditStudent');
+
+// Update the editStudent function in your script section
+function editStudent(studentData) {
+    // Split the full name into parts (assuming format: "First Middle Last")
+    const nameParts = studentData.full_name.split(' ');
+    const firstName = nameParts[0];
+    const middleName = nameParts.length > 2 ? nameParts[1] : '';
+    const lastName = nameParts.length > 2 ? nameParts[2] : nameParts[1];
+
+    // Populate form fields
+    document.getElementById('edit_student_id').value = studentData.id;
+    document.getElementById('edit_id_no').value = studentData.id_no;
+    document.getElementById('edit_first_name').value = firstName;
+    document.getElementById('edit_middle_name').value = middleName;
+    document.getElementById('edit_last_name').value = lastName;
+    document.getElementById('edit_year_level').value = studentData.year_level;
+    document.getElementById('edit_course').value = studentData.course;
+
+    // Show modal
+    editStudentModal.classList.remove('hidden');
+}
+
+// Hide modal when clicking Cancel
+cancelEditStudent.addEventListener('click', () => {
+    editStudentModal.classList.add('hidden');
+});
+
+// Close modal when clicking outside
+editStudentModal.addEventListener('click', (e) => {
+    if (e.target === editStudentModal) {
+        editStudentModal.classList.add('hidden');
+    }
+});
+
+// Handle form submission
+editStudentForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(editStudentForm);
+    
+    try {
+        const response = await fetch('update_student.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            editStudentModal.classList.add('hidden');
+            // Show edit success modal
+            const editSuccessModal = document.getElementById('editSuccessModal');
+            editSuccessModal.classList.remove('hidden');
+            
+            // Handle closing of edit success modal
+            const closeEditSuccessModal = document.getElementById('closeEditSuccessModal');
+            closeEditSuccessModal.addEventListener('click', () => {
+                editSuccessModal.classList.add('hidden');
+                window.location.reload(); // Reload to show updated data
+            });
+            
+            // Close on outside click
+            editSuccessModal.addEventListener('click', (e) => {
+                if (e.target === editSuccessModal) {
+                    editSuccessModal.classList.add('hidden');
+                    window.location.reload();
+                }
+            });
+        } else {
+            alert(result.message || 'Error updating student');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error updating student');
+    }
+});
+
+// Update the edit form submission handler in your script section
+editStudentForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(editStudentForm);
+    
+    try {
+        const response = await fetch('update_student.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            editStudentModal.classList.add('hidden'); // Hide edit modal
+            // Show success modal
+            const editSuccessModal = document.getElementById('editSuccessModal');
+            editSuccessModal.classList.remove('hidden');
+            
+            // Handle closing of success modal
+            const closeEditSuccessModal = document.getElementById('closeEditSuccessModal');
+            closeEditSuccessModal.addEventListener('click', () => {
+                editSuccessModal.classList.add('hidden');
+                window.location.reload(); // Reload to show updated data
+            });
+            
+            // Close on outside click
+            editSuccessModal.addEventListener('click', (e) => {
+                if (e.target === editSuccessModal) {
+                    editSuccessModal.classList.add('hidden');
+                    window.location.reload();
+                }
+            });
+        } else {
+            alert(result.message || 'Error updating student');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error updating student');
     }
 });
 </script>
