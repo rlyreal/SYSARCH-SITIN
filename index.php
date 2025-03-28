@@ -188,18 +188,171 @@
     </div>
 
     <script>
-        document.getElementById("id_no").addEventListener("input", function (event) {
-            this.value = this.value.replace(/\D/g, ''); 
-            if (this.value.length > 8) {
-                this.value = this.value.slice(0, 8);
+        document.addEventListener("DOMContentLoaded", function () {
+            // ID number validation
+            document.getElementById("id_no").addEventListener("input", function (event) {
+                this.value = this.value.replace(/\D/g, ''); 
+                if (this.value.length > 8) {
+                    this.value = this.value.slice(0, 8);
+                }
+            });
+
+            function validateText(input) {
+                input.value = input.value.replace(/[^A-Za-z ]/g, ''); 
+            }
+
+            // Form switching functionality
+            const signUpButton = document.getElementById("signUpButton");
+            const signInButton = document.getElementById("signInButton");
+            const signInForm = document.getElementById("signIn");
+            const signUpForm = document.getElementById("signup");
+
+            signUpButton?.addEventListener("click", function () {
+                signInForm.classList.add("hidden");
+                signUpForm.classList.remove("hidden");
+            });
+
+            signInButton?.addEventListener("click", function () {
+                signInForm.classList.remove("hidden");
+                signUpForm.classList.add("hidden");
+            });
+
+            // Register form submission
+            const registerForm = document.getElementById("registerForm");
+            registerForm?.addEventListener("submit", function (e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+
+                fetch("register.php", {
+                    method: "POST",
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === "success") {
+                        // Create and insert popup
+                        const popup = document.createElement('div');
+                        popup.innerHTML = `
+                            <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+                                <!-- Backdrop -->
+                                <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"></div>
+                                
+                                <!-- Popup Content -->
+                                <div class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-sm sm:p-6 opacity-0 translate-y-4 scale-95">
+                                    <div>
+                                        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+                                            <svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                            </svg>
+                                        </div>
+                                        <div class="mt-3 text-center sm:mt-5">
+                                            <h3 class="text-xl font-semibold leading-6 text-gray-900 mb-2">
+                                                Registration Successful!
+                                            </h3>
+                                            <div class="mt-2">
+                                                <p class="text-sm text-gray-500">
+                                                    Your account has been created successfully. You can now log in.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        document.body.appendChild(popup);
+
+                        // Animate popup entrance
+                        requestAnimationFrame(() => {
+                            const content = popup.querySelector('.bg-white');
+                            content.classList.remove('opacity-0', 'translate-y-4', 'scale-95');
+                            content.classList.add('opacity-100', 'translate-y-0', 'scale-100', 'transition-all', 'duration-300');
+                        });
+
+                        // Remove popup after delay
+                        setTimeout(() => {
+                            popup.querySelector('.bg-white').classList.add('opacity-0', 'translate-y-4', 'scale-95');
+                            setTimeout(() => {
+                                popup.remove();
+                                registerForm.reset();
+                                signUpForm.classList.add("hidden");
+                                signInForm.classList.remove("hidden");
+                            }, 300);
+                        }, 2000);
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Registration Failed',
+                            text: data.message,
+                            customClass: {
+                                popup: 'bg-white rounded-lg shadow-xl',
+                                title: 'text-xl font-bold text-gray-900',
+                                text: 'text-gray-600',
+                            }
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'An error occurred during registration.',
+                        customClass: {
+                            popup: 'bg-white rounded-lg shadow-xl',
+                            title: 'text-xl font-bold text-gray-900',
+                            text: 'text-gray-600',
+                        }
+                    });
+                });
+            });
+
+            // Login form submission
+            document.getElementById("loginForm").addEventListener("submit", function (e) {
+                e.preventDefault();
+                let formData = new FormData(this);
+
+                fetch("login.php", {
+                    method: "POST",
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === "success") {
+                        Swal.fire({
+                            title: "Success!",
+                            text: data.message,
+                            icon: "success",
+                            timer: 2000,
+                            showConfirmButton: false
+                        }).then(() => {
+                            if (data.role === "admin") {
+                                window.location.href = "admin_dashboard.php";
+                            } else if (data.role === "user") {
+                                window.location.href = "dashboard.php";
+                            } else {
+                                console.error("Unknown role:", data.role);
+                                window.location.href = "index.php";
+                            }
+                        });
+                    } else {
+                        Swal.fire({ title: "Error!", text: data.message, icon: "error" })
+                        .then(() => clearLoginInputs());
+                    }
+                })
+                .catch(error => console.error("Error:", error));
+            });
+
+            function clearLoginInputs() {
+                let usernameField = document.querySelector("#loginForm input[name='username']");
+                let passwordField = document.querySelector("#loginForm input[name='password']");
+
+                usernameField.value = "";
+                passwordField.value = "";
+                passwordField.type = "text";
+                setTimeout(() => passwordField.type = "password", 10);
+                setTimeout(() => usernameField.focus(), 100);
             }
         });
-
-        function validateText(input) {
-            input.value = input.value.replace(/[^A-Za-z ]/g, ''); 
-        }
     </script>
-
-    <script src="script.js"></script>
 </body>
 </html>
