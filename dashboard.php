@@ -58,96 +58,18 @@ $user_profile = (!empty($profile_picture) && file_exists($profile_picture)) ? $p
         .animate-scan {
             animation: scan 2s linear infinite;
         }
-    </style>
-</head>
-<body>
-    <!-- Replace the existing animated background with this -->
-    <div class="fixed inset-0 -z-10 overflow-hidden bg-gradient-to-br from-gray-900 to-gray-800">
-        <?php 
-        // Enhanced array of different device SVG paths
-        $devices = [
-            // Desktop PC with Monitor
-            '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17h6m-3-3v3M4 14h16M6 6h12a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2z"/>',
-            
-            // Modern Laptop
-            '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 18h16M4 14h16M6 6h12a2 2 0 012 2v8H4V8a2 2 0 012-2z M7 19h10a1 1 0 001-1v0a1 1 0 00-1-1H7a1 1 0 00-1 1v0a1 1 0 001 1z"/>',
-            
-            // Gaming Monitor
-            '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2z M12 16v4 M8 20h8"/>',
-            
-            // All-in-One PC
-            '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2z M9 11l2 2 4-4"/>',
-        ];
-        
-        for($i = 0; $i < 30; $i++): 
-            $randomDevice = $devices[array_rand($devices)];
-        ?>
-            <div class="tech-device absolute">
-                <svg xmlns="http://www.w3.org/2000/svg" 
-                     class="<?php echo rand(0,1) ? 'h-8 w-8' : 'h-10 w-10'; ?> text-blue-400/30" 
-                     fill="none" 
-                     viewBox="0 0 24 24" 
-                     stroke="currentColor">
-                    <?php echo $randomDevice; ?>
-                </svg>
-            </div>
-        <?php endfor; ?>
-    </div>
-
-    <!-- Update the style section in your head tag -->
-    <style>
-        .tech-device {
-            animation: float-device 20s linear infinite;
-            left: -50px;
-            opacity: 0;
+        body {
+            background-color: white;
         }
         
-        @keyframes float-device {
-            0% {
-                transform: translateX(-100%) translateY(0) rotate(0deg);
-                opacity: 0;
-            }
-            10% {
-                opacity: 1;
-            }
-            90% {
-                opacity: 1;
-            }
-            100% {
-                transform: translateX(100vw) translateY(100px) rotate(360deg);
-                opacity: 0;
-            }
-        }
-
-        /* Distribute devices at different positions and with different behaviors */
-        <?php for($i = 0; $i < 30; $i++): ?>
-        .tech-device:nth-child(<?php echo $i + 1; ?>) {
-            top: <?php echo rand(5, 95); ?>%;
-            animation-delay: <?php echo $i * 0.5; ?>s;
-            animation-duration: <?php echo rand(15, 30); ?>s;
-            filter: blur(<?php echo rand(0, 1) ? '0px' : '1px'; ?>);
-        }
-        <?php endfor; ?>
-
-        /* Add a subtle glow effect to devices */
-        .tech-device svg {
-            filter: drop-shadow(0 0 2px rgba(59, 130, 246, 0.5));
-        }
-
-        /* Keep the blur effect for the container */
+        /* Keep the container styling but remove animation properties */
         .container {
             position: relative;
             z-index: 10;
-            backdrop-filter: blur(8px);
-        }
-
-        /* Add hover effect for devices */
-        .tech-device:hover {
-            transform: scale(1.2);
-            transition: transform 0.3s ease;
         }
     </style>
-
+</head>
+<body>
     <!-- Navbar -->
     <div class="navbar bg-[#2c343c] shadow-lg">
         <div class="navbar-start">

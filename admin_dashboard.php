@@ -10,13 +10,9 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
 
 $admin_id = $_SESSION['admin_id'];
 
-// Fetch admin details
-$stmt = $conn->prepare("SELECT first_name, last_name FROM admins WHERE id = ?");
-$stmt->bind_param("i", $admin_id);
-$stmt->execute();
-$stmt->bind_result($first_name, $last_name);
-$stmt->fetch();
-$stmt->close();
+// Remove the admin details fetch since we only have username now
+// Just use the username from session
+$admin_username = $_SESSION['username'];
 
 // Fetch statistics
 $students = $conn->query("SELECT COUNT(DISTINCT id_no) AS total FROM users WHERE id_no IS NOT NULL")->fetch_assoc()['total'];
@@ -70,7 +66,8 @@ while($row = $purposeResult->fetch_assoc()) {
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $announcement = trim($_POST['announcement']);
     if (!empty($announcement)) {
-        $admin_name = $first_name . " " . $last_name;
+        // Use username instead of first_name and last_name
+        $admin_name = $admin_username; // Using the username from session
         $query = $conn->prepare("INSERT INTO announcements (admin_name, message, date) VALUES (?, ?, NOW())");
         $query->bind_param("ss", $admin_name, $announcement);
         if ($query->execute()) {
@@ -182,9 +179,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     </div>
 </nav>
     
-    <div class="container mx-auto mt-8 p-4">
-        <h2 class="text-2xl font-bold">Welcome, <?php echo htmlspecialchars($first_name . " " . $last_name); ?>!</h2>
-        
+    
         <div class="grid md:grid-cols-2 gap-6 mt-6">
             <!-- ✅ Statistics Section -->
             <div class="col-span-1">

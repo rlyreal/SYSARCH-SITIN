@@ -9,22 +9,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $password = trim($_POST['password']);
     $userFound = false;
 
-    // Default Admin Credentials (FOR DEVELOPMENT ONLY! REMOVE BEFORE GOING LIVE!)
-    $defaultAdminUsername = "admin";
-    $defaultAdminPassword = "password"; 
-
-    if ($username === $defaultAdminUsername && $password === $defaultAdminPassword) {
-        $_SESSION['admin_id'] = 0; 
-        $_SESSION['username'] = $defaultAdminUsername;
-        $_SESSION['admin_name'] = "Super Admin"; // Added Fix
-        $_SESSION['role'] = 'admin';
-
-        echo json_encode(["status" => "success", "message" => "Admin login successful!", "role" => "admin"]);
-        exit();
-    }
-
-    // Check Users Table
-    $stmt = $conn->prepare("SELECT id, username, password, first_name, last_name FROM users WHERE username = ?");
+    // Check admin table first (changed from admins to admin)
+    $stmt = $conn->prepare("SELECT id, username, password FROM admin WHERE username = ?");
     $stmt->bind_param("s", $username);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -33,23 +19,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $userFound = true;
         $row = $result->fetch_assoc();
 
-        if (password_verify($password, $row['password'])) {
-            session_regenerate_id(true); // Security improvement
+        // Direct password comparison since it's stored as plain text
+        if ($password === $row['password']) {
+            session_regenerate_id(true);
 
-            $_SESSION['user_id'] = $row['id'];
+            $_SESSION['admin_id'] = $row['id'];
             $_SESSION['username'] = $row['username'];
-            $_SESSION['first_name'] = $row['first_name'];
-            $_SESSION['last_name'] = $row['last_name'];
-            $_SESSION['role'] = 'user';
+            $_SESSION['role'] = 'admin';
 
-            echo json_encode(["status" => "success", "message" => "Login successful!", "role" => "user"]);
+            echo json_encode(["status" => "success", "message" => "Admin login successful!", "role" => "admin"]);
             exit();
         }
     }
     $stmt->close();
 
-    // Check Admin Table
-    $stmt = $conn->prepare("SELECT id, username, password, admin_name FROM admin WHERE username = ?");
+    // Check Users Table (keeping this part for regular users)
+    $stmt = $conn->prepare("SELECT id, username, password, first_name, last_name FROM users WHERE username = ?");
     $stmt->bind_param("s", $username);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -61,12 +46,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if (password_verify($password, $row['password'])) {
             session_regenerate_id(true);
 
-            $_SESSION['admin_id'] = $row['id'];
+            $_SESSION['user_id'] = $row['id'];
             $_SESSION['username'] = $row['username'];
-            $_SESSION['admin_name'] = $row['admin_name']; // FIXED
-            $_SESSION['role'] = 'admin';
+            $_SESSION['first_name'] = $row['first_name'];
+            $_SESSION['last_name'] = $row['last_name'];
+            $_SESSION['role'] = 'user';
 
-            echo json_encode(["status" => "success", "message" => "Admin login successful!", "role" => "admin"]);
+            echo json_encode(["status" => "success", "message" => "Login successful!", "role" => "user"]);
             exit();
         }
     }
