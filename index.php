@@ -148,37 +148,76 @@
 
     <!-- Login Form -->
     <div class="container max-w-md mx-auto" id="signIn">
-        <div class="card bg-base-100 shadow-xl">
-            <div class="card-body">
-                <div class="flex justify-center gap-4 mb-6">
-                    <img src="University-of-Cebu-Logo.jpg" alt="Logo" class="h-20">
-                    <img src="ccs.png" alt="Logo1" class="h-20">
+        <div class="card bg-white shadow-2xl rounded-xl">
+            <div class="card-body p-8">
+                <!-- Logo Section -->
+                <div class="flex justify-center items-center gap-6 mb-8">
+                    <img src="University-of-Cebu-Logo.jpg" alt="UC Logo" class="h-24 w-auto">
+                    <img src="ccs.png" alt="CCS Logo" class="h-24 w-auto">
                 </div>
-                <h2 class="card-title text-2xl font-bold text-center mb-6">CCS Sitin Monitoring System</h2>
                 
-                <form id="loginForm" class="space-y-4">
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
-                            <i class="fas fa-user"></i>
-                        </span>
-                        <input type="text" name="username" placeholder="Username" 
-                               class="input input-bordered w-full pl-10" required>
-                    </div>
-                    
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
-                            <i class="fas fa-lock"></i>
-                        </span>
-                        <input type="password" name="password" placeholder="Password" 
-                               class="input input-bordered w-full pl-10" required>
+                <!-- Title -->
+                <h2 class="text-3xl font-bold text-center text-gray-800 mb-8">
+                    CCS Sitin Monitoring System
+                </h2>
+                
+                <!-- Login Form -->
+                <form id="loginForm" class="space-y-6">
+                    <!-- Username Input -->
+                    <div class="space-y-2">
+                        <label for="username" class="text-sm font-medium text-gray-700">Username</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                                <i class="fas fa-user text-gray-400"></i>
+                            </div>
+                            <input 
+                                type="text" 
+                                name="username" 
+                                id="username"
+                                class="w-full pl-11 pr-4 py-3 text-gray-900 rounded-lg border border-gray-300 
+                                       focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all
+                                       placeholder:text-gray-400"
+                                placeholder="Enter your username"
+                                required
+                            >
+                        </div>
                     </div>
 
-                    <div class="card-actions justify-end mt-6">
-                        <button type="submit" class="btn btn-primary bg-[#2c343c] hover:bg-[#363e46] border-none">
-                            Login
+                    <!-- Password Input -->
+                    <div class="space-y-2">
+                        <label for="password" class="text-sm font-medium text-gray-700">Password</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                                <i class="fas fa-lock text-gray-400"></i>
+                            </div>
+                            <input 
+                                type="password" 
+                                name="password" 
+                                id="password"
+                                class="w-full pl-11 pr-4 py-3 text-gray-900 rounded-lg border border-gray-300 
+                                       focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all
+                                       placeholder:text-gray-400"
+                                placeholder="Enter your password"
+                                required
+                            >
+                        </div>
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="flex justify-end gap-4 pt-4">
+                        <button 
+                            type="submit"
+                            class="px-6 py-3 bg-[#2c343c] text-white rounded-lg hover:bg-[#363e46] 
+                                   focus:ring-4 focus:ring-gray-300 transition-all duration-200"
+                        >
+                            Sign In
                         </button>
-                        <button type="button" id="signUpButton" 
-                                class="btn bg-gray-200 hover:bg-gray-300 text-gray-800 border-none">
+                        <button 
+                            type="button"
+                            id="signUpButton"
+                            class="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 
+                                   focus:ring-4 focus:ring-gray-100 transition-all duration-200"
+                        >
                             Register
                         </button>
                     </div>
@@ -317,29 +356,123 @@
                 })
                 .then(response => response.json())
                 .then(data => {
+                    // Replace the success popup in the login form submission with this:
                     if (data.status === "success") {
-                        Swal.fire({
-                            title: "Success!",
-                            text: data.message,
-                            icon: "success",
-                            timer: 2000,
-                            showConfirmButton: false
-                        }).then(() => {
-                            if (data.role === "admin") {
-                                window.location.href = "admin_dashboard.php";
-                            } else if (data.role === "user") {
-                                window.location.href = "dashboard.php";
-                            } else {
-                                console.error("Unknown role:", data.role);
-                                window.location.href = "index.php";
+                        const popup = document.createElement('div');
+                        popup.innerHTML = `
+                            <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+                                <!-- Backdrop -->
+                                <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"></div>
+                                
+                                <!-- Popup Content -->
+                                <div class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-sm sm:p-6 opacity-0 translate-y-4 scale-95">
+                                    <div>
+                                        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full ${data.role === 'admin' ? 'bg-blue-100' : 'bg-green-100'}">
+                                            <!-- Loading Animation -->
+                                            <div class="animate-spin rounded-full h-8 w-8 border-b-2 ${data.role === 'admin' ? 'border-blue-600' : 'border-green-600'}"></div>
+                                        </div>
+                                        <div class="mt-3 text-center sm:mt-5">
+                                            <h3 class="text-xl font-semibold leading-6 text-gray-900 mb-2">
+                                                ${data.role === 'admin' ? 'Welcome, Administrator!' : 'Hello, Student!'}
+                                            </h3>
+                                            <div class="mt-2">
+                                                <p class="text-sm text-gray-500">
+                                                    Loading your dashboard...
+                                                </p>
+                                            </div>
+                                            <!-- Progress bar -->
+                                            <div class="mt-4">
+                                                <div class="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+                                                    <div class="h-full ${data.role === 'admin' ? 'bg-blue-500' : 'bg-green-500'} rounded-full animate-load-progress"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+
+                        // Add the progress bar animation style
+                        const style = document.createElement('style');
+                        style.textContent = `
+                            @keyframes load-progress {
+                                0% { width: 0; }
+                                100% { width: 100%; }
                             }
+                            .animate-load-progress {
+                                animation: load-progress 1.5s linear;
+                            }
+                        `;
+                        document.head.appendChild(style);
+
+                        document.body.appendChild(popup);
+
+                        // Animate popup entrance
+                        requestAnimationFrame(() => {
+                            const content = popup.querySelector('.bg-white');
+                            content.classList.remove('opacity-0', 'translate-y-4', 'scale-95');
+                            content.classList.add('opacity-100', 'translate-y-0', 'scale-100', 'transition-all', 'duration-300');
                         });
+
+                        // Redirect after animation completes
+                        setTimeout(() => {
+                            popup.querySelector('.bg-white').classList.add('opacity-0', 'translate-y-4', 'scale-95');
+                            setTimeout(() => {
+                                popup.remove();
+                                if (data.role === "admin") {
+                                    window.location.href = "admin_dashboard.php";
+                                } else if (data.role === "user") {
+                                    window.location.href = "dashboard.php";
+                                }
+                            }, 300);
+                        }, 1500);
                     } else {
-                        Swal.fire({ title: "Error!", text: data.message, icon: "error" })
-                        .then(() => clearLoginInputs());
+                        // Show error popup
+                        const errorPopup = document.createElement('div');
+                        errorPopup.innerHTML = `
+                            <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+                                <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"></div>
+                                <div class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-sm sm:p-6 opacity-0 translate-y-4 scale-95">
+                                    <div>
+                                        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+                                            <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </div>
+                                        <div class="mt-3 text-center sm:mt-5">
+                                            <h3 class="text-xl font-semibold leading-6 text-gray-900 mb-2">
+                                                Login Failed
+                                            </h3>
+                                            <div class="mt-2">
+                                                <p class="text-sm text-gray-500">
+                                                    ${data.message}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        document.body.appendChild(errorPopup);
+
+                        requestAnimationFrame(() => {
+                            const content = errorPopup.querySelector('.bg-white');
+                            content.classList.remove('opacity-0', 'translate-y-4', 'scale-95');
+                            content.classList.add('opacity-100', 'translate-y-0', 'scale-100', 'transition-all', 'duration-300');
+                        });
+
+                        setTimeout(() => {
+                            errorPopup.querySelector('.bg-white').classList.add('opacity-0', 'translate-y-4', 'scale-95');
+                            setTimeout(() => {
+                                errorPopup.remove();
+                                clearLoginInputs();
+                            }, 300);
+                        }, 2000);
                     }
                 })
-                .catch(error => console.error("Error:", error));
+                .catch(error => {
+                    console.error("Error:", error);
+                });
             });
 
             function clearLoginInputs() {
