@@ -44,6 +44,8 @@ while($row = $roomResult->fetch_assoc()) {
     <title>Sit-in Records</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Replace Chart.js with ECharts in the head section -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 </head>
 <body class="bg-gray-100">
     
@@ -151,17 +153,11 @@ while($row = $roomResult->fetch_assoc()) {
     
     <!-- Charts Container -->
     <div class="grid grid-cols-2 gap-8 mb-8">
-        <div class="bg-white p-8 rounded-lg shadow-lg">
-            <h3 class="text-xl font-semibold text-gray-700 mb-6 text-center"></h3>
-            <div class="w-[500px] h-[500px] mx-auto"> <!-- Increased from w-96 h-96 -->
-                <canvas id="chart1"></canvas>
-            </div>
+        <div class="bg-[#2c343c] p-8 rounded-lg shadow-lg">
+            <div class="w-[500px] h-[500px] mx-auto" id="chart1"></div>
         </div>
-        <div class="bg-white p-8 rounded-lg shadow-lg">
-            <h3 class="text-xl font-semibold text-gray-700 mb-6 text-center"></h3>
-            <div class="w-[500px] h-[500px] mx-auto"> <!-- Increased from w-96 h-96 -->
-                <canvas id="chart2"></canvas>
-            </div>
+        <div class="bg-[#2c343c] p-8 rounded-lg shadow-lg">
+            <div class="w-[500px] h-[500px] mx-auto" id="chart2"></div>
         </div>
     </div>
 
@@ -249,119 +245,138 @@ while($row = $roomResult->fetch_assoc()) {
 </div>
     
 <script>
-    // Replace the existing chartOptions
-    const chartOptions = {
-        responsive: true,
-        maintainAspectRatio: true,
-        plugins: {
-            legend: {
-                position: 'bottom',
-                padding: 25,
-                labels: {
-                    font: {
-                        size: 16 // Increased font size
-                    },
-                    padding: 25
-                }
+// Initialize charts after DOM content is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // First Chart (Programming Languages)
+    const chart1 = echarts.init(document.getElementById('chart1'));
+    const languagesOption = {
+        backgroundColor: '#2c343c',
+        title: {
+            text: 'Programming Languages Distribution',
+            left: 'center',
+            top: 20,
+            textStyle: {
+                color: '#ccc'
+            }
+        },
+        tooltip: {
+            trigger: 'item'
+        },
+        visualMap: {
+            show: false,
+            min: 0,
+            max: Math.max(...<?php echo json_encode($languageCounts); ?>),
+            inRange: {
+                colorLightness: [0, 1]
+            }
+        },
+        series: [{
+            name: 'Programming Language',
+            type: 'pie',
+            radius: '55%',
+            center: ['50%', '50%'],
+            data: <?php 
+                $languageData = array_map(function($name, $value) {
+                    return ['value' => $value, 'name' => $name];
+                }, $languages, $languageCounts);
+                echo json_encode($languageData);
+            ?>.sort(function(a, b) {
+                return a.value - b.value;
+            }),
+            roseType: 'radius',
+            label: {
+                color: 'rgba(255, 255, 255, 0.3)'
             },
-            tooltip: {
-                enabled: true,
-                titleFont: {
-                    size: 18
+            labelLine: {
+                lineStyle: {
+                    color: 'rgba(255, 255, 255, 0.3)'
                 },
-                bodyFont: {
-                    size: 16
-                }
+                smooth: 0.2,
+                length: 10,
+                length2: 20
             },
-            title: {
-                font: {
-                    size: 20
-                }
+            itemStyle: {
+                color: '#c23531',
+                shadowBlur: 200,
+                shadowColor: 'rgba(0, 0, 0, 0.5)'
+            },
+            animationType: 'scale',
+            animationEasing: 'elasticOut',
+            animationDelay: function(idx) {
+                return Math.random() * 200;
             }
-        },
-        radius: ['100%', '150%'],  // Increased radius range further
-        layout: {
-            padding: {
-                top: 30,
-                bottom: 30,
-                left: 30,
-                right: 30
-            }
-        }
+        }]
     };
+    chart1.setOption(languagesOption);
 
-    // Replace the existing chart initialization code
-    const ctx1 = document.getElementById('chart1').getContext('2d');
-    new Chart(ctx1, {
-        type: 'pie',
-        data: {
-            labels: <?php echo json_encode($languages); ?>,
-            datasets: [{
-                data: <?php echo json_encode($languageCounts); ?>,
-                backgroundColor: [
-                    'rgba(54, 162, 235, 0.8)',
-                    'rgba(255, 99, 132, 0.8)',
-                    'rgba(255, 159, 64, 0.8)',
-                    'rgba(201, 203, 207, 0.8)',
-                    'rgba(75, 192, 192, 0.8)',
-                    'rgba(153, 102, 255, 0.8)',
-                    'rgba(255, 205, 86, 0.8)',
-                    'rgba(51, 153, 102, 0.8)'
-                ],
-                borderColor: 'white',
-                borderWidth: 2,
-                hoverOffset: 15,
-                offset: 10
-            }]
-        },
-        options: {
-            ...chartOptions,
-            plugins: {
-                ...chartOptions.plugins,
-                title: {
-                    display: true,
-                    text: 'Programming Languages Distribution',
-                    padding: 20
-                }
+    // Second Chart (Laboratory Rooms)
+    const chart2 = echarts.init(document.getElementById('chart2'));
+    const roomsOption = {
+        backgroundColor: '#2c343c',
+        title: {
+            text: 'Laboratory Room Distribution',
+            left: 'center',
+            top: 20,
+            textStyle: {
+                color: '#ccc'
             }
-        }
-    });
+        },
+        tooltip: {
+            trigger: 'item'
+        },
+        visualMap: {
+            show: false,
+            min: 0,
+            max: Math.max(...<?php echo json_encode($roomCounts); ?>),
+            inRange: {
+                colorLightness: [0, 1]
+            }
+        },
+        series: [{
+            name: 'Laboratory',
+            type: 'pie',
+            radius: '55%',
+            center: ['50%', '50%'],
+            data: <?php 
+                $roomData = array_map(function($name, $value) {
+                    return ['value' => $value, 'name' => $name];
+                }, $rooms, $roomCounts);
+                echo json_encode($roomData);
+            ?>.sort(function(a, b) {
+                return a.value - b.value;
+            }),
+            roseType: 'radius',
+            label: {
+                color: 'rgba(255, 255, 255, 0.3)'
+            },
+            labelLine: {
+                lineStyle: {
+                    color: 'rgba(255, 255, 255, 0.3)'
+                },
+                smooth: 0.2,
+                length: 10,
+                length2: 20
+            },
+            itemStyle: {
+                color: '#c23531',
+                shadowBlur: 200,
+                shadowColor: 'rgba(0, 0, 0, 0.5)'
+            },
+            animationType: 'scale',
+            animationEasing: 'elasticOut',
+            animationDelay: function(idx) {
+                return Math.random() * 200;
+            }
+        }]
+    };
+    chart2.setOption(roomsOption);
 
-    const ctx2 = document.getElementById('chart2').getContext('2d');
-    new Chart(ctx2, {
-        type: 'pie',
-        data: {
-            labels: <?php echo json_encode($rooms); ?>,
-            datasets: [{
-                data: <?php echo json_encode($roomCounts); ?>,
-                backgroundColor: [
-                    'rgba(255, 182, 193, 0.8)',
-                    'rgba(135, 206, 235, 0.8)',
-                    'rgba(255, 255, 224, 0.8)',
-                    'rgba(147, 112, 219, 0.8)',
-                    'rgba(169, 169, 169, 0.8)',
-                    'rgba(152, 251, 152, 0.8)',
-                    'rgba(255, 160, 122, 0.8)',
-                    'rgba(176, 196, 222, 0.8)'
-                ],
-                borderColor: 'white',
-                borderWidth: 2,
-                hoverOffset: 15,
-                offset: 10
-            }]
-        },
-        options: {
-            ...chartOptions,
-            plugins: {
-                ...chartOptions.plugins,
-                title: {
-                    display: true,
-                    text: 'Laboratory Room Distribution',
-                    padding: 20
-                }
-            }
-        }
+    // Handle window resize
+    window.addEventListener('resize', function() {
+        chart1.resize();
+        chart2.resize();
     });
+});
 
     document.getElementById('search').addEventListener('keyup', function() {
         let filter = this.value.toLowerCase();
