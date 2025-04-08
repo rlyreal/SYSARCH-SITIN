@@ -30,106 +30,109 @@ $result = $conn->query($sql);
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Student Information</title>
-<!-- Tailwind CSS CDN -->
-<script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Information</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.7.2/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            themes: ["light"],
+            plugins: [require("daisyui")],
+        }
+    </script>
 </head>
 <body class="bg-gray-50">
 
 <!-- Admin Navbar -->
-<nav class="bg-[#2c343c] px-6 py-4 shadow-lg">
-    <div class="max-w-7xl mx-auto flex justify-between items-center">
-        <!-- Logo Section -->
-        <div class="flex items-center space-x-2">
+<div class="navbar bg-[#2c343c] shadow-lg">
+    <div class="navbar-start">
+        <div class="flex items-center">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
-            <span class="text-2xl font-bold text-white">Admin</span>
-        </div>
-
-        <!-- Center Navigation Links -->
-        <div class="flex-1 flex justify-center">
-            <ul class="flex items-center space-x-6">
-                <li>
-                    <a href="admin_dashboard.php" class="text-white hover:text-yellow-200 transition-colors duration-200 font-medium flex items-center space-x-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                        </svg>
-                        <span>Home</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="search.php" class="text-white hover:text-yellow-200 transition-colors duration-200 font-medium flex items-center space-x-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                        <span>Search</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="students.php" class="text-white hover:text-yellow-200 transition-colors duration-200 font-medium flex items-center space-x-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-                        <span>Students</span>
-                    </a>
-                </li>
-                <li>
-                <a href="sit_in.php" 
-                           class="text-white hover:text-yellow-200 transition-colors duration-200 font-medium flex items-center space-x-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                        </svg>
-                        <span>Sit-in</span>
-                    </a>
-                </li>
-                <a href="sit_in_records.php" 
-                           class="text-white hover:text-yellow-200 transition-colors duration-200 font-medium flex items-center space-x-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                            </svg>
-                            <span>View Records</span>
-                        </a>
-                    </li>
-                <li>
-                <a href="reservation.php" 
-                       class="text-white hover:text-yellow-200 transition-colors duration-200 font-medium flex items-center space-x-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        <span>Reservation</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="reports.php" class="text-white hover:text-yellow-200 transition-colors duration-200 font-medium flex items-center space-x-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <span>Reports</span>
-                    </a>
-                </li>
-                <li><a href="feedback.php" class="text-white hover:text-yellow-200 transition-colors duration-200 font-medium flex items-center space-x-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                        </svg>
-                        <span>Feedback Reports</span>
-                    </a></li>
-            </ul>
-        </div>
-
-        <!-- Right-aligned Logout Button -->
-        <div class="flex-shrink-0 ml-6">
-            <a href="logout.php" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2 font-medium">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                <span>Log out</span>
-            </a>
+            <span class="text-xl font-bold text-white ml-2">Admin</span>
         </div>
     </div>
-</nav>
+    
+    <div class="navbar-center hidden lg:flex">
+        <ul class="menu menu-horizontal px-1 gap-2">
+            <li>
+                <a href="admin_dashboard.php" class="btn btn-ghost text-white hover:bg-white/10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    Home
+                </a>
+            </li>
+            <li>
+                <a href="search.php" class="btn btn-ghost text-white hover:bg-white/10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    Search
+                </a>
+            </li>
+            <li>
+                <a href="students.php" class="btn btn-ghost text-white hover:bg-white/10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    Students
+                </a>
+            </li>
+            <li>
+                <a href="sit_in.php" class="btn btn-ghost text-white hover:bg-white/10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    Sit-in
+                </a>
+            </li>
+            <li>
+                <a href="sit_in_records.php" class="btn btn-ghost text-white hover:bg-white/10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    View Records
+                </a>
+            </li>
+            <li>
+                <a href="reservation.php" class="btn btn-ghost text-white hover:bg-white/10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    Reservation
+                </a>
+            </li>
+            <li>
+                <a href="reports.php" class="btn btn-ghost text-white hover:bg-white/10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Reports
+                </a>
+            </li>
+            <li>
+                <a href="feedback.php" class="btn btn-ghost text-white hover:bg-white/10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                    </svg>
+                    Feedback Reports
+                </a>
+            </li>
+        </ul>
+    </div>
+    
+    <div class="navbar-end">
+        <a href="logout.php" class="btn btn-error btn-outline gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            Logout
+        </a>
+    </div>
+</div>
 
 <div class="container mx-auto px-4 py-8">
     <?php if (isset($_SESSION['message'])): ?>
@@ -223,6 +226,13 @@ $count++;
         title="Delete">
     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+    </svg>
+</button>
+<button onclick="resetStudentSession('<?php echo $row['id_no']; ?>')" 
+        class="w-8 h-8 rounded-full bg-yellow-100 hover:bg-yellow-200 flex items-center justify-center transition duration-200" 
+        title="Reset Session">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
     </svg>
 </button>
 </div>
@@ -370,9 +380,12 @@ $count++;
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Course*</label>
                     <select name="course" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="">Select Course</option>
-                        <option value="BSIT">BSIT</option>
-                        <option value="BSCS">BSCS</option>
+                                <option value="" disabled selected>Course</option>
+                                <option value="BSIT">BSIT (Information Technology)</option>
+                                <option value="BSCS">BSCS (Computer Science)</option>
+                                <option value="BSIS">BSIS (Information Systems)</option>
+                                <option value="BSCE">BSCE (Civil Engineering)</option>
+                                <option value="BSEE">BSEE (Electrical Engineering)</option>
                     </select>
                 </div>
                 <div>
@@ -485,8 +498,12 @@ $count++;
                     <label class="block text-sm font-medium text-gray-700 mb-1">Course*</label>
                     <select id="edit_course" name="course" required
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="BSIT">BSIT</option>
-                        <option value="BSCS">BSCS</option>
+                        <option value="" disabled selected>Course</option>
+                                <option value="BSIT">BSIT (Information Technology)</option>
+                                <option value="BSCS">BSCS (Computer Science)</option>
+                                <option value="BSIS">BSIS (Information Systems)</option>
+                                <option value="BSCE">BSCE (Civil Engineering)</option>
+                                <option value="BSEE">BSEE (Electrical Engineering)</option>
                     </select>
                 </div>
             </div>
@@ -571,6 +588,58 @@ $count++;
                 <p class="text-sm text-gray-500">
                     The student has been removed from the system.
                 </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reset Single Session Confirmation Modal -->
+<div id="resetSingleModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Reset Student Sessions</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500">
+                    Are you sure you want to reset this student's session count to 30?
+                </p>
+            </div>
+            <div class="items-center px-4 py-3">
+                <input type="hidden" id="resetStudentIdNo">
+                <button id="confirmSingleReset" class="px-4 py-2 bg-yellow-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-300 mb-2">
+                    Reset Sessions
+                </button>
+                <button id="cancelSingleReset" class="px-4 py-2 bg-gray-100 text-gray-700 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reset Single Session Success Modal -->
+<div id="resetSingleSuccessModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
+                <svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Success!</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500">
+                    Session count has been successfully reset to 30.
+                </p>
+            </div>
+            <div class="items-center px-4 py-3">
+                <button id="closeResetSuccessModal" class="px-4 py-2 bg-green-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300">
+                    Continue
+                </button>
             </div>
         </div>
     </div>
@@ -829,6 +898,59 @@ searchInput.addEventListener('keyup', function() {
         row.style.display = text.includes(input) ? "" : "none";
     });
 });
+
+// Add this to your existing script section in Students.php
+function resetStudentSession(idNo) {
+    // Show confirmation modal
+    const resetModal = document.getElementById('resetSingleModal');
+    const resetSuccessModal = document.getElementById('resetSingleSuccessModal');
+    document.getElementById('resetStudentIdNo').value = idNo;
+    resetModal.classList.remove('hidden');
+
+    // Handle confirmation
+    document.getElementById('confirmSingleReset').addEventListener('click', function() {
+        fetch('reset_single_session.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `id_no=${idNo}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            resetModal.classList.add('hidden');
+            if (data.success) {
+                resetSuccessModal.classList.remove('hidden');
+            } else {
+                alert(data.message || 'Error resetting session count');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error resetting session count');
+        });
+    });
+
+    // Handle cancel
+    document.getElementById('cancelSingleReset').addEventListener('click', function() {
+        resetModal.classList.add('hidden');
+    });
+
+    // Handle success modal close
+    document.getElementById('closeResetSuccessModal').addEventListener('click', function() {
+        resetSuccessModal.classList.add('hidden');
+        window.location.reload(); // Reload to show updated count
+    });
+
+    // Close modals when clicking outside
+    [resetModal, resetSuccessModal].forEach(modal => {
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.add('hidden');
+            }
+        });
+    });
+}
 </script>
 </body>
 </html>
