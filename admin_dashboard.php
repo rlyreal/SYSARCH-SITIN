@@ -106,17 +106,36 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <!-- Add this after your existing <script> tags in the head section -->
+    <script>
+    document.querySelector('.avatar img').onerror = function() {
+        this.src = 'https://ui-avatars.com/api/?name=<?php echo urlencode($admin_username); ?>&background=4338ca&color=fff';
+    };
+    </script>
 </head>
 <body class="bg-gray-100">
     <!-- Replace the existing navbar with this -->
     <div class="navbar bg-[#2c343c] shadow-lg">
         <div class="navbar-start">
-            <div class="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-                <span class="text-xl font-bold text-white ml-2">Admin</span>
+            <div class="dropdown">
+                <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
+                    <div class="w-10 rounded-full ring ring-gray-400 ring-offset-base-100 ring-offset-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-full w-full text-white p-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="background-color: #2c343c;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                </div>
+                <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
+                    <li>
+                        <a class="justify-between">
+                            <?php echo htmlspecialchars($admin_username); ?>
+                            <span class="badge badge-primary">Admin</span>
+                        </a>
+                    </li>   
+                    <li><a>Settings</a></li>
+                </ul>
             </div>
+            <span class="text-xl font-bold text-white ml-2">Admin</span>
         </div>
         
         <div class="navbar-center hidden lg:flex">

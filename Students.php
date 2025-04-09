@@ -125,12 +125,42 @@ $result = $conn->query($sql);
     </div>
     
     <div class="navbar-end">
-        <a href="logout.php" class="btn btn-error btn-outline gap-2">
+        <button id="logoutBtn" class="btn btn-error btn-outline gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
             Logout
-        </a>
+        </button>
+    </div>
+</div>
+
+<!-- Add the notification popup here -->
+<div id="notification" class="hidden fixed top-4 right-4 z-50">
+    <div class="max-w-sm bg-white border rounded-lg shadow-lg overflow-hidden">
+        <div id="notificationContent" class="flex items-center p-4">
+            <!-- Success Icon -->
+            <div id="successIcon" class="hidden flex-shrink-0 w-6 h-6 text-green-500">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+            </div>
+            <!-- Error Icon -->
+            <div id="errorIcon" class="hidden flex-shrink-0 w-6 h-6 text-red-500">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </div>
+            <div class="ml-3">
+                <p id="notificationMessage" class="text-sm font-medium text-gray-900"></p>
+            </div>
+            <div class="ml-4 flex-shrink-0 flex">
+                <button onclick="hideNotification()" class="inline-flex text-gray-400 hover:text-gray-500">
+                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -645,6 +675,31 @@ $count++;
     </div>
 </div>
 
+<!-- Logout confirmation modal -->
+<div id="logoutModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                </svg>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Confirm Logout</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500">Are you sure you want to logout?</p>
+            </div>
+            <div class="flex justify-center gap-4 mt-3">
+                <button id="cancelLogout" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium rounded-md">
+                    Cancel
+                </button>
+                <button id="confirmLogout" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md">
+                    Logout
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 // Modal Elements
 const resetModal = document.getElementById('resetModal');
@@ -652,6 +707,7 @@ const deleteModal = document.getElementById('deleteModal');
 const addStudentModal = document.getElementById('addStudentModal');
 const editStudentModal = document.getElementById('editStudentModal');
 const successModal = document.getElementById('successModal');
+const logoutModal = document.getElementById('logoutModal');
 
 // Reset Sessions Functionality
 const resetButton = document.getElementById('resetButton');
@@ -817,7 +873,7 @@ document.getElementById('cancelEditStudent').addEventListener('click', () => {
 });
 
 // Generic modal close on outside click
-[resetModal, deleteModal, addStudentModal, editStudentModal, successModal].forEach(modal => {
+[resetModal, deleteModal, addStudentModal, editStudentModal, successModal, logoutModal].forEach(modal => {
     if (modal) {
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
@@ -951,6 +1007,37 @@ function resetStudentSession(idNo) {
         });
     });
 }
+
+// Logout Functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const logoutBtn = document.getElementById('logoutBtn');
+    const logoutModal = document.getElementById('logoutModal');
+    const cancelLogout = document.getElementById('cancelLogout');
+    const confirmLogout = document.getElementById('confirmLogout');
+
+    // Show modal when logout button is clicked
+    logoutBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        logoutModal.classList.remove('hidden');
+    });
+
+    // Hide modal when cancel is clicked
+    cancelLogout.addEventListener('click', function() {
+        logoutModal.classList.add('hidden');
+    });
+
+    // Perform logout when confirm is clicked
+    confirmLogout.addEventListener('click', function() {
+        window.location.href = 'logout.php';
+    });
+
+    // Close modal when clicking outside
+    logoutModal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.classList.add('hidden');
+        }
+    });
+});
 </script>
 </body>
 </html>

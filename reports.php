@@ -10,11 +10,11 @@ if (isset($_GET['delete_id'])) {
     exit();
 }
 
-// Update the SQL query first
-$sql = "SELECT f.created_at, s.idno, s.fullname, s.purpose, s.time_in, s.time_out 
-        FROM feedback f 
-        JOIN sit_in s ON f.sit_in_id = s.id 
-        ORDER BY f.created_at DESC";
+// Update the SQL query to fetch only completed sit-ins
+$sql = "SELECT s.created_at, s.idno, s.fullname, s.purpose, s.time_in, s.time_out 
+        FROM sit_in s 
+        WHERE s.time_out IS NOT NULL 
+        ORDER BY s.created_at DESC";
 $result = $conn->query($sql);
 ?>
 
@@ -62,6 +62,9 @@ $result = $conn->query($sql);
             font-weight: 600;
         }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
 </head>
 <body class="bg-gray-100">
 
@@ -146,12 +149,12 @@ $result = $conn->query($sql);
     </div>
     
     <div class="navbar-end">
-        <a href="logout.php" class="btn btn-error btn-outline gap-2">
+        <button id="logoutBtn" class="btn btn-error btn-outline gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
             Logout
-        </a>
+        </button>
     </div>
 </div>
 
@@ -279,7 +282,6 @@ document.getElementById("searchInput").addEventListener("keyup", function() {
 </script>
 
 <script>
-// Replace the existing export functions with these updated versions
 function exportToCSV() {
     // Create header rows with proper formatting
     const headers = [
@@ -337,226 +339,151 @@ function exportToCSV() {
 }
 
 function exportToExcel() {
+    // Initialize new workbook
     const wb = XLSX.utils.book_new();
     
-    // Create header data with proper formatting
+    // Create header data
     const headerData = [
         ['UNIVERSITY OF CEBU'],
         ['COLLEGE OF COMPUTER STUDIES'],
         ['Sit-In Monitoring System'],
         [`Generated on: ${new Date().toLocaleString()}`],
         [''], // Empty row for spacing
-        ['Date', 'ID Number', 'Name', 'Purpose', 'Time In', 'Time Out', 'Type'] // Column headers
+        ['Date', 'ID Number', 'Name', 'Purpose', 'Time In', 'Time Out', 'Type']
     ];
     
     // Get table data
     const tableRows = Array.from(document.querySelectorAll('#feedbackTable tr')).map(row => 
         Array.from(row.querySelectorAll('td')).map(cell => cell.textContent.trim())
-    ).filter(row => row.length > 0); // Remove empty rows
+    ).filter(row => row.length > 0);
 
-    // Combine headers and table data
+    // Combine headers and data
     const wsData = [...headerData, ...tableRows];
     
-    // Create worksheet
+    // Create worksheet and set properties
     const ws = XLSX.utils.aoa_to_sheet(wsData);
-    
-    // Set column widths
     ws['!cols'] = [
-        { wch: 22 },    // Date
-        { wch: 22 },    // ID Number
-        { wch: 35 },    // Name
-        { wch: 35 },    // Purpose
-        { wch: 20 },    // Time In
-        { wch: 20 },    // Time Out
-        { wch: 20 }     // Type
+        { wch: 22 }, // Date
+        { wch: 22 }, // ID Number
+        { wch: 35 }, // Name
+        { wch: 35 }, // Purpose
+        { wch: 20 }, // Time In
+        { wch: 20 }, // Time Out
+        { wch: 20 }  // Type
     ];
 
-    // Style the headers (first 6 rows)
-    for (let i = 0; i < 6; i++) {
-        const cellRef = XLSX.utils.encode_cell({r: i, c: 0});
-        if (!ws[cellRef]) continue;
-        
-        ws[cellRef].s = {
-            font: {
-                bold: true,
-                sz: i < 4 ? 14 : 12 // Larger font for institution name, smaller for headers
-            },
-            alignment: {
-                horizontal: 'center',
-                vertical: 'center'
-            }
-        };
-    }
-
-    // Center align and merge cells for the header text
-    for (let i = 0; i < 4; i++) {
-        const range = { s: {r: i, c: 0}, e: {r: i, c: 6} };
-        ws['!merges'] = ws['!merges'] || [];
-        ws['!merges'].push(range);
-    }
-
-    // Style the column headers (row 6)
-    const headerRow = 5;
-    for (let i = 0; i < 7; i++) {
-        const cellRef = XLSX.utils.encode_cell({r: headerRow, c: i});
-        if (ws[cellRef]) {
-            ws[cellRef].s = {
-                font: { bold: true, color: { rgb: "FFFFFF" } },
-                fill: { fgColor: { rgb: "2C343C" } },
-                alignment: { horizontal: 'left', vertical: 'center' }
-            };
-        }
-    }
-
-    // Style the data cells
-    tableRows.forEach((row, rowIndex) => {
-        row.forEach((cell, colIndex) => {
-            const cellRef = XLSX.utils.encode_cell({r: rowIndex + headerData.length, c: colIndex});
-            if (ws[cellRef]) {
-                ws[cellRef].s = {
-                    font: {
-                        sz: 11,
-                        color: { rgb: colIndex === 6 ? "22C55E" : "4B5563" }, // Green for SIT-IN
-                        bold: colIndex === 6 // Bold for SIT-IN
-                    },
-                    alignment: {
-                        horizontal: colIndex === 4 || colIndex === 5 || colIndex === 6 ? 'center' : 'left',
-                        vertical: 'center'
-                    }
-                };
-            }
-        });
-    });
-
+    // Add worksheet to workbook and save
     XLSX.utils.book_append_sheet(wb, ws, "Reports");
     XLSX.writeFile(wb, "UC_SitIn_Records.xlsx");
 }
 
 function exportToPDF() {
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF('p', 'mm', 'a4'); // Changed to portrait orientation
+    const doc = new jsPDF('p', 'mm', 'a4');
     
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 15;
+    // Create a clone of the table for manipulation
+    const originalTable = document.querySelector('table');
+    const tableClone = originalTable.cloneNode(true);
     
-    // Load both images
+    // Style the header row
+    const headerRow = tableClone.querySelector('thead tr');
+    if (headerRow) {
+        headerRow.style.backgroundColor = '#2c343c';
+        headerRow.style.color = 'white';
+    }
+    
+    // Update image paths to point to project root
     const ucLogo = new Image();
-    const ccsLogo = new Image();
     ucLogo.src = 'University-of-Cebu-Logo.jpg';
+    
+    const ccsLogo = new Image();
     ccsLogo.src = 'ccs.png';
-
-    // Wait for both images to load before creating PDF
+    
     Promise.all([
-        new Promise(resolve => ucLogo.onload = resolve),
-        new Promise(resolve => ccsLogo.onload = resolve)
+        new Promise((resolve) => {
+            ucLogo.onload = resolve;
+            ucLogo.onerror = () => {
+                console.error('Error loading UC logo');
+                resolve();
+            };
+        }),
+        new Promise((resolve) => {
+            ccsLogo.onload = resolve;
+            ccsLogo.onerror = () => {
+                console.error('Error loading CCS logo');
+                resolve();
+            };
+        })
     ]).then(() => {
-        // Calculate image dimensions
-        const logoWidth = 15; // Smaller logo size for portrait
-        const logoHeight = 15;
-        
-        // Calculate positions for centered logos
-        const ucLogoX = pageWidth/2 - logoWidth - 5;
-        const ccsLogoX = pageWidth/2 + 5;
-        const logosY = margin;
-
-        // Add both logos
-        doc.addImage(ucLogo, 'JPEG', ucLogoX, logosY, logoWidth, logoHeight);
-        doc.addImage(ccsLogo, 'PNG', ccsLogoX, logosY, logoWidth, logoHeight);
-
-        // Add headers below logos with adjusted spacing
-        const textStartY = margin + logoHeight + 5;
-
-        // Add University Header with adjusted positions
-        doc.setFontSize(14); // Reduced font sizes for portrait
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(44, 52, 60);
-        doc.text('UNIVERSITY OF CEBU', pageWidth/2, textStartY + 5, { align: 'center' });
-        
-        doc.setFontSize(12);
-        doc.text('COLLEGE OF COMPUTER STUDIES', pageWidth/2, textStartY + 12, { align: 'center' });
-        
-        doc.setFontSize(11);
-        doc.text('Sit-In Monitoring System', pageWidth/2, textStartY + 19, { align: 'center' });
-        
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'normal');
-        doc.text('Generated on: ' + new Date().toLocaleString(), pageWidth/2, textStartY + 26, { align: 'center' });
-
-        // Table configuration with adjusted dimensions for portrait
-        doc.autoTable({
-            // Define explicit headers
-            head: [[
-                'Date',
-                'ID Number',
-                'Name', 
-                'Purpose',
-                'Time In',
-                'Time Out',
-                'Type'
-            ]],
-            body: Array.from(document.querySelectorAll('#feedbackTable tr')).map(row => 
-                Array.from(row.querySelectorAll('td')).map(cell => cell.textContent.trim())
-            ),
-            startY: textStartY + 35,
-            theme: 'grid',
-            styles: {
-                font: 'helvetica',
-                fontSize: 7,
-                cellPadding: 3,
-                lineWidth: 0.1,
-                lineColor: [221, 221, 221],
-                minCellHeight: 8
-            },
-            headStyles: {
-                fillColor: [44, 52, 60],
-                textColor: [255, 255, 255],
-                fontSize: 8,
-                fontStyle: 'bold',
-                halign: 'left',
-                valign: 'middle'
-            },
-            columnStyles: {
-                0: { cellWidth: 22, halign: 'left' },   // Date
-                1: { cellWidth: 22, halign: 'left' },   // ID Number
-                2: { cellWidth: 35, halign: 'left' },   // Name
-                3: { cellWidth: 35, halign: 'left' },   // Purpose
-                4: { cellWidth: 20, halign: 'center' }, // Time In
-                5: { cellWidth: 20, halign: 'center' }, // Time Out
-                6: { 
-                    cellWidth: 20,
-                    halign: 'center',
-                    textColor: [34, 197, 94],
+        try {
+            const pageWidth = doc.internal.pageSize.getWidth();
+            
+            // Add logos
+            doc.addImage(ucLogo, 'JPEG', pageWidth/2 - 30, 10, 20, 20);
+            doc.addImage(ccsLogo, 'PNG', pageWidth/2 + 10, 10, 20, 20);
+            
+            let yPos = 40;
+            
+            // Add headers
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.text('UNIVERSITY OF CEBU', pageWidth/2, yPos, { align: 'center' });
+            
+            yPos += 8;
+            doc.setFontSize(14);
+            doc.text('COLLEGE OF COMPUTER STUDIES', pageWidth/2, yPos, { align: 'center' });
+            
+            yPos += 8;
+            doc.setFontSize(12);
+            doc.text('Sit-In Monitoring System', pageWidth/2, yPos, { align: 'center' });
+            
+            yPos += 8;
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Generated on: ${new Date().toLocaleString()}`, pageWidth/2, yPos, { align: 'center' });
+            
+            // Add table with headers using the cloned and styled table
+            doc.autoTable({
+                html: tableClone,
+                startY: yPos + 10,
+                theme: 'grid',
+                styles: {
+                    fontSize: 8,
+                    cellPadding: 2
+                },
+                headStyles: {
+                    fillColor: [44, 52, 60],
+                    textColor: [255, 255, 255],
+                    fontSize: 9,
                     fontStyle: 'bold'
-                }  // Type
-            },
-            margin: {
-                top: margin,
-                right: margin,
-                bottom: margin,
-                left: margin
-            },
-            didDrawPage: function(data) {
-                if (data.pageNumber > 1) {
-                    // Repeat logos and headers on new pages
-                    doc.addImage(ucLogo, 'JPEG', ucLogoX, margin, logoWidth, logoHeight);
-                    doc.addImage(ccsLogo, 'PNG', ccsLogoX, margin, logoWidth, logoHeight);
-                    doc.setFontSize(12);
-                    doc.setFont('helvetica', 'bold');
-                    doc.text('UNIVERSITY OF CEBU - CCS Sit-In Records', pageWidth/2, margin + logoHeight + 10, { align: 'center' });
+                },
+                columnStyles: {
+                    0: { cellWidth: 25 }, // Date
+                    1: { cellWidth: 25 }, // ID Number
+                    2: { cellWidth: 35 }, // Name
+                    3: { cellWidth: 35 }, // Purpose
+                    4: { cellWidth: 20 }, // Time In
+                    5: { cellWidth: 20 }, // Time Out
+                    6: { // Type column
+                        cellWidth: 20,
+                        textColor: [34, 197, 94],
+                        fontStyle: 'bold'
+                    }
+                },
+                margin: { top: 10 },
+                didDrawPage: function(data) {
+                    // Add page number at the bottom
+                    doc.setFontSize(8);
+                    doc.text(`Page ${doc.internal.getNumberOfPages()}`, data.settings.margin.left, doc.internal.pageSize.height - 10);
                 }
-                // Page numbers
-                doc.setFontSize(8);
-                doc.setTextColor(128, 128, 128);
-                doc.text(`Page ${data.pageNumber}`, pageWidth - margin, pageHeight - 10);
-            }
-        });
-        
-        doc.save('UC_SitIn_Records.pdf');
-    })
-    .catch(error => {
-        console.error('Error loading images:', error);
-        alert('Error loading images. Please make sure both images exist in the correct directory.');
+            });
+
+            // Save the PDF
+            doc.save('UC_SitIn_Records.pdf');
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('Error generating PDF. Please check the console for details.');
+        }
     });
 }
 
@@ -658,7 +585,6 @@ function printTable() {
     printWindow.document.write('<html><head><title>Print</title>');
     printWindow.document.write('</head><body>');
     printWindow.document.write(printContent.innerHTML);
-    printWindow.document.write('</body></html>');
     printWindow.document.close();
 
     // Wait for images and styles to load
@@ -670,6 +596,62 @@ function printTable() {
 }
 </script>
 
+<!-- Logout confirmation modal -->
+<div id="logoutModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                </svg>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Confirm Logout</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500">Are you sure you want to logout?</p>
+            </div>
+            <div class="flex justify-center gap-4 mt-3">
+                <button id="cancelLogout" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium rounded-md">
+                    Cancel
+                </button>
+                <button id="confirmLogout" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md">
+                    Logout
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const logoutBtn = document.getElementById('logoutBtn');
+    const logoutModal = document.getElementById('logoutModal');
+    const cancelLogout = document.getElementById('cancelLogout');
+    const confirmLogout = document.getElementById('confirmLogout');
+
+    // Show modal when logout button is clicked
+    logoutBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        logoutModal.classList.remove('hidden');
+    });
+
+    // Hide modal when cancel is clicked
+    cancelLogout.addEventListener('click', function() {
+        logoutModal.classList.add('hidden');
+    });
+
+    // Perform logout when confirm is clicked
+    confirmLogout.addEventListener('click', function() {
+        window.location.href = 'logout.php';
+    });
+
+    // Close modal when clicking outside
+    logoutModal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.classList.add('hidden');
+        }
+    });
+});
+</script>
 </body>
 </html>
 

@@ -135,15 +135,40 @@ while($row = $roomResult->fetch_assoc()) {
         </div>
         
         <div class="navbar-end">
-            <a href="logout.php" class="btn btn-error btn-outline gap-2">
+            <button id="logoutBtn" class="btn btn-error btn-outline gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
                 Logout
-            </a>
+            </button>
         </div>
     </div>
     
+    <!-- Logout confirmation modal -->
+    <div id="logoutModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
+            <div class="mt-3 text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                    <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Confirm Logout</h3>
+                <div class="mt-2 px-7 py-3">
+                    <p class="text-sm text-gray-500">Are you sure you want to logout?</p>
+                </div>
+                <div class="flex justify-center gap-4 mt-3">
+                    <button id="cancelLogout" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium rounded-md">
+                        Cancel
+                    </button>
+                    <button id="confirmLogout" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md">
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 <div class="container mx-auto px-4 py-8">
     <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Current Sit-in Records</h2>
     
@@ -241,7 +266,6 @@ while($row = $roomResult->fetch_assoc()) {
 </div>
     
 <script>
-// Initialize charts after DOM content is loaded
 document.addEventListener('DOMContentLoaded', function() {
     // First Chart (Programming Languages)
     const chart1 = echarts.init(document.getElementById('chart1'));
@@ -372,8 +396,41 @@ document.addEventListener('DOMContentLoaded', function() {
         chart1.resize();
         chart2.resize();
     });
-});
 
+    // Logout Modal Functionality
+    const logoutBtn = document.getElementById('logoutBtn');
+    const logoutModal = document.getElementById('logoutModal');
+    const cancelLogout = document.getElementById('cancelLogout');
+    const confirmLogout = document.getElementById('confirmLogout');
+
+    if (logoutBtn && logoutModal && cancelLogout && confirmLogout) {
+        // Show modal when logout button is clicked
+        logoutBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            logoutModal.classList.remove('hidden');
+        });
+
+        // Hide modal when cancel is clicked
+        cancelLogout.addEventListener('click', function() {
+            logoutModal.classList.add('hidden');
+        });
+
+        // Perform logout when confirm is clicked
+        confirmLogout.addEventListener('click', function() {
+            window.location.href = 'logout.php';
+        });
+
+        // Close modal when clicking outside
+        logoutModal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.add('hidden');
+            }
+        });
+    } else {
+        console.error('One or more logout elements not found');
+    }
+
+    // Search functionality
     document.getElementById('search').addEventListener('keyup', function() {
         let filter = this.value.toLowerCase();
         let rows = document.querySelectorAll('#records-table tr');
@@ -381,6 +438,7 @@ document.addEventListener('DOMContentLoaded', function() {
             row.style.display = row.textContent.toLowerCase().includes(filter) ? '' : 'none';
         });
     });
+});
 </script>
 </body>
 </html>
