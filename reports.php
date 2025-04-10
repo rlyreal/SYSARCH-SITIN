@@ -10,6 +10,16 @@ if (isset($_GET['delete_id'])) {
     exit();
 }
 
+// Get unique purposes for the filter dropdown
+$purposesQuery = "SELECT DISTINCT purpose FROM sit_in WHERE time_out IS NOT NULL ORDER BY purpose ASC";
+$purposesResult = $conn->query($purposesQuery);
+$purposes = [];
+if ($purposesResult->num_rows > 0) {
+    while($purposeRow = $purposesResult->fetch_assoc()) {
+        $purposes[] = $purposeRow['purpose'];
+    }
+}
+
 // Update the SQL query to fetch only completed sit-ins
 $sql = "SELECT s.created_at, s.idno, s.fullname, s.purpose, s.time_in, s.time_out 
         FROM sit_in s 
@@ -165,8 +175,9 @@ $result = $conn->query($sql);
         <h2 class="text-3xl font-bold text-center text-blue-600">REPORTS</h2>
     </div>
 
-    <!-- Search Section -->
-    <div class="max-w-md mx-auto mb-6">
+    <!-- Search and Filter Section -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <!-- Search Input -->
         <div class="relative">
             <input type="text" 
                    id="searchInput" 
@@ -175,6 +186,26 @@ $result = $conn->query($sql);
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Purpose Filter Dropdown -->
+        <div class="relative">
+            <select id="purposeFilter" class="w-full px-4 py-2 pl-10 pr-4 text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none">
+                <option value="">All Purposes</option>
+                <?php foreach($purposes as $purpose): ?>
+                <option value="<?php echo htmlspecialchars($purpose); ?>"><?php echo htmlspecialchars($purpose); ?></option>
+                <?php endforeach; ?>
+            </select>
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/>
+                </svg>
+            </div>
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
             </div>
         </div>
@@ -259,71 +290,87 @@ $result = $conn->query($sql);
 </div> <!-- End of table div -->
 
 <script>
-document.getElementById("searchInput").addEventListener("keyup", function() {
-    const filter = this.value.toLowerCase();
-    const rows = document.querySelectorAll("#feedbackTable tr:not(:first-child)");
-    
-    rows.forEach(row => {
-        const idNumber = row.children[1].textContent.toLowerCase();
-        const name = row.children[2].textContent.toLowerCase();
-        const purpose = row.children[3].textContent.toLowerCase();
-        const date = row.children[0].textContent.toLowerCase();
+// Update the search function to also consider the purpose filter
+function applyFilters() {
+    const searchText = document.getElementById("searchInput").value.toLowerCase();
+    const purposeFilter = document.getElementById("purposeFilter").value;
+    const rows = document.querySelectorAll("#feedbackTable tr");
         
-        if (idNumber.includes(filter) || 
-            name.includes(filter) || 
-            purpose.includes(filter) || 
-            date.includes(filter)) {
-            row.style.display = "";
-        } else {
-            row.style.display = "none";
+    rows.forEach(row => {
+        const cells = row.getElementsByTagName('td');
+        if (cells.length > 0) {
+            const idNumber = cells[1].textContent.toLowerCase();
+            const name = cells[2].textContent.toLowerCase();
+            const purpose = cells[3].textContent.trim(); // Don't lowercase for exact comparison
+            const date = cells[0].textContent.toLowerCase();
+            
+            const matchesSearch = idNumber.includes(searchText) || 
+                                  name.includes(searchText) || 
+                                  purpose.toLowerCase().includes(searchText) || 
+                                  date.includes(searchText);
+            
+            // Exact purpose matching
+            const matchesPurpose = !purposeFilter || purpose === purposeFilter;
+            
+            if (matchesSearch && matchesPurpose) {
+                row.style.display = "";
+            } else {
+                row.style.display = "none";
+            }
         }
     });
-});
-</script>
+}
 
-<script>
+// Event listeners for filters
+document.getElementById("searchInput").addEventListener("keyup", applyFilters);
+document.getElementById("purposeFilter").addEventListener("change", applyFilters);
+
 function exportToCSV() {
     // Create header rows with proper formatting
+    const purposeFilter = document.getElementById("purposeFilter").value;
+    const purposeText = purposeFilter ? `Purpose: ${purposeFilter}` : "All Purposes";
+    
     const headers = [
         '"UNIVERSITY OF CEBU"',
         '"COLLEGE OF COMPUTER STUDIES"',
         '"Sit-In Monitoring System"',
         `"Generated on: ${new Date().toLocaleString()}"`,
+        `"Filter: ${purposeText}"`,
         '', // Empty line for spacing
         '"Date","ID Number","Name","Purpose","Time In","Time Out","Type"' // Quoted headers
     ];
     
-    const table = document.getElementById('feedbackTable');
-    let csv = headers;
-    const rows = table.getElementsByTagName('tr');
+    const csv = [...headers];
     
-    // Get data
-    for(let i = 0; i < rows.length; i++) {
-        const cols = rows[i].getElementsByTagName('td');
-        
-        if (cols.length > 0) {
-            // Get values and handle special characters
-            const date = cols[0].textContent.trim();
-            const idNumber = cols[1].textContent.trim();
-            const name = cols[2].textContent.trim();
-            const purpose = cols[3].textContent.trim();
-            const timeIn = cols[4].textContent.trim();
-            const timeOut = cols[5].textContent.trim();
+    // Get data from visible rows only
+    document.querySelectorAll('#feedbackTable tr').forEach(row => {
+        if (row.style.display !== 'none') {
+            const cols = row.getElementsByTagName('td');
             
-            // Format each row with proper quoting and spacing
-            const rowData = [
-                `"${date}"`,
-                `"${idNumber}"`,
-                `"${name}"`,
-                `"${purpose}"`,
-                `"${timeIn}"`,
-                `"${timeOut}"`,
-                '"SIT-IN"'
-            ];
-            
-            csv.push(rowData.join(','));
+            if (cols.length > 0) {
+                // Get values and handle special characters
+                const date = cols[0].textContent.trim();
+                const idNumber = cols[1].textContent.trim();
+                const name = cols[2].textContent.trim();
+                const purpose = cols[3].textContent.trim();
+                const timeIn = cols[4].textContent.trim();
+                const timeOut = cols[5].textContent.trim();
+                
+                // Format each row with proper quoting and spacing
+                const rowData = [
+                    `"${date}"`,
+                    `"${idNumber}"`,
+                    `"${name}"`,
+                    `"${purpose}"`,
+                    `"${timeIn}"`,
+                    `"${timeOut}"`,
+                    '"SIT-IN"'
+                ];
+                
+                csv.push(rowData.join(','));
+            }
         }
-    }
+    });
 
     // Create and trigger download with UTF-8 BOM for Excel compatibility
     const BOM = '\uFEFF';
@@ -332,7 +379,12 @@ function exportToCSV() {
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `UC_SitIn_Records_${new Date().toLocaleDateString()}.csv`);
+    
+    const fileName = purposeFilter ? 
+        `UC_SitIn_${purposeFilter}_${new Date().toLocaleDateString()}.csv` :
+        `UC_SitIn_Records_${new Date().toLocaleDateString()}.csv`;
+    
+    link.setAttribute('download', fileName);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -342,20 +394,31 @@ function exportToExcel() {
     // Initialize new workbook
     const wb = XLSX.utils.book_new();
     
+    // Get purpose filter value
+    const purposeFilter = document.getElementById("purposeFilter").value;
+    const purposeText = purposeFilter ? `Purpose: ${purposeFilter}` : "All Purposes";
+    
     // Create header data
     const headerData = [
         ['UNIVERSITY OF CEBU'],
         ['COLLEGE OF COMPUTER STUDIES'],
         ['Sit-In Monitoring System'],
         [`Generated on: ${new Date().toLocaleString()}`],
+        [`Filter: ${purposeText}`],
         [''], // Empty row for spacing
         ['Date', 'ID Number', 'Name', 'Purpose', 'Time In', 'Time Out', 'Type']
     ];
     
-    // Get table data
-    const tableRows = Array.from(document.querySelectorAll('#feedbackTable tr')).map(row => 
-        Array.from(row.querySelectorAll('td')).map(cell => cell.textContent.trim())
-    ).filter(row => row.length > 0);
+    // Get visible table data using DOM traversal
+    const tableRows = [];
+    document.querySelectorAll('#feedbackTable tr').forEach(row => {
+        if (row.style.display !== 'none') {
+            const rowData = Array.from(row.querySelectorAll('td')).map(cell => cell.textContent.trim());
+            if (rowData.length > 0) {
+                tableRows.push(rowData);
+            }
+        }
+    });
 
     // Combine headers and data
     const wsData = [...headerData, ...tableRows];
@@ -372,18 +435,43 @@ function exportToExcel() {
         { wch: 20 }  // Type
     ];
 
+    // Set filename based on purpose filter
+    const fileName = purposeFilter ? 
+        `UC_SitIn_${purposeFilter}.xlsx` : 
+        "UC_SitIn_Records.xlsx";
+    
     // Add worksheet to workbook and save
     XLSX.utils.book_append_sheet(wb, ws, "Reports");
-    XLSX.writeFile(wb, "UC_SitIn_Records.xlsx");
+    XLSX.writeFile(wb, fileName);
 }
 
 function exportToPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('p', 'mm', 'a4');
     
+    // Get purpose filter value
+    const purposeFilter = document.getElementById("purposeFilter").value;
+    const purposeText = purposeFilter ? `Purpose: ${purposeFilter}` : "All Purposes";
+    
     // Create a clone of the table for manipulation
     const originalTable = document.querySelector('table');
     const tableClone = originalTable.cloneNode(true);
+    
+    // Get all visible rows from the original table
+    const visibleRows = [];
+    document.querySelectorAll('#feedbackTable tr').forEach((row, index) => {
+        if (row.style.display !== 'none') {
+            visibleRows.push(index);
+        }
+    });
+    
+    // Remove all rows from the clone that aren't in our visible set
+    const cloneRows = tableClone.querySelectorAll('tbody tr');
+    Array.from(cloneRows).forEach((row, index) => {
+        if (!visibleRows.includes(index)) {
+            row.remove();
+        }
+    });
     
     // Style the header row
     const headerRow = tableClone.querySelector('thead tr');
@@ -442,6 +530,11 @@ function exportToPDF() {
             doc.setFont('helvetica', 'normal');
             doc.text(`Generated on: ${new Date().toLocaleString()}`, pageWidth/2, yPos, { align: 'center' });
             
+            yPos += 6;
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`Filter: ${purposeText}`, pageWidth/2, yPos, { align: 'center' });
+            
             // Add table with headers using the cloned and styled table
             doc.autoTable({
                 html: tableClone,
@@ -478,8 +571,13 @@ function exportToPDF() {
                 }
             });
 
+            // Set filename based on purpose filter
+            const fileName = purposeFilter ? 
+                `UC_SitIn_${purposeFilter.replace(/[^a-z0-9]/gi, '_')}.pdf` : 
+                'UC_SitIn_Records.pdf';
+
             // Save the PDF
-            doc.save('UC_SitIn_Records.pdf');
+            doc.save(fileName);
         } catch (error) {
             console.error('Error generating PDF:', error);
             alert('Error generating PDF. Please check the console for details.');
@@ -490,6 +588,11 @@ function exportToPDF() {
 function printTable() {
     // Create a printable area
     const printContent = document.createElement('div');
+    
+    // Get purpose filter value
+    const purposeFilter = document.getElementById("purposeFilter").value;
+    const purposeText = purposeFilter ? `Purpose: ${purposeFilter}` : "All Purposes";
+    
     printContent.innerHTML = `
         <style>
             @media print {
@@ -536,6 +639,12 @@ function printTable() {
                     color: #22c55e !important; 
                     font-weight: bold; 
                 }
+                .filter-info {
+                    text-align: center;
+                    font-size: 10px;
+                    font-weight: bold;
+                    margin: 5px 0;
+                }
                 @page { 
                     size: portrait;
                     margin: 15mm;
@@ -561,12 +670,29 @@ function printTable() {
             <h2 style="margin: 5px 0; font-size: 12px; color: #2c343c; font-weight: bold;">COLLEGE OF COMPUTER STUDIES</h2>
             <h3 style="margin: 5px 0; font-size: 11px; color: #2c343c;">Sit-In Monitoring System</h3>
             <p style="margin: 5px 0; font-size: 9px; color: #4b5563;">Generated on: ${new Date().toLocaleString()}</p>
+            <p class="filter-info" style="color: #2c343c;">Filter: ${purposeText}</p>
         </div>
     `;
 
     // Clone the original table
     const originalTable = document.querySelector('table');
     const tableClone = originalTable.cloneNode(true);
+    
+    // Get all visible rows
+    const visibleRows = [];
+    document.querySelectorAll('#feedbackTable tr').forEach((row, index) => {
+        if (row.style.display !== 'none') {
+            visibleRows.push(index);
+        }
+    });
+    
+    // Remove all rows from the clone that aren't in our visible set
+    const cloneRows = tableClone.querySelectorAll('tbody tr');
+    Array.from(cloneRows).forEach((row, index) => {
+        if (!visibleRows.includes(index)) {
+            row.remove();
+        }
+    });
 
     // Ensure the header has the correct styling
     const headerRow = tableClone.querySelector('thead tr');
@@ -594,35 +720,12 @@ function printTable() {
         printWindow.close();
     }, 500);
 }
-</script>
 
-<!-- Logout confirmation modal -->
-<div id="logoutModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
-        <div class="mt-3 text-center">
-            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
-                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                </svg>
-            </div>
-            <h3 class="text-lg leading-6 font-medium text-gray-900">Confirm Logout</h3>
-            <div class="mt-2 px-7 py-3">
-                <p class="text-sm text-gray-500">Are you sure you want to logout?</p>
-            </div>
-            <div class="flex justify-center gap-4 mt-3">
-                <button id="cancelLogout" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium rounded-md">
-                    Cancel
-                </button>
-                <button id="confirmLogout" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md">
-                    Logout
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
+// Initialize filters when page loads
 document.addEventListener('DOMContentLoaded', function() {
+    // Apply filters on page load in case URL parameters set a filter
+    applyFilters();
+    
     const logoutBtn = document.getElementById('logoutBtn');
     const logoutModal = document.getElementById('logoutModal');
     const cancelLogout = document.getElementById('cancelLogout');
@@ -652,6 +755,32 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+
+<!-- Logout confirmation modal -->
+<div id="logoutModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                </svg>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Confirm Logout</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500">Are you sure you want to logout?</p>
+            </div>
+            <div class="flex justify-center gap-4 mt-3">
+                <button id="cancelLogout" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium rounded-md">
+                    Cancel
+                </button>
+                <button id="confirmLogout" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md">
+                    Logout
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>
 
