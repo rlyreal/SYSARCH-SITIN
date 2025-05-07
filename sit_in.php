@@ -10,6 +10,47 @@ if (!$conn) {
 // Disable caching to always get the latest session count
 $conn->query("SET SESSION query_cache_type = OFF;");
 
+// Add this after your existing session_start() and database connection
+if (isset($_GET['action']) && $_GET['action'] === 'get_points') {
+    header('Content-Type: application/json');
+    
+    $sql = "SELECT 
+        u.id_no as idno,
+        CONCAT(u.last_name, ', ', u.first_name, ' ', COALESCE(u.middle_name, '')) as full_name,
+        u.course,
+        u.year_level,
+        u.points,
+        COALESCE(
+            (SELECT si.session_count 
+             FROM sit_in si 
+             WHERE si.idno = u.id_no 
+             ORDER BY si.created_at DESC 
+             LIMIT 1),
+            30
+        ) as current_sessions
+    FROM users u
+    ORDER BY u.last_name, u.first_name";
+    
+    $result = $conn->query($sql);
+    $students = array();
+    
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $students[] = array(
+                'idno' => htmlspecialchars($row['idno']),
+                'full_name' => htmlspecialchars($row['full_name']),
+                'course' => htmlspecialchars($row['course']),
+                'year_level' => htmlspecialchars($row['year_level']),
+                'points' => htmlspecialchars($row['points']),
+                'current_sessions' => htmlspecialchars($row['current_sessions'])
+            );
+        }
+    }
+    
+    echo json_encode(['success' => true, 'students' => $students]);
+    exit;
+}
+
 // Replace the existing AJAX handler with this code
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['logout_id'])) {
     $logout_id = intval($_POST['logout_id']);
@@ -58,6 +99,123 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['logout_id'])) {
     }
 
     $conn->close();
+    exit;
+}
+
+// Replace the existing add_point handler with this updated version
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_point'])) {
+    $idno = $_POST['idno'];
+    $conn->begin_transaction();
+    
+    try {
+        // First check current session count
+        $stmt = $conn->prepare("SELECT session_count FROM sit_in WHERE idno = ? AND time_out IS NULL");
+        $stmt->bind_param("s", $idno);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $session_data = $result->fetch_assoc();
+        $current_sessions = $session_data['session_count'] ?? 0;
+        $stmt->close();
+
+        // If already at max sessions, don't proceed
+        if ($current_sessions >= 30) {
+            echo json_encode([
+                "success" => false,
+                "maxSessionsReached" => true,
+                "message" => "Maximum session limit reached"
+            ]);
+            exit;
+        }
+
+        // Get current points from users table
+        $stmt = $conn->prepare("SELECT points FROM users WHERE id_no = ?");
+        $stmt->bind_param("s", $idno);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $user = $result->fetch_assoc();
+        $current_points = $user['points'] ?? 0;
+        $stmt->close();
+        
+        // Calculate new points
+        $new_points = $current_points + 1;
+        
+        if ($new_points >= 3) {
+            // Check if adding a session would exceed max
+            if ($current_sessions >= 30) {
+                echo json_encode([
+                    "success" => false,
+                    "maxSessionsReached" => true,
+                    "message" => "Maximum session limit reached"
+                ]);
+                $conn->rollback();
+                exit;
+            }
+            
+            // Reset points to 0
+            $stmt = $conn->prepare("UPDATE users SET points = 0 WHERE id_no = ?");
+            $stmt->bind_param("s", $idno);
+            $stmt->execute();
+            $stmt->close();
+            
+            // Update session count
+            $stmt = $conn->prepare("UPDATE sit_in SET session_count = session_count + 1 WHERE idno = ? AND time_out IS NULL");
+            $stmt->bind_param("s", $idno);
+            $stmt->execute();
+            $stmt->close();
+            
+            $message = "Points reset to 0 and gained 1 session!";
+        } else {
+            // Just update points
+            $stmt = $conn->prepare("UPDATE users SET points = ? WHERE id_no = ?");
+            $stmt->bind_param("is", $new_points, $idno);
+            $stmt->execute();
+            $stmt->close();
+            
+            $message = "Point added successfully! Current points: " . $new_points;
+        }
+        
+        $conn->commit();
+        echo json_encode([
+            "success" => true, 
+            "message" => $message, 
+            "points" => ($new_points >= 3 ? 0 : $new_points)
+        ]);
+    } catch (Exception $e) {
+        $conn->rollback();
+        echo json_encode(["success" => false, "message" => $e->getMessage()]);
+    }
+    exit;
+}
+
+// Add this check when inserting new sit-in records
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['new_sitin'])) {
+    $idno = $_POST['idno'];
+    $conn->begin_transaction();
+    
+    try {
+        // Check if user already has an active session
+        $stmt = $conn->prepare("SELECT id FROM sit_in WHERE idno = ? AND time_out IS NULL");
+        $stmt->bind_param("s", $idno);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows > 0) {
+            throw new Exception("This user already has an active sit-in session!");
+        }
+        $stmt->close();
+
+        // If no active session, proceed with insert
+        $stmt = $conn->prepare("INSERT INTO sit_in (idno, fullname, purpose, laboratory, session_count) VALUES (?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssssi", $idno, $fullname, $purpose, $laboratory, $session_count);
+        $stmt->execute();
+        $stmt->close();
+        
+        $conn->commit();
+        echo json_encode(["success" => true, "message" => "Sit-in session started successfully"]);
+    } catch (Exception $e) {
+        $conn->rollback();
+        echo json_encode(["success" => false, "message" => $e->getMessage()]);
+    }
     exit;
 }
 ?>
@@ -230,7 +388,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['logout_id'])) {
                             echo '<td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">';
                             echo '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Active</span>';
                             echo '</td>';
-                            echo '<td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">';
+                            echo '<td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium flex items-center justify-center space-x-2">';
+                            // Add button
+                            echo '<button class="add-point-btn p-1 hover:bg-gray-100 rounded-full transition-colors duration-200 inline-flex items-center" data-idno="' . htmlspecialchars($row['idno']) . '">';
+                            echo '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">';
+                            echo '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />';
+                            echo '</svg>';
+                            echo '</button>';
+                            // Time Out button
                             echo '<button class="logout-btn inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-colors duration-200" data-id="' . $row['id'] . '">';
                             echo '<svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">';
                             echo '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />';
@@ -239,7 +404,86 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['logout_id'])) {
                             echo '</tr>';
                         }
                     }
-                    $conn->close();
+                    ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Add Student Points Table -->
+    <div class="bg-white rounded-lg shadow-lg overflow-hidden mt-8">
+        <div class="p-6 border-b border-gray-200">
+            <h2 class="text-2xl font-bold text-gray-800">Student Points</h2>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="student-points-table min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            ID Number
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Name
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Course
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Year Level
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Points
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Current Sessions
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <?php
+                    // Replace the existing Student Points SQL query with this fixed version
+                    $sql = "SELECT 
+                        u.id_no as idno,
+                        CONCAT(u.last_name, ', ', u.first_name, ' ', COALESCE(u.middle_name, '')) as full_name,
+                        u.course,
+                        u.year_level,
+                        u.points,
+                        COALESCE(
+                            (SELECT si.session_count 
+                             FROM sit_in si 
+                             WHERE si.idno = u.id_no 
+                             ORDER BY si.created_at DESC 
+                             LIMIT 1),
+                            30
+                        ) as current_sessions
+                    FROM users u
+                    ORDER BY u.last_name, u.first_name";
+                    
+                    $result = $conn->query($sql);
+                    
+                    if (!$result) {
+                        echo '<tr><td colspan="6" class="px-6 py-4 text-center text-red-500">SQL Error: ' . $conn->error . '</td></tr>';
+                    } elseif ($result->num_rows == 0) {
+                        echo '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No active students found</td></tr>';
+                    } else {
+                        while ($row = $result->fetch_assoc()) {
+                            echo '<tr class="hover:bg-gray-50 transition-colors duration-200">';
+                            echo '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' . htmlspecialchars($row['idno']) . '</td>';
+                            echo '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' . htmlspecialchars($row['full_name']) . '</td>';
+                            echo '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' . htmlspecialchars($row['course']) . '</td>';
+                            echo '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' . htmlspecialchars($row['year_level']) . '</td>';
+                            echo '<td class="px-6 py-4 whitespace-nowrap text-sm">';
+                            echo '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">' 
+                                . htmlspecialchars($row['points']) . '</span>';
+                            echo '</td>';
+                            echo '<td class="px-6 py-4 whitespace-nowrap text-sm">';
+                            echo '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">' 
+                                . htmlspecialchars($row['current_sessions']) . '</span>';
+                            echo '</td>';
+                            echo '</tr>';
+                        }
+                    }
                     ?>
                 </tbody>
             </table>
@@ -249,7 +493,45 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['logout_id'])) {
 
 <!-- Replace the existing script with this version -->
 <script>
-document.addEventListener("DOMContentLoaded", function () {
+// Function to update student points table
+function updateStudentPoints() {
+    const tbody = document.querySelector('.student-points-table tbody');
+    if (!tbody) return;
+
+    fetch('sit_in.php?action=get_points', {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.students) {
+            tbody.innerHTML = data.students.map(student => `
+                <tr class="hover:bg-gray-50 transition-colors duration-200">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${student.idno}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${student.full_name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${student.course}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${student.year_level}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                            ${student.points}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                            ${student.current_sessions}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+// Update the timeout success handler in your existing script
+document.addEventListener("DOMContentLoaded", function() {
     const confirmPopup = document.getElementById("confirmPopup");
     const timeoutPopup = document.getElementById("timeoutPopup");
     const timeoutMessage = document.getElementById("timeoutMessage");
@@ -285,6 +567,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 currentRow.remove();
                 timeoutMessage.textContent = data.message;
                 timeoutPopup.classList.remove('hidden');
+                // Update student points table after successful timeout
+                updateStudentPoints();
             } else {
                 timeoutMessage.textContent = "Error: " + data.message;
                 timeoutPopup.classList.remove('hidden');
@@ -347,6 +631,67 @@ document.addEventListener("DOMContentLoaded", function () {
             this.classList.add('hidden');
         }
     });
+
+    // Add max sessions popup handlers
+    const maxSessionsPopup = document.getElementById('maxSessionsPopup');
+    const closeMaxSessionsPopup = document.getElementById('closeMaxSessionsPopup');
+
+    if (closeMaxSessionsPopup) {
+        closeMaxSessionsPopup.addEventListener('click', function() {
+            maxSessionsPopup.classList.add('hidden');
+        });
+    }
+
+    // Close popup when clicking outside
+    if (maxSessionsPopup) {
+        maxSessionsPopup.addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.add('hidden');
+            }
+        });
+    }
+
+    // Add point button handler
+    document.querySelectorAll('.add-point-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const idno = this.getAttribute('data-idno');
+            
+            fetch('sit_in.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `add_point=1&idno=${idno}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    window.location.reload();
+                } else if (data.maxSessionsReached) {
+                    maxSessionsPopup.classList.remove('hidden');
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while processing your request.');
+            });
+        });
+    });
+});
+
+// Add event listener for closing max sessions popup
+document.getElementById('closeMaxSessionsPopup').addEventListener('click', function() {
+    document.getElementById('maxSessionsPopup').classList.add('hidden');
+});
+
+// Close popup when clicking outside
+document.getElementById('maxSessionsPopup').addEventListener('click', function(e) {
+    if (e.target === this) {
+        this.classList.add('hidden');
+    }
 });
 </script>
 
@@ -394,6 +739,29 @@ document.addEventListener("DOMContentLoaded", function () {
                 <button id="closeTimeoutPopup" 
                         class="px-4 py-2 bg-green-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300">
                     Continue
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add max sessions popup -->
+<div id="maxSessionsPopup" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Maximum Sessions Reached</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500">Cannot add more sessions. Maximum limit of 30 sessions reached for this user.</p>
+            </div>
+            <div class="items-center px-4 py-3">
+                <button id="closeMaxSessionsPopup" 
+                    class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                    Understood
                 </button>
             </div>
         </div>
