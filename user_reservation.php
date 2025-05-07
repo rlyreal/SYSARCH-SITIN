@@ -506,32 +506,81 @@ $stmt->close();
             const selectedLab = document.getElementById('laboratory').value;
             const pcSelectionDiv = document.querySelector('#pcSelection');
             
-            // Example PC grid - you can modify this based on your needs
-            let pcGrid = `
-                <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                    ${generatePcGrid(30)} <!-- Assuming 30 PCs per lab -->
+            if (!selectedLab) {
+                pcSelectionDiv.innerHTML = `
+                    <div class="text-center text-gray-500 py-8">
+                        Please select a laboratory first
+                    </div>
+                `;
+                return;
+            }
+            
+            // Show loading state
+            pcSelectionDiv.innerHTML = `
+                <div class="text-center text-gray-500 py-8">
+                    Loading PC availability...
                 </div>
             `;
             
-            pcSelectionDiv.innerHTML = pcGrid;
-            // Scroll to top when loading new PCs
-            pcSelectionDiv.scrollTop = 0;
+            // Fetch active PC usage via AJAX
+            fetch(`get_active_pcs.php?laboratory=${selectedLab}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        let pcGrid = `
+                            <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                ${generatePcGrid(30, data.active_pcs)}
+                            </div>
+                        `;
+                        pcSelectionDiv.innerHTML = pcGrid;
+                    } else {
+                        pcSelectionDiv.innerHTML = `
+                            <div class="text-center text-red-500 py-8">
+                                ${data.message || 'Error loading PC status'}
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    pcSelectionDiv.innerHTML = `
+                        <div class="text-center text-red-500 py-8">
+                            Error loading PC status. Please try again.
+                        </div>
+                    `;
+                });
         }
 
-        function generatePcGrid(numberOfPcs) {
+        // Update the event listeners to call updatePcOptions when date or time changes
+        document.addEventListener('DOMContentLoaded', function() {
+            const dateInput = document.getElementById('date');
+            const timeInput = document.getElementById('time_in');
+            const labInput = document.getElementById('laboratory');
+            
+            dateInput.addEventListener('change', updatePcOptions);
+            timeInput.addEventListener('change', updatePcOptions);
+            labInput.addEventListener('change', updatePcOptions);
+        });
+
+        function generatePcGrid(numberOfPcs, activePcs) {
             let grid = '';
             for (let i = 1; i <= numberOfPcs; i++) {
+                const isInUse = activePcs.includes(i.toString());
                 grid += `
                     <div class="text-center">
                         <button type="button" 
-                            class="pc-button w-full p-2 rounded-lg border hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                            onclick="selectPc(${i})">
+                            class="pc-button w-full p-2 rounded-lg border ${isInUse ? 'bg-gray-200 cursor-not-allowed' : 'hover:bg-purple-100'} 
+                            focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            onclick="${isInUse ? '' : `selectPc(${i})`}"
+                            ${isInUse ? 'disabled' : ''}>
                             <svg class="w-8 h-8 mx-auto mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
                                     d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                             </svg>
                             <span class="text-sm">PC ${i}</span>
-                            <span class="block text-xs text-green-500">AVAILABLE</span>
+                            <span class="block text-xs ${isInUse ? 'text-red-500 font-bold' : 'text-green-500'}">
+                                ${isInUse ? 'UNAVAILABLE' : 'AVAILABLE'}
+                            </span>
                         </button>
                     </div>
                 `;

@@ -27,7 +27,7 @@ if (isset($_POST['action']) && isset($_POST['reservation_id'])) {
             $stmt->close();
             
             if ($reservation) {
-                // First check if user is currently sitting in
+                // Check if user is currently sitting in
                 $stmt = $conn->prepare("SELECT id FROM sit_in WHERE idno = ? AND time_out IS NULL");
                 $stmt->bind_param("s", $reservation['idno']);
                 $stmt->execute();
@@ -51,31 +51,47 @@ if (isset($_POST['action']) && isset($_POST['reservation_id'])) {
                     throw new Exception("No sessions remaining!");
                 }
 
-                // Insert into sit_in table with current session count
-                $stmt = $conn->prepare("INSERT INTO sit_in (idno, fullname, purpose, laboratory, time_in, session_count, created_at) VALUES (?, ?, ?, ?, NOW(), ?, NOW())");
-                $stmt->bind_param("ssssi", 
+                // Insert into sit_in table
+                $stmt = $conn->prepare("INSERT INTO sit_in (idno, fullname, purpose, laboratory, pc_number, time_in, session_count, created_at) VALUES (?, ?, ?, ?, ?, NOW(), ?, NOW())");
+                $stmt->bind_param("sssssi", 
                     $reservation['idno'],
                     $reservation['full_name'],
                     $reservation['purpose'],
                     $reservation['laboratory'],
+                    $reservation['pc_number'],
                     $current_sessions
                 );
-                $stmt->execute();
-                $stmt->close();
                 
+                if (!$stmt->execute()) {
+                    throw new Exception("Failed to insert into sit_in table: " . $stmt->error);
+                }
+                $stmt->close();
+
                 // Update reservation status
                 $status = 'approved';
                 $stmt = $conn->prepare("UPDATE reservations SET status = ? WHERE id = ?");
                 $stmt->bind_param("si", $status, $reservation_id);
-                $stmt->execute();
+                
+                if ($stmt->execute()) {
+                    $conn->commit();
+                    echo json_encode([
+                        "success" => true,
+                        "message" => "Reservation approved successfully"
+                    ]);
+                    echo "<script>
+                        document.getElementById('approvalSuccessModal').classList.remove('hidden');
+                    </script>";
+                } else {
+                    throw new Exception("Failed to update reservation status");
+                }
                 $stmt->close();
 
-                // Log the action
+                // Insert into reservation_logs
                 $stmt = $conn->prepare("INSERT INTO reservation_logs (
                     reservation_id, idno, full_name, course, year_level, 
                     purpose, laboratory, date, time_in, pc_number, 
-                    status, action_type, action_by
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                    status, action_type, action_by, action_date
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
                 
                 $action_type = "Approved";
                 $stmt->bind_param("isssssssssssi", 
@@ -93,23 +109,26 @@ if (isset($_POST['action']) && isset($_POST['reservation_id'])) {
                     $action_type,
                     $_SESSION['admin_id']
                 );
-                $stmt->execute();
-                $stmt->close();
                 
+                if (!$stmt->execute()) {
+                    throw new Exception("Failed to insert into reservation_logs: " . $stmt->error);
+                }
+                $stmt->close();
+
                 $conn->commit();
-                echo "<script>
-                    document.addEventListener('DOMContentLoaded', function() {
-                        showModal('approve', 'Reservation approved and added to sit-in sessions.');
-                    });
-                </script>";
+                echo json_encode([
+                    "success" => true,
+                    "message" => "Reservation approved and added to sit-in sessions."
+                ]);
+                exit;
             }
         } catch (Exception $e) {
             $conn->rollback();
-            echo "<script>
-                document.addEventListener('DOMContentLoaded', function() {
-                    showModal('disapprove', 'Error: " . addslashes($e->getMessage()) . "');
-                });
-            </script>";
+            echo json_encode([
+                "success" => false,
+                "message" => "Error: " . $e->getMessage()
+            ]);
+            exit;
         }
     } else {
         // Handle disapproval
@@ -376,6 +395,28 @@ $result = $stmt->get_result();
         </div>
     </div>
 
+    <!-- Add this before closing </body> tag -->
+    <div id="approvalSuccessModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
+            <div class="mt-3 text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+                    <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Approval Successful!</h3>
+                <div class="mt-2 px-7 py-3">
+                    <p class="text-sm text-gray-500">The reservation has been successfully approved.</p>
+                </div>
+                <div class="flex justify-center mt-3">
+                    <button id="closeApprovalSuccessModal" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md">
+                        Done
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         window.showModal = function(type, message) {
@@ -443,6 +484,21 @@ $result = $stmt->get_result();
         document.getElementById('successModal').addEventListener('click', function(e) {
             if (e.target === this) {
                 closeModal();
+            }
+        });
+
+        // Add modal close handler
+        document.getElementById('closeApprovalSuccessModal').addEventListener('click', function() {
+            document.getElementById('approvalSuccessModal').classList.add('hidden');
+            // Reload the page to refresh the reservation list
+            window.location.reload();
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('approvalSuccessModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.add('hidden');
+                window.location.reload();
             }
         });
     });
