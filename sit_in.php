@@ -289,7 +289,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['new_sitin'])) {
                 </a>
             </li>
             <li>
-                <a href="reservation.php" class="btn btn-ghost text-white hover:bg-white/10">
+                <a href="admin_reservation.php" class="btn btn-ghost text-white hover:bg-white/10">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
@@ -651,6 +651,27 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
+    // Add Points Modal Event Listeners
+    const addPointsModal = document.getElementById('addPointsModal');
+    const closeAddPointsModal = document.getElementById('closeAddPointsModal');
+
+    if (closeAddPointsModal) {
+        closeAddPointsModal.addEventListener('click', function() {
+            addPointsModal.classList.add('hidden');
+            location.reload(); // Refresh the page to update points display
+        });
+    }
+
+    // Close modal when clicking outside
+    if (addPointsModal) {
+        addPointsModal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.add('hidden');
+                location.reload(); // Refresh the page to update points display
+            }
+        });
+    }
+
     // Add point button handler
     document.querySelectorAll('.add-point-btn').forEach(button => {
         button.addEventListener('click', function() {
@@ -666,8 +687,11 @@ document.addEventListener("DOMContentLoaded", function() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    alert(data.message);
-                    window.location.reload();
+                    // Show success modal with message
+                    document.getElementById('pointsMessage').textContent = data.message;
+                    document.getElementById('addPointsModal').classList.remove('hidden');
+                    // Update student points table
+                    updateStudentPoints();
                 } else if (data.maxSessionsReached) {
                     maxSessionsPopup.classList.remove('hidden');
                 } else {
@@ -691,6 +715,20 @@ document.getElementById('closeMaxSessionsPopup').addEventListener('click', funct
 document.getElementById('maxSessionsPopup').addEventListener('click', function(e) {
     if (e.target === this) {
         this.classList.add('hidden');
+    }
+});
+
+// Add event listener for closing add points modal
+document.getElementById('closeAddPointsModal').addEventListener('click', function() {
+    document.getElementById('addPointsModal').classList.add('hidden');
+    window.location.reload(); // Refresh the page to show updated points
+});
+
+// Close modal when clicking outside
+document.getElementById('addPointsModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        this.classList.add('hidden');
+        window.location.reload();
     }
 });
 </script>
@@ -762,6 +800,29 @@ document.getElementById('maxSessionsPopup').addEventListener('click', function(e
                 <button id="closeMaxSessionsPopup" 
                     class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300">
                     Understood
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Points Success Modal -->
+<div id="addPointsModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
+                <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Points Added!</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500" id="pointsMessage"></p>
+            </div>
+            <div class="items-center px-4 py-3">
+                <button id="closeAddPointsModal" 
+                    class="px-4 py-2 bg-green-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300">
+                    Continue
                 </button>
             </div>
         </div>

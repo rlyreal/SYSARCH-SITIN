@@ -182,7 +182,7 @@ $stmt->close();
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <!-- Left side - Registration Form -->
             <div class="bg-white rounded-lg shadow-lg">
-                <div class="bg-blue-600 text-white py-3 px-4 rounded-t-lg">
+                <div class="bg-[#2c343c] text-white py-3 px-4 rounded-t-lg">
                     <h3 class="text-lg font-semibold text-center">Laboratory Reservation Form</h3>
                 </div>
                 <div class="p-4">
@@ -299,20 +299,13 @@ $stmt->close();
                                 </div>
                             </div>
                         </div>
-
-                        <div class="text-center">
-                            <button type="submit" 
-                                class="bg-blue-600 text-white px-4 py-1.5 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors text-sm">
-                                Confirm Reservation
-                            </button>
-                        </div>
                     </form>
                 </div>
             </div>
 
             <!-- Right side - PC Selection -->
             <div class="bg-white rounded-lg shadow-lg">
-                <div class="bg-blue-600 text-white py-3 px-4 rounded-t-lg">
+                <div class="bg-[#2c343c] text-white py-3 px-4 rounded-t-lg">
                     <h3 class="text-lg font-semibold text-center">Choose PC</h3>
                 </div>
                 <div id="pcSelection" class="p-4 h-[500px] overflow-y-auto">
@@ -323,7 +316,7 @@ $stmt->close();
                 </div>
                 <div class="p-4 border-t text-center">
                     <button id="finalConfirm" 
-                        class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        class="bg-[#2c343c] text-white px-6 py-2 rounded-lg hover:bg-[#3a424b] focus:outline-none focus:ring-2 focus:ring-[#2c343c] focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled>
                         Confirm PC Selection
                     </button>

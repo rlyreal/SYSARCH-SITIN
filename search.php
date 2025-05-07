@@ -183,7 +183,7 @@ $conn->close();
                     </a>
                 </li>
                 <li>
-                    <a href="reservation.php" class="btn btn-ghost text-white hover:bg-white/10">
+                    <a href="admin_reservation.php" class="btn btn-ghost text-white hover:bg-white/10">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
@@ -276,12 +276,19 @@ $conn->close();
                     <select name="purpose" 
                             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500" 
                             required>
-                        <option value="">Select Purpose</option>
-                        <option value="C# Programming">C# Programming</option>
-                        <option value="C Programming">C Programming</option>
-                        <option value="Java Programming">Java Programming</option>
-                        <option value="ASP.Net Programming">ASP.Net Programming</option>
-                        <option value="Php Programming">Php Programming</option>
+                            <option value="" disabled selected>Select Purpose</option>
+                                <option value="C Programming">C Programming</option>
+                                <option value="C++ Programming">C++ Programming</option>
+                                <option value="C# Programming">C# Programming</option>
+                                <option value="Java Programming">Java Programming</option>
+                                <option value="Python Programming">Python Programming</option>
+                                <option value="Database">Database</option>
+                                <option value="Digital Logic & Design">Digital Logic & Design</option>
+                                <option value="Embedded System & IOT">Embedded System & IOT</option>
+                                <option value="System Integration & Architecture">System Integration & Architecture</option>
+                                <option value="Computer Application">Computer Application</option>
+                                <option value="Web Design & Development">Web Design & Development</option>
+                                <option value="Project Management">Project Management</option>
                     </select>
                 </div>
                 <div>
@@ -290,11 +297,13 @@ $conn->close();
                             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500" 
                             required>
                         <option value="">Select Laboratory</option>
+                        <option value="517">517</option>
                         <option value="524">524</option>
                         <option value="526">526</option>
                         <option value="528">528</option>
                         <option value="530">530</option>
                         <option value="542">542</option>
+                        <option value="544">544</option>
                     </select>
                 </div>
             </div>
