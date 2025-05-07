@@ -51,7 +51,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt->bind_param("ssssssssss", $id_no, $full_name, $course, $year_level, $purpose, $laboratory, $date, $time_in, $pc_number, $status);
     
     if ($stmt->execute()) {
-        echo "<script>alert('Reservation submitted successfully! Waiting for admin approval.');</script>";
+        echo "<script>
+            document.addEventListener('DOMContentLoaded', function() {
+                document.getElementById('successModal').classList.remove('hidden');
+            });
+            
+            document.getElementById('closeSuccessModal').addEventListener('click', function() {
+                document.getElementById('successModal').classList.add('hidden');
+                window.location.href = 'dashboard.php'; // Optional: redirect after closing
+            });
+            
+            document.getElementById('successModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.add('hidden');
+                    window.location.href = 'dashboard.php'; // Optional: redirect after closing
+                }
+            });
+        </script>";
     } else {
         echo "<script>alert('Error submitting reservation.');</script>";
     }
@@ -363,6 +379,59 @@ $stmt->close();
         </div>
     </div>
 
+    <!-- Add this before the closing </body> tag -->
+    <div id="confirmationModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
+            <div class="mt-3 text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4">
+                    <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Confirm Reservation</h3>
+                <div class="mt-2 px-7 py-3">
+                    <p class="text-sm text-gray-500">Are you sure you want to confirm this reservation?</p>
+                    <div class="mt-2 text-sm text-left">
+                        <p><span class="font-medium">Laboratory:</span> <span id="confirmLab"></span></p>
+                        <p><span class="font-medium">PC Number:</span> <span id="confirmPC"></span></p>
+                        <p><span class="font-medium">Date:</span> <span id="confirmDate"></span></p>
+                        <p><span class="font-medium">Time:</span> <span id="confirmTime"></span></p>
+                    </div>
+                </div>
+                <div class="flex justify-center gap-4 mt-3">
+                    <button id="cancelConfirmation" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium rounded-md">
+                        Cancel
+                    </button>
+                    <button id="proceedConfirmation" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md">
+                        Confirm
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add this before closing </body> tag -->
+    <div id="successModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
+            <div class="mt-3 text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+                    <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Success!</h3>
+                <div class="mt-2 px-7 py-3">
+                    <p class="text-sm text-gray-500">Reservation submitted successfully! Waiting for admin approval.</p>
+                </div>
+                <div class="flex justify-center mt-3">
+                    <button id="closeSuccessModal" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md">
+                        Okay
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Logout modal functionality
         document.querySelector('a[href="logout.php"]').addEventListener('click', function(e) {
@@ -384,32 +453,52 @@ $stmt->close();
             }
         });
 
-        // Add this JavaScript code after your existing script
+        // Replace or update the existing form submit handler
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.querySelector('form');
-            const pcSelectionDiv = document.querySelector('#pcSelection');
+            const finalConfirmButton = document.querySelector('#finalConfirm');
+            const requiredFields = form.querySelectorAll('[required]');
             
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                // Validate all required fields are filled
-                const requiredFields = form.querySelectorAll('[required]');
+            // Function to check if all fields are filled
+            function checkFormValidity() {
                 let allFieldsFilled = true;
-                
                 requiredFields.forEach(field => {
                     if (!field.value) {
                         allFieldsFilled = false;
                     }
                 });
                 
-                if (allFieldsFilled) {
-                    updatePcOptions(); // Show PC selection
-                }
+                // If PC is selected but form isn't complete, disable the final confirm button
+                const selectedPc = document.querySelector('.pc-button.bg-purple-200');
+                finalConfirmButton.disabled = !allFieldsFilled || !selectedPc;
+                
+                return allFieldsFilled;
+            }
+
+            // Add input event listeners to all required fields
+            requiredFields.forEach(field => {
+                field.addEventListener('input', checkFormValidity);
+                field.addEventListener('change', checkFormValidity);
             });
 
-            // Close active session modal
-            document.getElementById('closeActiveSessionModal').addEventListener('click', function() {
-                document.getElementById('activeSessionModal').classList.add('hidden');
+            // Update the selectPc function
+            window.selectPc = function(pcNumber) {
+                const buttons = document.querySelectorAll('.pc-button');
+                buttons.forEach(btn => btn.classList.remove('bg-purple-200', 'border-purple-500'));
+                event.currentTarget.classList.add('bg-purple-200', 'border-purple-500');
+                
+                // Only enable final confirm if form is valid
+                finalConfirmButton.disabled = !checkFormValidity();
+            }
+
+            // Update form submit handler
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (!checkFormValidity()) {
+                    alert('Please fill in all required fields before selecting a PC.');
+                    return;
+                }
+                updatePcOptions();
             });
         });
 
@@ -461,7 +550,7 @@ $stmt->close();
             document.querySelector('#finalConfirm').disabled = false;
         }
 
-        // Update the finalConfirm click handler
+        // Replace the existing finalConfirm click handler with this
         document.getElementById('finalConfirm').addEventListener('click', function() {
             // Check if user has active session
             if (document.querySelector('.text-blue-600')?.textContent === 'Currently in session') {
@@ -469,6 +558,27 @@ $stmt->close();
                 return;
             }
             
+            const selectedPc = document.querySelector('.pc-button.bg-purple-200')?.querySelector('.text-sm')?.textContent;
+            const laboratory = document.getElementById('laboratory').value;
+            const date = document.getElementById('date').value;
+            const time = document.getElementById('time_in').value;
+            
+            // Update confirmation modal with details
+            document.getElementById('confirmLab').textContent = 'Laboratory ' + laboratory;
+            document.getElementById('confirmPC').textContent = selectedPc;
+            document.getElementById('confirmDate').textContent = new Date(date).toLocaleDateString();
+            document.getElementById('confirmTime').textContent = time;
+            
+            // Show confirmation modal
+            document.getElementById('confirmationModal').classList.remove('hidden');
+        });
+
+        // Add modal button handlers
+        document.getElementById('cancelConfirmation').addEventListener('click', function() {
+            document.getElementById('confirmationModal').classList.add('hidden');
+        });
+
+        document.getElementById('proceedConfirmation').addEventListener('click', function() {
             const form = document.querySelector('form');
             const selectedPc = document.querySelector('.pc-button.bg-purple-200')?.querySelector('.text-sm')?.textContent;
             
@@ -490,6 +600,13 @@ $stmt->close();
             form.submit();
         });
 
+        // Close modal when clicking outside
+        document.getElementById('confirmationModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.add('hidden');
+            }
+        });
+
         // Add modal close handler
         document.getElementById('closeActiveSessionModal').addEventListener('click', function() {
             document.getElementById('activeSessionModal').classList.add('hidden');
@@ -500,6 +617,11 @@ $stmt->close();
             if (e.target === this) {
                 this.classList.add('hidden');
             }
+        });
+
+        // Add modal close handler for success modal
+        document.getElementById('closeSuccessModal').addEventListener('click', function() {
+            document.getElementById('successModal').classList.add('hidden');
         });
     </script>
 </body>
