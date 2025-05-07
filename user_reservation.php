@@ -8,8 +8,33 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-// Add this at the top of your PHP section
+// Add this before processing the form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Check if user has active session
+    $stmt = $conn->prepare("SELECT id FROM sit_in WHERE idno = ? AND time_out IS NULL");
+    $stmt->bind_param("s", $id_no);
+    $stmt->execute();
+    $active_session = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if ($active_session) {
+        echo "<script>document.getElementById('activeSessionModal').classList.remove('hidden');</script>";
+        exit;
+    }
+
+    // Check session count
+    $stmt = $conn->prepare("SELECT session_count FROM sit_in WHERE idno = ? ORDER BY id DESC LIMIT 1");
+    $stmt->bind_param("s", $id_no);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $session_data = $result->fetch_assoc();
+    $current_sessions = $session_data ? $session_data['session_count'] : 30;
+
+    if ($current_sessions <= 0) {
+        echo "<script>alert('You have no sessions remaining.');</script>";
+        exit;
+    }
+
     $id_no = $_POST['id_number'];
     $full_name = $_POST['full_name'];
     $course = $_POST['course'];
@@ -46,13 +71,15 @@ $stmt->close();
 $full_name = "$last_name, $first_name " . ($middle_name ? "$middle_name" : "");
 
 // Fetch session count
-$stmt = $conn->prepare("SELECT COALESCE(
-    (SELECT session_count FROM sit_in WHERE idno = ? ORDER BY id DESC LIMIT 1), 
-    30
-) as session_count");
-$stmt->bind_param("s", $id_no);
+$stmt = $conn->prepare("SELECT 
+    CASE 
+        WHEN EXISTS (SELECT 1 FROM sit_in WHERE idno = ? AND time_out IS NULL)
+        THEN 'Active Session'
+        ELSE COALESCE((SELECT session_count FROM sit_in WHERE idno = ? ORDER BY id DESC LIMIT 1), 30)
+    END as session_status");
+$stmt->bind_param("ss", $id_no, $id_no);
 $stmt->execute();
-$stmt->bind_result($session_count);
+$stmt->bind_result($session_status);
 $stmt->fetch();
 $stmt->close();
 ?>
@@ -245,9 +272,13 @@ $stmt->close();
                             <div>
                                 <label class="block text-gray-700 mb-1 text-sm">Sessions</label>
                                 <div class="px-3 py-1.5 border rounded-lg bg-gray-100 text-sm">
-                                    <?php echo $session_count; ?> sessions remaining
-                                    <?php if ($session_count <= 0): ?>
-                                        <p class="text-red-500 text-xs mt-1">No sessions remaining</p>
+                                    <?php if ($session_status === 'Active Session'): ?>
+                                        <span class="text-blue-600">Currently in session</span>
+                                    <?php else: ?>
+                                        <?php echo $session_status; ?> sessions remaining
+                                        <?php if ($session_status <= 0): ?>
+                                            <p class="text-red-500 text-xs mt-1">No sessions remaining</p>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                 </div>
                             </div>
@@ -310,6 +341,28 @@ $stmt->close();
         </div>
     </div>
 
+    <!-- Add this HTML before the closing </body> tag -->
+    <div id="activeSessionModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
+            <div class="mt-3 text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 mb-4">
+                    <svg class="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Active Session Found</h3>
+                <div class="mt-2 px-7 py-3">
+                    <p class="text-sm text-gray-500">You currently have an active session. Please complete your current session before making a new reservation.</p>
+                </div>
+                <div class="flex justify-center mt-3">
+                    <button id="closeActiveSessionModal" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md">
+                        Okay, Got it
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Logout modal functionality
         document.querySelector('a[href="logout.php"]').addEventListener('click', function(e) {
@@ -352,6 +405,11 @@ $stmt->close();
                 if (allFieldsFilled) {
                     updatePcOptions(); // Show PC selection
                 }
+            });
+
+            // Close active session modal
+            document.getElementById('closeActiveSessionModal').addEventListener('click', function() {
+                document.getElementById('activeSessionModal').classList.add('hidden');
             });
         });
 
@@ -403,8 +461,14 @@ $stmt->close();
             document.querySelector('#finalConfirm').disabled = false;
         }
 
-        // Add this to your existing script section
+        // Update the finalConfirm click handler
         document.getElementById('finalConfirm').addEventListener('click', function() {
+            // Check if user has active session
+            if (document.querySelector('.text-blue-600')?.textContent === 'Currently in session') {
+                document.getElementById('activeSessionModal').classList.remove('hidden');
+                return;
+            }
+            
             const form = document.querySelector('form');
             const selectedPc = document.querySelector('.pc-button.bg-purple-200')?.querySelector('.text-sm')?.textContent;
             
@@ -424,6 +488,18 @@ $stmt->close();
             
             // Submit the form
             form.submit();
+        });
+
+        // Add modal close handler
+        document.getElementById('closeActiveSessionModal').addEventListener('click', function() {
+            document.getElementById('activeSessionModal').classList.add('hidden');
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('activeSessionModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.add('hidden');
+            }
         });
     </script>
 </body>
