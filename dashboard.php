@@ -28,7 +28,64 @@ $stmt->bind_result($session_count);
 $stmt->fetch();
 $stmt->close();
 
+// Update the notifications query to include both announcements and reservations
+$notificationsQuery = "
+    (SELECT 
+        'announcement' as type,
+        id,
+        admin_name,
+        message,
+        date as timestamp,
+        NULL as status
+    FROM announcements
+    ORDER BY date DESC
+    LIMIT 1)
+    
+    UNION ALL
+    
+    (SELECT 
+        'reservation' as type,
+        r.id,
+        'System' as admin_name,
+        CASE 
+            WHEN r.status = 'approved' THEN 'Your reservation has been approved'
+            WHEN r.status = 'disapproved' THEN 'Your reservation has been disapproved'
+        END as message,
+        r.created_at as timestamp,
+        r.status
+    FROM reservations r
+    WHERE r.idno = (SELECT id_no FROM users WHERE id = ?)
+    AND r.status IN ('approved', 'disapproved')
+    ORDER BY r.created_at DESC
+    LIMIT 1)
+    
+    ORDER BY timestamp DESC";
+
+$stmt = $conn->prepare($notificationsQuery);
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$notificationResult = $stmt->get_result();
+
 $user_profile = (!empty($profile_picture) && file_exists($profile_picture)) ? $profile_picture : "profile.jpg";
+
+function human_time_diff($timestamp) {
+    $time_diff = time() - $timestamp;
+    
+    if ($time_diff < 60) {
+        return 'just now';
+    } elseif ($time_diff < 3600) {
+        $mins = floor($time_diff / 60);
+        return $mins . ' minute' . ($mins > 1 ? 's' : '');
+    } elseif ($time_diff < 86400) {
+        $hours = floor($time_diff / 3600);
+        return $hours . ' hour' . ($hours > 1 ? 's' : '');
+    } elseif ($time_diff < 604800) {
+        $days = floor($time_diff / 86400);
+        return $days . ' day' . ($days > 1 ? 's' : '');
+    } else {
+        return date('M j, Y', $timestamp);
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -91,13 +148,79 @@ $user_profile = (!empty($profile_picture) && file_exists($profile_picture)) ? $p
                         Home
                     </a>
                 </li>
-                <li>
-                    <a href="#" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                        </svg>
-                        Notifications
-                    </a>
+                <li class="dropdown dropdown-end">
+                    <button class="btn btn-ghost text-white hover:bg-white/10" onclick="removeNotificationBadge()">
+                        <div class="indicator">
+                            <?php 
+                            // Only show badge if there are any notifications
+                            if($notificationResult->num_rows > 0): 
+                            ?>
+                            <span class="indicator-item badge badge-error badge-sm notification-badge">1</span>
+                            <?php endif; ?>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                        </div>
+                    </button>
+                    <div class="dropdown-content z-[999] menu p-2 shadow bg-base-100 rounded-box w-80 mt-4">
+                        <div class="px-4 py-2 border-b">
+                            <h3 class="font-bold text-lg">Notifications</h3>
+                        </div>
+                        <div class="overflow-y-auto max-h-64">
+                            <?php 
+                            if($notificationResult->num_rows > 0) {
+                                while($row = $notificationResult->fetch_assoc()) {
+                                    $timestamp = strtotime($row['timestamp']);
+                                    $timeAgo = human_time_diff($timestamp);
+                                    
+                                    // Set notification color based on type and status
+                                    $bgColor = 'bg-gray-100';
+                                    $iconHtml = '';
+                                    
+                                    if($row['type'] === 'reservation') {
+                                        if($row['status'] === 'approved') {
+                                            $bgColor = 'bg-green-50';
+                                            $iconHtml = '<svg class="h-5 w-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>';
+                                        } else if($row['status'] === 'disapproved') {
+                                            $bgColor = 'bg-red-50';
+                                            $iconHtml = '<svg class="h-5 w-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>';
+                                        }
+                                    }
+                            ?>
+                            <div class="px-4 py-3 hover:<?php echo $bgColor; ?> border-b">
+                                <div class="flex justify-between items-start">
+                                    <div class="flex-1">
+                                        <div class="flex items-center gap-2">
+                                            <?php if($iconHtml) echo $iconHtml; ?>
+                                            <p class="text-sm font-medium text-gray-900">
+                                                <?php echo htmlspecialchars($row['admin_name']); ?>
+                                            </p>
+                                        </div>
+                                        <p class="text-sm text-gray-500 mt-1">
+                                            <?php echo htmlspecialchars($row['message']); ?>
+                                        </p>
+                                        <p class="text-xs text-gray-400 mt-1">
+                                            <?php echo $timeAgo; ?> ago
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <?php 
+                                }
+                            } else {
+                            ?>
+                                <div class="px-4 py-3 text-center text-gray-500">
+                                    No new notifications
+                                </div>
+                            <?php 
+                            }
+                            ?>
+                        </div>
+                    </div>
                 </li>
                 <li>
                     <a href="editprofile.php" class="btn btn-ghost text-white hover:bg-white/10">
@@ -384,7 +507,7 @@ $user_profile = (!empty($profile_picture) && file_exists($profile_picture)) ? $p
 
         // Initial load and refresh every 30 seconds
         loadAnnouncements();
-        setInterval(loadAnnouncements, 30000);
+        setInterval(loadAnnouncements, 10000);       // 10 seconds
 
         // Update the logout button click handler
         document.querySelector('a[href="logout.php"]').addEventListener('click', function(e) {
@@ -408,6 +531,82 @@ $user_profile = (!empty($profile_picture) && file_exists($profile_picture)) ? $p
                 this.classList.add('hidden');
             }
         });
+
+        function checkNewAnnouncements() {
+            fetch('get_announcements.php')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success' && data.announcements.length > 0) {
+                        const notificationButton = document.querySelector('.indicator');
+                        const dropdownContent = document.querySelector('.dropdown-content .overflow-y-auto');
+                        
+                        // Only show badge if there's a new announcement
+                        const latestAnnouncement = data.announcements[0];
+                        if (latestAnnouncement.date >= new Date(Date.now() - 24*60*60*1000).toISOString()) {
+                            notificationButton.innerHTML = `
+                                <span class="indicator-item badge badge-error badge-sm">1</span>
+                                ${notificationButton.innerHTML}
+                            `;
+                        }
+
+                        // Update dropdown content with only the latest announcement
+                        if (dropdownContent) {
+                            dropdownContent.innerHTML = `
+                                <div class="px-4 py-3 hover:bg-gray-100 border-b">
+                                    <div class="flex justify-between items-start">
+                                        <div class="flex-1">
+                                            <p class="text-sm font-medium text-gray-900">
+                                                ${latestAnnouncement.admin_name}
+                                            </p>
+                                            <p class="text-sm text-gray-500">
+                                                ${latestAnnouncement.message}
+                                            </p>
+                                            <p class="text-xs text-gray-400 mt-1">
+                                                ${timeAgo(new Date(latestAnnouncement.date))}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    } else {
+                        const dropdownContent = document.querySelector('.dropdown-content .overflow-y-auto');
+                        if (dropdownContent) {
+                            dropdownContent.innerHTML = '<div class="px-4 py-3 text-center text-gray-500">No new notifications</div>';
+                        }
+                    }
+                });
+        }
+
+        function timeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            if (seconds < 60) return 'just now';
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return `${minutes}m ago`;
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return `${hours}h ago`;
+            const days = Math.floor(hours / 24);
+            if (days < 7) return `${days}d ago`;
+            return date.toLocaleDateString();
+        }
+
+        // Check for new announcements every 30 seconds
+        setInterval(checkNewAnnouncements, 10000);   // 10 seconds
+
+        function removeNotificationBadge() {
+            const badge = document.querySelector('.notification-badge');
+            if (badge) {
+                badge.remove();
+                
+                // Send request to mark notifications as read
+                fetch('mark_notifications_read.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+            }
+        }
     </script>
 </body>
 </html>
