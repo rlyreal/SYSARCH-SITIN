@@ -62,6 +62,34 @@ while($row = $purposeResult->fetch_assoc()) {
     $purposeCounts[] = $row['count'];
 }
 
+// Update the leaderboard query to get only top 3
+$leaderboardQuery = "
+    WITH RankedStudents AS (
+        SELECT 
+            u.id,
+            u.first_name,
+            u.last_name,
+            u.course,
+            COUNT(s.id) as session_count,
+            DENSE_RANK() OVER (ORDER BY COUNT(s.id) DESC) as rank
+        FROM users u
+        LEFT JOIN sit_in s ON u.id_no = s.idno
+        WHERE s.time_out IS NOT NULL
+        GROUP BY u.id, u.first_name, u.last_name, u.course
+    )
+    SELECT *
+    FROM RankedStudents
+    WHERE rank <= 3
+    ORDER BY session_count DESC, last_name ASC
+    LIMIT 3
+";
+
+$leaderboardResult = $conn->query($leaderboardQuery);
+$leaderboardData = [];
+while($row = $leaderboardResult->fetch_assoc()) {
+    $leaderboardData[] = $row;
+}
+
 // Handle announcement submission
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $announcement = trim($_POST['announcement']);
@@ -223,6 +251,69 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 </svg>
                 Logout
             </a>
+        </div>
+    </div>
+
+    <!-- Add this after the navbar and before the grid section -->
+    <div class="container mx-auto px-4 mt-6">
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="bg-[#2c343c] text-white px-6 py-4">
+                <h2 class="text-xl font-semibold">🏆 Student Leaderboard</h2>
+                <p class="text-gray-300 text-sm">Top students based on sit-in sessions</p>
+            </div>
+            
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <?php 
+                    $medals = [
+                        1 => [
+                            'bg' => 'from-yellow-50 to-yellow-100',
+                            'border' => 'border-yellow-200',
+                            'badge' => 'bg-yellow-500',
+                            'text' => 'text-yellow-600',
+                            'title' => 'Gold Medal'
+                        ],
+                        2 => [
+                            'bg' => 'from-gray-50 to-gray-100',
+                            'border' => 'border-gray-200',
+                            'badge' => 'bg-gray-400',
+                            'text' => 'text-gray-600',
+                            'title' => 'Silver Medal'
+                        ],
+                        3 => [
+                            'bg' => 'from-orange-50 to-orange-100',
+                            'border' => 'border-orange-200',
+                            'badge' => 'bg-orange-500',
+                            'text' => 'text-orange-600',
+                            'title' => 'Bronze Medal'
+                        ]
+                    ];
+
+                    for($i = 0; $i < 3 && $i < count($leaderboardData); $i++) {
+                        $rank = $i + 1;
+                        $student = $leaderboardData[$i];
+                        $style = $medals[$rank];
+                    ?>
+                        <div class="flex items-center space-x-4 bg-gradient-to-r <?php echo $style['bg']; ?> p-4 rounded-lg border <?php echo $style['border']; ?>">
+                            <div class="flex-shrink-0">
+                                <div class="w-16 h-16 rounded-full <?php echo $style['badge']; ?> flex items-center justify-center text-white text-2xl font-bold">
+                                    <?php echo $rank; ?>
+                                    <?php echo $rank == 1 ? 'st' : ($rank == 2 ? 'nd' : 'rd'); ?>
+                                </div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium <?php echo $style['text']; ?>"><?php echo $style['title']; ?></p>
+                                <p class="text-lg font-semibold text-gray-900 truncate">
+                                    <?php echo htmlspecialchars($student['first_name'] . ' ' . $student['last_name']); ?>
+                                </p>
+                                <p class="text-sm text-gray-500">
+                                    <?php echo $student['session_count']; ?> Sessions
+                                </p>
+                            </div>
+                        </div>
+                    <?php } ?>
+                </div>
+            </div>
         </div>
     </div>
 
