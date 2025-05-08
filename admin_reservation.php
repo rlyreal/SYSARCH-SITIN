@@ -271,6 +271,35 @@ $result = $stmt->get_result();
 
     <div class="container mx-auto px-4 py-8">
         <h1 class="text-2xl font-bold mb-6">Pending Reservations</h1>
+
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Laboratory</label>
+                    <select id="labFilter" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm">
+                        <option value="">All Laboratories</option>
+                        <option value="517">517</option>
+                        <option value="524">524</option>
+                        <option value="526">526</option>
+                        <option value="528">528</option>
+                        <option value="530">530</option>
+                        <option value="542">542</option>
+                        <option value="544">544</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                    <input type="text" id="searchFilter" placeholder="Search name or ID..." 
+                        class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm">
+                </div>
+                <div class="flex items-end">
+                    <button onclick="resetFilters()" 
+                        class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 text-sm">
+                        Reset Filters
+                    </button>
+                </div>
+            </div>
+        </div>
         
         <div class="bg-white rounded-lg shadow-lg overflow-hidden mb-8">
             <table class="w-full">
@@ -501,6 +530,75 @@ $result = $stmt->get_result();
                 window.location.reload();
             }
         });
+
+        // Update the filter function to only target pending reservations table
+        function applyFilters() {
+            // Specifically target the first table's tbody rows (Pending Reservations)
+            const rows = document.querySelector('.container table:first-of-type tbody').querySelectorAll('tr');
+            const labValue = labFilter.value.toLowerCase();
+            const dateValue = dateFilter.value;
+            const searchValue = searchFilter.value.toLowerCase();
+
+            rows.forEach(row => {
+                // Get the cell values
+                const lab = row.children[2].textContent.toLowerCase(); // Laboratory column
+                const dateTime = row.children[4].textContent.toLowerCase(); // Date & Time column
+                const name = row.children[1].textContent.toLowerCase(); // Name column
+                const id = row.children[0].textContent.toLowerCase(); // ID column
+
+                // Check if row matches all filters
+                const matchesLab = !labValue || lab.includes(labValue);
+                const matchesDate = !dateValue || dateTime.includes(dateValue);
+                const matchesSearch = !searchValue || 
+                                    name.includes(searchValue) || 
+                                    id.includes(searchValue);
+
+                // Show/hide row based on filter matches
+                if (matchesLab && matchesDate && matchesSearch) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // Show "No results" message if all rows are hidden
+            const visibleRows = Array.from(rows).filter(row => row.style.display !== 'none').length;
+            let noResults = document.getElementById('noResults');
+
+            if (visibleRows === 0) {
+                if (!noResults) {
+                    const tbody = document.querySelector('.container table:first-of-type tbody');
+                    noResults = document.createElement('tr');
+                    noResults.id = 'noResults';
+                    noResults.innerHTML = `
+                        <td colspan="7" class="px-6 py-4 text-center text-gray-500">
+                            No reservations found matching the filters
+                        </td>
+                    `;
+                    tbody.appendChild(noResults);
+                }
+            } else if (noResults) {
+                noResults.remove();
+            }
+        }
+
+        // Update the event listeners
+        const labFilter = document.getElementById('labFilter');
+        const dateFilter = document.getElementById('dateFilter');
+        const searchFilter = document.getElementById('searchFilter');
+
+        // Add event listeners
+        labFilter.addEventListener('change', applyFilters);
+        dateFilter.addEventListener('input', applyFilters);
+        searchFilter.addEventListener('input', applyFilters);
+
+        // Reset filters function
+        window.resetFilters = function() {
+            labFilter.value = '';
+            dateFilter.value = '';
+            searchFilter.value = '';
+            applyFilters();
+        }
     });
     </script>
 </body>
