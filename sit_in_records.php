@@ -1,13 +1,20 @@
 <?php
 session_start();
-$conn = new mysqli("localhost", "root", "", "sitin_system");
+include 'db.php';
+
+// Redirect if not logged in as admin
+if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+    header("Location: index.php");
+    exit;
+}
+
+$admin_username = $_SESSION['username'] ?? 'Admin User';
 
 // Check connection
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// Add this PHP code before the <script> tag to get the data
 // Query for programming languages count
 $languageQuery = "SELECT purpose, COUNT(*) as count 
                  FROM sit_in 
@@ -36,409 +43,529 @@ while($row = $roomResult->fetch_assoc()) {
     $roomCounts[] = $row['count'];
 }
 ?>
+
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light-style layout-menu-fixed" dir="ltr" data-theme="theme-default" data-assets-path="../assets/">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sit-in Records</title>
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.7.2/dist/full.min.css" rel="stylesheet" type="text/css" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            themes: ["light"],
-            plugins: [require("daisyui")],
-        }
-    </script>
+    <title>Sit-in Records | Admin</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/img/favicon/favicon.ico" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700&display=swap" rel="stylesheet" />
+    
+    <!-- Icons. Required if you use Bootstrap Icons-->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" />
+    
+    <!-- Sneat Template Core CSS -->
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/css/core.css" class="template-customizer-core-css" />
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/css/theme-default.css" class="template-customizer-theme-css" />
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/css/demo.css" />
+    
+    <!-- Vendors CSS -->
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/apex-charts/apex-charts.css" />
+
+    <!-- Charts -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    
+    <!-- Helpers -->
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/js/helpers.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/js/config.js"></script>
 </head>
-<body class="bg-gray-100">
-    
-    <!-- Replace the existing navbar in sit_in_records.php -->
-    <div class="navbar bg-[#2c343c] shadow-lg">
-        <div class="navbar-start">
-            <div class="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-                <span class="text-xl font-bold text-white ml-2">Admin</span>
+
+<body>
+    <!-- Layout wrapper -->
+    <div class="layout-wrapper layout-content-navbar">
+        <div class="layout-container">
+            <!-- Menu -->
+            <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
+                <div class="app-brand demo">
+                    <a href="admin_dashboard.php" class="app-brand-link">
+                        <span class="app-brand-logo demo">
+                            <svg width="25" viewBox="0 0 25 42" xmlns="http://www.w3.org/2000/svg">
+                                <defs><linearGradient id="a" x1="50%" x2="50%" y1="0%" y2="100%">
+                                <stop offset="0%" stop-color="#5A8DEE"/><stop offset="100%" stop-color="#699AF9"/></linearGradient></defs>
+                                <path fill="url(#a)" d="M12.5 0 25 14H0z"/><path fill="#FDAC41" d="M0 14 12.5 28 25 14H0z"/>
+                                <path fill="#E89A3C" d="M0 28 12.5 42 25 28H0z"/><path fill="#FDAC41" d="M12.5 14 25 28 12.5 42 0 28z"/>
+                            </svg>
+                        </span>
+                        <span class="app-brand-text demo menu-text fw-bolder ms-2">Sit-In Admin</span>
+                    </a>
+
+                    <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-block d-xl-none">
+                        <i class="bi bi-x bi-middle"></i>
+                    </a>
+                </div>
+
+                <div class="menu-inner-shadow"></div>
+
+                <ul class="menu-inner py-1">
+                    <!-- Dashboard -->
+                    <li class="menu-item">
+                        <a href="admin_dashboard.php" class="menu-link">
+                            <i class="menu-icon bi bi-house-door"></i>
+                            <div data-i18n="Dashboard">Dashboard</div>
+                        </a>
+                    </li>
+
+                    <li class="menu-header small text-uppercase">
+                        <span class="menu-header-text">Management</span>
+                    </li>
+
+                    <!-- Search -->
+                    <li class="menu-item">
+                        <a href="search.php" class="menu-link">
+                            <i class="menu-icon bi bi-search"></i>
+                            <div data-i18n="Search">Search</div>
+                        </a>
+                    </li>
+
+                    <!-- Students -->
+                    <li class="menu-item">
+                        <a href="students.php" class="menu-link">
+                            <i class="menu-icon bi bi-people"></i>
+                            <div data-i18n="Students">Students</div>
+                        </a>
+                    </li>
+
+                    <!-- Sit-in -->
+                    <li class="menu-item">
+                        <a href="sit_in.php" class="menu-link">
+                            <i class="menu-icon bi bi-clipboard-check"></i>
+                            <div data-i18n="Sit-in">Sit-in</div>
+                        </a>
+                    </li>
+
+                    <!-- View Records -->
+                    <li class="menu-item active">
+                        <a href="sit_in_records.php" class="menu-link">
+                            <i class="menu-icon bi bi-clipboard-data"></i>
+                            <div data-i18n="Records">View Records</div>
+                        </a>
+                    </li>
+
+                    <li class="menu-header small text-uppercase">
+                        <span class="menu-header-text">Features</span>
+                    </li>
+
+                    <!-- Reservation -->
+                    <li class="menu-item">
+                        <a href="admin_reservation.php" class="menu-link">
+                            <i class="menu-icon bi bi-calendar-check"></i>
+                            <div data-i18n="Reservation">Reservation</div>
+                        </a>
+                    </li>
+
+                    <!-- Reports -->
+                    <li class="menu-item">
+                        <a href="reports.php" class="menu-link">
+                            <i class="menu-icon bi bi-file-earmark-bar-graph"></i>
+                            <div data-i18n="Reports">Reports</div>
+                        </a>
+                    </li>
+
+                    <!-- Feedback Reports -->
+                    <li class="menu-item">
+                        <a href="feedback.php" class="menu-link">
+                            <i class="menu-icon bi bi-chat-left-text"></i>
+                            <div data-i18n="Feedback">Feedback Reports</div>
+                        </a>
+                    </li>
+
+                    <!-- Resources -->
+                    <li class="menu-item">
+                        <a href="lab_resources.php" class="menu-link">
+                            <i class="menu-icon bi bi-box"></i>
+                            <div data-i18n="Resources">Resources</div>
+                        </a>
+                    </li>
+                </ul>
+            </aside>
+            <!-- / Menu -->
+
+            <!-- Layout container -->
+            <div class="layout-page">
+                <!-- Navbar -->
+                <nav class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme" id="layout-navbar">
+                    <div class="layout-menu-toggle navbar-nav align-items-xl-center me-3 me-xl-0 d-xl-none">
+                        <a class="nav-item nav-link px-0 me-xl-4" href="javascript:void(0)">
+                            <i class="bi bi-list bi-middle"></i>
+                        </a>
+                    </div>
+
+                    <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
+                        <!-- Search -->
+                        <div class="navbar-nav align-items-center">
+                            <div class="nav-item d-flex align-items-center">
+                                <i class="bi bi-search fs-4 lh-0"></i>
+                                <input
+                                    type="text"
+                                    class="form-control border-0 shadow-none"
+                                    placeholder="Search..."
+                                    aria-label="Search..."
+                                    id="navbarSearch"
+                                />
+                            </div>
+                        </div>
+                        <!-- /Search -->
+
+                        <ul class="navbar-nav flex-row align-items-center ms-auto">
+                            <!-- User -->
+                            <li class="nav-item navbar-dropdown dropdown-user dropdown">
+                                <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown">
+                                    <div class="avatar avatar-online">
+                                        <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($admin_username); ?>&background=696cff&color=fff" alt class="w-px-40 h-auto rounded-circle" />
+                                    </div>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item" href="#">
+                                            <div class="d-flex">
+                                                <div class="flex-shrink-0 me-3">
+                                                    <div class="avatar avatar-online">
+                                                        <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($admin_username); ?>&background=696cff&color=fff" alt class="w-px-40 h-auto rounded-circle" />
+                                                    </div>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <span class="fw-semibold d-block"><?php echo htmlspecialchars($admin_username); ?></span>
+                                                    <small class="text-muted">Administrator</small>
+                                                </div>
+                                            </div>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <div class="dropdown-divider"></div>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#">
+                                            <i class="bi bi-gear me-2"></i>
+                                            <span class="align-middle">Settings</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <div class="dropdown-divider"></div>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="javascript:void(0);" id="logoutBtn">
+                                            <i class="bi bi-box-arrow-right me-2"></i>
+                                            <span class="align-middle">Log Out</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <!--/ User -->
+                        </ul>
+                    </div>
+                </nav>
+                <!-- / Navbar -->
+
+                <!-- Content wrapper -->
+                <div class="content-wrapper">
+                    <!-- Content -->
+                    <div class="container-xxl flex-grow-1 container-p-y">
+                        <h4 class="fw-bold py-3 mb-4">
+                            <span class="text-muted fw-light">Student Management /</span> Sit-in Records
+                        </h4>
+                        
+                        <!-- Charts Row -->
+                        <div class="row mb-4">
+                            <div class="col-md-6 col-12 mb-4">
+                                <div class="card">
+                                    <div class="card-header d-flex align-items-center justify-content-between">
+                                        <h5 class="card-title m-0 me-2">Programming Languages Distribution</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="languagesChart" style="height: 350px;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 col-12 mb-4">
+                                <div class="card">
+                                    <div class="card-header d-flex align-items-center justify-content-between">
+                                        <h5 class="card-title m-0 me-2">Laboratory Room Distribution</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="roomsChart" style="height: 350px;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- / Charts Row -->
+
+                        <!-- Records Table Card -->
+                        <div class="card">
+                            <div class="card-header border-bottom">
+                                <h5 class="card-title mb-3">Sit-in Records</h5>
+                                <div class="d-flex justify-content-between align-items-center row pb-2 gap-3 gap-md-0">
+                                    <div class="col-md-6 user_role"></div>
+                                    <div class="col-md-6">
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                            <input type="text" id="search" class="form-control" placeholder="Search records...">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-datatable table-responsive">
+                                <table class="table table-bordered table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>ID Number</th>
+                                            <th>Name</th>
+                                            <th>Purpose</th>
+                                            <th>Lab</th>
+                                            <th>Login</th>
+                                            <th>Logout</th>
+                                            <th>Date</th>
+                                            <th>Sessions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="records-table">
+                                        <?php
+                                        // Update the SQL query to include session_count
+                                        $sql = "SELECT *, 
+                                                DATE_FORMAT(time_in, '%l:%i %p') as formatted_time_in,
+                                                DATE_FORMAT(time_out, '%l:%i %p') as formatted_time_out 
+                                                FROM sit_in 
+                                                ORDER BY STR_TO_DATE(CONCAT(date, ' ', time_in), '%Y-%m-%d %H:%i:%s') DESC";
+
+                                        $result = $conn->query($sql);
+
+                                        if ($result->num_rows > 0) {
+                                            while ($row = $result->fetch_assoc()) {
+                                                echo '<tr>';
+                                                echo '<td><i class="bi bi-person-badge text-primary me-2"></i>' . htmlspecialchars($row['idno']) . '</td>';
+                                                echo '<td>' . htmlspecialchars($row['fullname']) . '</td>';
+                                                echo '<td>' . htmlspecialchars($row['purpose']) . '</td>';
+                                                echo '<td>' . htmlspecialchars($row['laboratory']) . '</td>';
+                                                echo '<td>' . htmlspecialchars($row['formatted_time_in']) . '</td>';
+                                                echo '<td>';
+                                                echo $row['time_out'] ? htmlspecialchars($row['formatted_time_out']) : 
+                                                    '<span class="badge bg-label-success">Active</span>';
+                                                echo '</td>';
+                                                echo '<td>' . htmlspecialchars($row['date']) . '</td>';
+                                                echo '<td>';
+                                                echo '<span class="badge bg-label-primary">' . htmlspecialchars($row['session_count']) . '</span>';
+                                                echo '</td>';
+                                                echo '</tr>';
+                                            }
+                                        } else {
+                                            echo '<tr><td colspan="8" class="text-center">No records found</td></tr>';
+                                        }
+                                        ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <!-- / Records Table Card -->
+                    </div>
+                    <!-- / Content -->
+
+                    <!-- Footer -->
+                    <footer class="content-footer footer bg-footer-theme">
+                        <div class="container-xxl d-flex flex-wrap justify-content-between py-2 flex-md-row flex-column">
+                            <div class="mb-2 mb-md-0">
+                                ©
+                                <script>
+                                    document.write(new Date().getFullYear());
+                                </script>
+                                Sit-In System Admin Dashboard
+                            </div>
+                        </div>
+                    </footer>
+                    <!-- / Footer -->
+
+                    <div class="content-backdrop fade"></div>
+                </div>
+                <!-- / Content wrapper -->
             </div>
+            <!-- / Layout page -->
         </div>
-        
-        <div class="navbar-center hidden lg:flex">
-            <ul class="menu menu-horizontal px-1 gap-2">
-                <li>
-                    <a href="admin_dashboard.php" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                        </svg>
-                        Home
-                    </a>
-                </li>
-                <li>
-                    <a href="search.php" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                        Search
-                    </a>
-                </li>
-                <li>
-                    <a href="students.php" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-                        Students
-                    </a>
-                </li>
-                <li>
-                    <a href="sit_in.php" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
-                        Sit-in
-                    </a>
-                </li>
-                <li>
-                    <a href="sit_in_records.php" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
-                        View Records
-                    </a>
-                </li>
-                <li>
-                    <a href="admin_reservation.php" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        Reservation
-                    </a>
-                </li>
-                <li>
-                    <a href="reports.php" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        Reports
-                    </a>
-                </li>
-                <li>
-                    <a href="feedback.php" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                        </svg>
-                        Feedback Reports
-                    </a>
-                </li>
-            </ul>
-        </div>
-        
-        <div class="navbar-end">
-            <button id="logoutBtn" class="btn btn-error btn-outline gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                Logout
-            </button>
-        </div>
+
+        <!-- Overlay -->
+        <div class="layout-overlay layout-menu-toggle"></div>
     </div>
-    
-    <!-- Logout confirmation modal -->
-    <div id="logoutModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
-            <div class="mt-3 text-center">
-                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
-                    <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                    </svg>
+    <!-- / Layout wrapper -->
+
+    <!-- Logout Modal -->
+    <div class="modal fade" id="logoutModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Logout</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <h3 class="text-lg leading-6 font-medium text-gray-900">Confirm Logout</h3>
-                <div class="mt-2 px-7 py-3">
-                    <p class="text-sm text-gray-500">Are you sure you want to logout?</p>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-12 mb-3 text-center">
+                            <div class="avatar avatar-md mx-auto mb-3">
+                                <span class="avatar-initial rounded-circle bg-label-danger">
+                                    <i class="bi bi-box-arrow-right"></i>
+                                </span>
+                            </div>
+                            <p>Are you sure you want to logout?</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="flex justify-center gap-4 mt-3">
-                    <button id="cancelLogout" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium rounded-md">
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
                         Cancel
                     </button>
-                    <button id="confirmLogout" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md">
-                        Logout
-                    </button>
+                    <a href="logout.php" class="btn btn-danger">Logout</a>
                 </div>
             </div>
         </div>
     </div>
 
-<div class="container mx-auto px-4 py-8">
-    <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Current Sit-in Records</h2>
-    
-    <!-- Charts Container -->
-    <div class="grid grid-cols-2 gap-8 mb-8">
-        <div class="bg-[#2c343c] p-8 rounded-lg shadow-lg">
-            <div class="w-[500px] h-[500px] mx-auto" id="chart1"></div>
-        </div>
-        <div class="bg-[#2c343c] p-8 rounded-lg shadow-lg">
-            <div class="w-[500px] h-[500px] mx-auto" id="chart2"></div>
-        </div>
-    </div>
+    <!-- Core JS -->
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/jquery/jquery.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/popper/popper.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/js/bootstrap.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/js/menu.js"></script>
 
-    <!-- Replace the existing table section with this -->
-    <div class="mt-8 bg-white rounded-lg shadow-lg overflow-hidden">
-        <!-- Search Bar -->
-        <div class="p-4 border-b border-gray-200">
-            <input type="text" 
-                   id="search" 
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                   placeholder="Search records...">
-        </div>
+    <!-- Main JS -->
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/js/main.js"></script>
 
-        <!-- Table -->
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            ID Number
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Name
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Purpose
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Lab
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Login
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Logout
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Date
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Sessions
-                        </th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200" id="records-table">
-                    <?php
-                    // Update the SQL query to include session_count
-                    $sql = "SELECT *, 
-                            DATE_FORMAT(time_in, '%l:%i %p') as formatted_time_in,
-                            DATE_FORMAT(time_out, '%l:%i %p') as formatted_time_out 
-                            FROM sit_in 
-                            ORDER BY STR_TO_DATE(CONCAT(date, ' ', time_in), '%Y-%m-%d %H:%i:%s') DESC";
-
-                    $result = $conn->query($sql);
-
-                    if ($result->num_rows > 0) {
-                        while ($row = $result->fetch_assoc()) {
-                            echo '<tr class="hover:bg-gray-50 transition-colors duration-200">';
-                            echo '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' . htmlspecialchars($row['idno']) . '</td>';
-                            echo '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' . htmlspecialchars($row['fullname']) . '</td>';
-                            echo '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' . htmlspecialchars($row['purpose']) . '</td>';
-                            echo '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' . htmlspecialchars($row['laboratory']) . '</td>';
-                            echo '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' . htmlspecialchars($row['formatted_time_in']) . '</td>';
-                            echo '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">';
-                            echo $row['time_out'] ? htmlspecialchars($row['formatted_time_out']) : 
-                                 '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Active</span>';
-                            echo '</td>';
-                            echo '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' . htmlspecialchars($row['date']) . '</td>';
-                            // Add the new session count column
-                            echo '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">';
-                            echo '<span class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full bg-green-100 text-green-800">' 
-                                 . htmlspecialchars($row['session_count']) 
-                                 . '</span>';
-                            echo '</td>';
-                            echo '</tr>';
-                        }
-                    } else {
-                        echo '<tr><td colspan="8" class="px-6 py-4 text-center text-gray-500">No records found</td></tr>';
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Languages Chart
+            const languagesChart = echarts.init(document.getElementById('languagesChart'));
+            const languagesOption = {
+                tooltip: {
+                    trigger: 'item',
+                    formatter: '{a} <br/>{b}: {c} ({d}%)'
+                },
+                legend: {
+                    orient: 'vertical',
+                    left: 'left',
+                    textStyle: {
+                        color: '#697a8d'
                     }
+                },
+                series: [{
+                    name: 'Programming Language',
+                    type: 'pie',
+                    radius: ['40%', '70%'],
+                    avoidLabelOverlap: false,
+                    itemStyle: {
+                        borderRadius: 10,
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    },
+                    label: {
+                        show: false,
+                        position: 'center'
+                    },
+                    emphasis: {
+                        label: {
+                            show: true,
+                            fontSize: '16',
+                            fontWeight: 'bold'
+                        }
+                    },
+                    labelLine: {
+                        show: false
+                    },
+                    data: <?php 
+                        $languageData = array_map(function($name, $value) {
+                            return ['value' => $value, 'name' => $name];
+                        }, $languages, $languageCounts);
+                        echo json_encode($languageData);
                     ?>
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-    
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // First Chart (Programming Languages)
-    const chart1 = echarts.init(document.getElementById('chart1'));
-    const languagesOption = {
-        backgroundColor: '#2c343c',
-        title: {
-            text: 'Programming Languages Distribution',
-            left: 'center',
-            top: 20,
-            textStyle: {
-                color: '#ccc'
-            }
-        },
-        tooltip: {
-            trigger: 'item'
-        },
-        visualMap: {
-            show: false,
-            min: 0,
-            max: Math.max(...<?php echo json_encode($languageCounts); ?>),
-            inRange: {
-                colorLightness: [0, 1]
-            }
-        },
-        series: [{
-            name: 'Programming Language',
-            type: 'pie',
-            radius: '55%',
-            center: ['50%', '50%'],
-            data: <?php 
-                $languageData = array_map(function($name, $value) {
-                    return ['value' => $value, 'name' => $name];
-                }, $languages, $languageCounts);
-                echo json_encode($languageData);
-            ?>.sort(function(a, b) {
-                return a.value - b.value;
-            }),
-            roseType: 'radius',
-            label: {
-                color: 'rgba(255, 255, 255, 0.3)'
-            },
-            labelLine: {
-                lineStyle: {
-                    color: 'rgba(255, 255, 255, 0.3)'
+                }]
+            };
+            languagesChart.setOption(languagesOption);
+
+            // Initialize Rooms Chart
+            const roomsChart = echarts.init(document.getElementById('roomsChart'));
+            const roomsOption = {
+                tooltip: {
+                    trigger: 'item',
+                    formatter: '{a} <br/>{b}: {c} ({d}%)'
                 },
-                smooth: 0.2,
-                length: 10,
-                length2: 20
-            },
-            itemStyle: {
-                color: '#c23531',
-                shadowBlur: 200,
-                shadowColor: 'rgba(0, 0, 0, 0.5)'
-            },
-            animationType: 'scale',
-            animationEasing: 'elasticOut',
-            animationDelay: function(idx) {
-                return Math.random() * 200;
-            }
-        }]
-    };
-    chart1.setOption(languagesOption);
-
-    // Second Chart (Laboratory Rooms)
-    const chart2 = echarts.init(document.getElementById('chart2'));
-    const roomsOption = {
-        backgroundColor: '#2c343c',
-        title: {
-            text: 'Laboratory Room Distribution',
-            left: 'center',
-            top: 20,
-            textStyle: {
-                color: '#ccc'
-            }
-        },
-        tooltip: {
-            trigger: 'item'
-        },
-        visualMap: {
-            show: false,
-            min: 0,
-            max: Math.max(...<?php echo json_encode($roomCounts); ?>),
-            inRange: {
-                colorLightness: [0, 1]
-            }
-        },
-        series: [{
-            name: 'Laboratory',
-            type: 'pie',
-            radius: '55%',
-            center: ['50%', '50%'],
-            data: <?php 
-                $roomData = array_map(function($name, $value) {
-                    return ['value' => $value, 'name' => $name];
-                }, $rooms, $roomCounts);
-                echo json_encode($roomData);
-            ?>.sort(function(a, b) {
-                return a.value - b.value;
-            }),
-            roseType: 'radius',
-            label: {
-                color: 'rgba(255, 255, 255, 0.3)'
-            },
-            labelLine: {
-                lineStyle: {
-                    color: 'rgba(255, 255, 255, 0.3)'
+                legend: {
+                    orient: 'vertical',
+                    left: 'left',
+                    textStyle: {
+                        color: '#697a8d'
+                    }
                 },
-                smooth: 0.2,
-                length: 10,
-                length2: 20
-            },
-            itemStyle: {
-                color: '#c23531',
-                shadowBlur: 200,
-                shadowColor: 'rgba(0, 0, 0, 0.5)'
-            },
-            animationType: 'scale',
-            animationEasing: 'elasticOut',
-            animationDelay: function(idx) {
-                return Math.random() * 200;
+                series: [{
+                    name: 'Laboratory',
+                    type: 'pie',
+                    radius: ['40%', '70%'],
+                    avoidLabelOverlap: false,
+                    itemStyle: {
+                        borderRadius: 10,
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    },
+                    label: {
+                        show: false,
+                        position: 'center'
+                    },
+                    emphasis: {
+                        label: {
+                            show: true,
+                            fontSize: '16',
+                            fontWeight: 'bold'
+                        }
+                    },
+                    labelLine: {
+                        show: false
+                    },
+                    data: <?php 
+                        $roomData = array_map(function($name, $value) {
+                            return ['value' => $value, 'name' => $name];
+                        }, $rooms, $roomCounts);
+                        echo json_encode($roomData);
+                    ?>
+                }]
+            };
+            roomsChart.setOption(roomsOption);
+
+            // Search functionality
+            document.getElementById('search').addEventListener('keyup', function() {
+                let searchText = this.value.toLowerCase();
+                let rows = document.querySelectorAll('#records-table tr');
+                
+                rows.forEach(row => {
+                    let text = row.textContent.toLowerCase();
+                    row.style.display = text.includes(searchText) ? '' : 'none';
+                });
+            });
+
+            // Navbar search redirection
+            document.getElementById('navbarSearch').addEventListener('keyup', function(e) {
+                if (e.key === 'Enter') {
+                    document.getElementById('search').value = this.value;
+                    document.getElementById('search').dispatchEvent(new Event('keyup'));
+                    document.getElementById('search').focus();
+                }
+            });
+
+            // Logout modal functionality
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function() {
+                    const logoutModal = new bootstrap.Modal(document.getElementById('logoutModal'));
+                    logoutModal.show();
+                });
             }
-        }]
-    };
-    chart2.setOption(roomsOption);
 
-    // Handle window resize
-    window.addEventListener('resize', function() {
-        chart1.resize();
-        chart2.resize();
-    });
-
-    // Logout Modal Functionality
-    const logoutBtn = document.getElementById('logoutBtn');
-    const logoutModal = document.getElementById('logoutModal');
-    const cancelLogout = document.getElementById('cancelLogout');
-    const confirmLogout = document.getElementById('confirmLogout');
-
-    if (logoutBtn && logoutModal && cancelLogout && confirmLogout) {
-        // Show modal when logout button is clicked
-        logoutBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            logoutModal.classList.remove('hidden');
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                languagesChart.resize();
+                roomsChart.resize();
+            });
         });
-
-        // Hide modal when cancel is clicked
-        cancelLogout.addEventListener('click', function() {
-            logoutModal.classList.add('hidden');
-        });
-
-        // Perform logout when confirm is clicked
-        confirmLogout.addEventListener('click', function() {
-            window.location.href = 'logout.php';
-        });
-
-        // Close modal when clicking outside
-        logoutModal.addEventListener('click', function(e) {
-            if (e.target === this) {
-                this.classList.add('hidden');
-            }
-        });
-    } else {
-        console.error('One or more logout elements not found');
-    }
-
-    // Search functionality
-    document.getElementById('search').addEventListener('keyup', function() {
-        let filter = this.value.toLowerCase();
-        let rows = document.querySelectorAll('#records-table tr');
-        rows.forEach(row => {
-            row.style.display = row.textContent.toLowerCase().includes(filter) ? '' : 'none';
-        });
-    });
-});
-</script>
+    </script>
 </body>
 </html>

@@ -114,595 +114,697 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
-    <!-- Update these script sources -->
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.7.2/dist/full.min.css" rel="stylesheet" type="text/css" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            themes: ["light"],
-            plugins: [require("daisyui")],
-        }
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Add this in the head section -->
-    <style>
-        .chart-container {
-            background-color: #2c343c;
-            border-radius: 0.5rem;
-            padding: 1rem;
-            position: relative;
-        }
-    </style>
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
-    <!-- Add this after your existing <script> tags in the head section -->
-    <script>
-    document.querySelector('.avatar img').onerror = function() {
-        this.src = 'https://ui-avatars.com/api/?name=<?php echo urlencode($admin_username); ?>&background=4338ca&color=fff';
-    };
-    </script>
-</head>
-<body class="bg-gray-100">
-    <!-- Replace the existing navbar with this -->
-    <div class="navbar bg-[#2c343c] shadow-lg">
-        <div class="navbar-start">
-            <div class="dropdown">
-                <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
-                    <div class="w-10 rounded-full ring ring-gray-400 ring-offset-base-100 ring-offset-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-full w-full text-white p-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="background-color: #2c343c;">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
-                </div>
-                <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
-                    <li>
-                        <a class="justify-between">
-                            <?php echo htmlspecialchars($admin_username); ?>
-                            <span class="badge badge-primary">Admin</span>
-                        </a>
-                    </li>   
-                    <li><a>Settings</a></li>
-                </ul>
-            </div>
-            <span class="text-xl font-bold text-white ml-2">Admin</span>
-        </div>
-        
-        <div class="navbar-center hidden lg:flex">
-            <ul class="menu menu-horizontal px-1 gap-2">
-                <li>
-                    <a href="admin_dashboard.php" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                        </svg>
-                        Home
-                    </a>
-                </li>
-                <li>
-                    <a href="search.php" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                        Search
-                    </a>
-                </li>
-                <li>
-                    <a href="students.php" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-                        Students
-                    </a>
-                </li>
-                <li>
-                    <a href="sit_in.php" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
-                        Sit-in
-                    </a>
-                </li>
-                <li>
-                    <a href="sit_in_records.php" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
-                        View Records
-                    </a>
-                </li>
-                <li>
-                    <a href="admin_reservation.php" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        Reservation
-                    </a>
-                </li>
-                <li>
-                    <a href="reports.php" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        Reports
-                    </a>
-                </li>
-                <li>
-                    <a href="feedback.php" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                        </svg>
-                        Feedback Reports
-                    </a>
-                </li>
-                <li>
-                    <a href="lab_resources.php" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                        </svg>
-                        Resources
-                    </a>
-                </li>
-            </ul>
-        </div>
-        
-        <div class="navbar-end">
-            <!-- Update the logout button in the navbar -->
-            <a href="logout.php" class="btn btn-error btn-outline gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                Logout
-            </a>
-        </div>
-    </div>
-
-    <!-- Add this after the navbar and before the grid section -->
-    <div class="container mx-auto px-4 mt-6">
-        <div class="bg-white rounded-lg shadow-md overflow-hidden">
-            <div class="bg-[#2c343c] text-white px-6 py-4">
-                <h2 class="text-xl font-semibold">🏆 Student Leaderboard</h2>
-                <p class="text-gray-300 text-sm">Top students based on sit-in sessions</p>
-            </div>
-            
-            <div class="p-6">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <?php 
-                    $medals = [
-                        1 => [
-                            'bg' => 'from-yellow-50 to-yellow-100',
-                            'border' => 'border-yellow-200',
-                            'badge' => 'bg-yellow-500',
-                            'text' => 'text-yellow-600',
-                            'title' => 'Gold Medal'
-                        ],
-                        2 => [
-                            'bg' => 'from-gray-50 to-gray-100',
-                            'border' => 'border-gray-200',
-                            'badge' => 'bg-gray-400',
-                            'text' => 'text-gray-600',
-                            'title' => 'Silver Medal'
-                        ],
-                        3 => [
-                            'bg' => 'from-orange-50 to-orange-100',
-                            'border' => 'border-orange-200',
-                            'badge' => 'bg-orange-500',
-                            'text' => 'text-orange-600',
-                            'title' => 'Bronze Medal'
-                        ]
-                    ];
-
-                    for($i = 0; $i < 3 && $i < count($leaderboardData); $i++) {
-                        $rank = $i + 1;
-                        $student = $leaderboardData[$i];
-                        $style = $medals[$rank];
-                    ?>
-                        <div class="flex items-center space-x-4 bg-gradient-to-r <?php echo $style['bg']; ?> p-4 rounded-lg border <?php echo $style['border']; ?>">
-                            <div class="flex-shrink-0">
-                                <div class="w-16 h-16 rounded-full <?php echo $style['badge']; ?> flex items-center justify-center text-white text-2xl font-bold">
-                                    <?php echo $rank; ?>
-                                    <?php echo $rank == 1 ? 'st' : ($rank == 2 ? 'nd' : 'rd'); ?>
-                                </div>
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <p class="text-sm font-medium <?php echo $style['text']; ?>"><?php echo $style['title']; ?></p>
-                                <p class="text-lg font-semibold text-gray-900 truncate">
-                                    <?php echo htmlspecialchars($student['first_name'] . ' ' . $student['last_name']); ?>
-                                </p>
-                                <p class="text-sm text-gray-500">
-                                    <?php echo $student['session_count']; ?> Sessions
-                                </p>
-                            </div>
-                        </div>
-                    <?php } ?>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="grid md:grid-cols-2 gap-6 mt-6">
-        <!-- ✅ Statistics Section -->
-        <div class="col-span-1">
-            <!-- Statistics Cards -->
-            <div class="grid grid-cols-3 gap-4 mb-6">
-                <div class="bg-white p-4 rounded-lg shadow-md border-l-4 border-blue-500">
-                    <div class="text-gray-500 text-sm">Students Registered</div>
-                    <div class="text-2xl font-bold text-blue-600"><?= $students ?></div>
-                </div>
-                <div class="bg-white p-4 rounded-lg shadow-md border-l-4 border-green-500">
-                    <div class="text-gray-500 text-sm">Currently Sit-in</div>
-                    <div class="text-2xl font-bold text-green-600"><?= $current_sit_in ?></div>
-                </div>
-                <div class="bg-white p-4 rounded-lg shadow-md border-l-4 border-yellow-500">
-                    <div class="text-gray-500 text-sm">Total Sit-in</div>
-                    <div class="text-2xl font-bold text-yellow-600"><?= $total_sit_in ?></div>
-                </div>
-            </div>
-
-            <!-- Pie Chart Card -->
-            <div class="bg-white p-4 shadow-md rounded-lg">
-                <div class="chart-container" style="height: 400px;">
-                    <div id="statsChart" style="width: 100%; height: 100%;"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ✅ Announcements Section -->
-        <div class="bg-white p-4 shadow-md rounded-md max-h-[500px]">
-            <h3 class="text-lg font-semibold">📢 Announcements</h3>
-            <form method="POST" class="mb-4">
-                <textarea 
-                    name="announcement" 
-                    class="w-full p-2 border rounded-md resize-none h-24" 
-                    placeholder="Write an announcement..." 
-                    required
-                ></textarea>
-                <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-700 mt-2">Post</button>
-            </form>
-            <h5 class="font-semibold">Recent Announcements</h5>
-            <div id="announcementContainer" class="mt-2 border-t pt-2 h-[200px] overflow-y-auto">
-                <!-- Announcements will load here -->
-            </div>
-        </div>
-    </div> <!-- End of grid md:grid-cols-2 -->
     
-    <!-- Bar Graph Card - Full Width -->
-    <div class="mt-6 bg-white p-6 shadow-md rounded-lg">
-        <div class="h-[300px]">
-            <canvas id="yearLevelChart"></canvas>
+    <!-- Sneat Template Core CSS -->
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/css/core.css" class="template-customizer-core-css" />
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/css/theme-default.css" class="template-customizer-theme-css" />
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/css/demo.css" />
+    
+    <!-- Sneat Vendors CSS -->
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/apex-charts/apex-charts.css" />
+
+    <!-- Page CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+    <!-- Charts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700&display=swap" rel="stylesheet" />
+    
+    <!-- Helpers -->
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/js/helpers.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/js/config.js"></script>
+</head>
+<body>
+  <!-- Layout wrapper -->
+  <div class="layout-wrapper layout-content-navbar">
+    <div class="layout-container">
+      <!-- Menu -->
+      <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
+        <div class="app-brand demo">
+          <a href="admin_dashboard.php" class="app-brand-link">
+            <span class="app-brand-logo demo">
+              <svg width="25" viewBox="0 0 25 42" xmlns="http://www.w3.org/2000/svg">
+                <!-- Logo SVG content here or use your own logo -->
+                <defs><linearGradient id="a" x1="50%" x2="50%" y1="0%" y2="100%">
+                <stop offset="0%" stop-color="#5A8DEE"/><stop offset="100%" stop-color="#699AF9"/></linearGradient></defs>
+                <path fill="url(#a)" d="M12.5 0 25 14H0z"/><path fill="#FDAC41" d="M0 14 12.5 28 25 14H0z"/>
+                <path fill="#E89A3C" d="M0 28 12.5 42 25 28H0z"/><path fill="#FDAC41" d="M12.5 14 25 28 12.5 42 0 28z"/>
+              </svg>
+            </span>
+            <span class="app-brand-text demo menu-text fw-bolder ms-2">Sit-In Admin</span>
+          </a>
+
+          <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-block d-xl-none">
+            <i class="bi bi-x bi-middle"></i>
+          </a>
         </div>
+
+        <div class="menu-inner-shadow"></div>
+
+        <ul class="menu-inner py-1">
+          <!-- Dashboard -->
+          <li class="menu-item active">
+            <a href="admin_dashboard.php" class="menu-link">
+              <i class="menu-icon bi bi-house-door"></i>
+              <div data-i18n="Dashboard">Dashboard</div>
+            </a>
+          </li>
+
+          <li class="menu-header small text-uppercase">
+            <span class="menu-header-text">Management</span>
+          </li>
+
+          <!-- Search -->
+          <li class="menu-item">
+            <a href="search.php" class="menu-link">
+              <i class="menu-icon bi bi-search"></i>
+              <div data-i18n="Search">Search</div>
+            </a>
+          </li>
+
+          <!-- Students -->
+          <li class="menu-item">
+            <a href="students.php" class="menu-link">
+              <i class="menu-icon bi bi-people"></i>
+              <div data-i18n="Students">Students</div>
+            </a>
+          </li>
+
+          <!-- Sit-in -->
+          <li class="menu-item">
+            <a href="sit_in.php" class="menu-link">
+              <i class="menu-icon bi bi-clipboard-check"></i>
+              <div data-i18n="Sit-in">Sit-in</div>
+            </a>
+          </li>
+
+          <!-- View Records -->
+          <li class="menu-item">
+            <a href="sit_in_records.php" class="menu-link">
+              <i class="menu-icon bi bi-clipboard-data"></i>
+              <div data-i18n="Records">View Records</div>
+            </a>
+          </li>
+
+          <li class="menu-header small text-uppercase">
+            <span class="menu-header-text">Features</span>
+          </li>
+
+          <!-- Reservation -->
+          <li class="menu-item">
+            <a href="admin_reservation.php" class="menu-link">
+              <i class="menu-icon bi bi-calendar-check"></i>
+              <div data-i18n="Reservation">Reservation</div>
+            </a>
+          </li>
+
+          <!-- Reports -->
+          <li class="menu-item">
+            <a href="reports.php" class="menu-link">
+              <i class="menu-icon bi bi-file-earmark-bar-graph"></i>
+              <div data-i18n="Reports">Reports</div>
+            </a>
+          </li>
+
+          <!-- Feedback Reports -->
+          <li class="menu-item">
+            <a href="feedback.php" class="menu-link">
+              <i class="menu-icon bi bi-chat-left-text"></i>
+              <div data-i18n="Feedback">Feedback Reports</div>
+            </a>
+          </li>
+
+          <!-- Resources -->
+          <li class="menu-item">
+            <a href="lab_resources.php" class="menu-link">
+              <i class="menu-icon bi bi-box"></i>
+              <div data-i18n="Resources">Resources</div>
+            </a>
+          </li>
+        </ul>
+      </aside>
+      <!-- / Menu -->
+
+      <!-- Layout container -->
+      <div class="layout-page">
+        <!-- Navbar -->
+        <nav class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme" id="layout-navbar">
+          <div class="layout-menu-toggle navbar-nav align-items-xl-center me-3 me-xl-0 d-xl-none">
+            <a class="nav-item nav-link px-0 me-xl-4" href="javascript:void(0)">
+              <i class="bi bi-list bi-middle"></i>
+            </a>
+          </div>
+
+          <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
+            <!-- Search -->
+            <div class="navbar-nav align-items-center">
+              <div class="nav-item d-flex align-items-center">
+                <i class="bi bi-search fs-4 lh-0"></i>
+                <input
+                  type="text"
+                  class="form-control border-0 shadow-none"
+                  placeholder="Search..."
+                  aria-label="Search..."
+                />
+              </div>
+            </div>
+            <!-- /Search -->
+
+            <ul class="navbar-nav flex-row align-items-center ms-auto">
+              <!-- Admin dropdown -->
+              <li class="nav-item navbar-dropdown dropdown-user dropdown">
+                <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown">
+                  <div class="avatar avatar-online">
+                    <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($admin_username); ?>&background=696cff&color=fff" alt class="w-px-40 h-auto rounded-circle" />
+                  </div>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end">
+                  <li>
+                    <a class="dropdown-item" href="#">
+                      <div class="d-flex">
+                        <div class="flex-shrink-0 me-3">
+                          <div class="avatar avatar-online">
+                            <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($admin_username); ?>&background=696cff&color=fff" alt class="w-px-40 h-auto rounded-circle" />
+                          </div>
+                        </div>
+                        <div class="flex-grow-1">
+                          <span class="fw-semibold d-block"><?php echo htmlspecialchars($admin_username); ?></span>
+                          <small class="text-muted">Administrator</small>
+                        </div>
+                      </div>
+                    </a>
+                  </li>
+                  <li>
+                    <div class="dropdown-divider"></div>
+                  </li>
+                  <li>
+                    <a class="dropdown-item" href="#">
+                      <i class="bi bi-gear me-2"></i>
+                      <span class="align-middle">Settings</span>
+                    </a>
+                  </li>
+                  <li>
+                    <div class="dropdown-divider"></div>
+                  </li>
+                  <li>
+                    <a class="dropdown-item" href="javascript:void(0);" id="logoutBtn">
+                      <i class="bi bi-box-arrow-right me-2"></i>
+                      <span class="align-middle">Log Out</span>
+                    </a>
+                  </li>
+                </ul>
+              </li>
+              <!--/ Admin dropdown -->
+            </ul>
+          </div>
+        </nav>
+        <!-- / Navbar -->
+
+        <!-- Content wrapper -->
+        <div class="content-wrapper">
+          <!-- Content -->
+          <div class="container-xxl flex-grow-1 container-p-y">
+            <!-- Student Leaderboard -->
+            <div class="card mb-4">
+              <div class="card-header d-flex align-items-center justify-content-between">
+                <h5 class="mb-0"><i class="bi bi-trophy me-2"></i>Student Leaderboard</h5>
+                <small class="text-muted float-end">Top students based on sit-in sessions</small>
+              </div>
+              <div class="card-body">
+                <div class="row g-4">
+                  <?php 
+                  $medals = [
+                      1 => [
+                          'bg' => 'bg-label-warning',
+                          'icon' => 'bi-trophy-fill text-warning',
+                          'title' => 'Gold Medal'
+                      ],
+                      2 => [
+                          'bg' => 'bg-label-secondary',
+                          'icon' => 'bi-trophy text-secondary',
+                          'title' => 'Silver Medal'
+                      ],
+                      3 => [
+                          'bg' => 'bg-label-danger',
+                          'icon' => 'bi-trophy text-danger',
+                          'title' => 'Bronze Medal'
+                      ]
+                  ];
+
+                  for($i = 0; $i < 3 && $i < count($leaderboardData); $i++) {
+                      $rank = $i + 1;
+                      $student = $leaderboardData[$i];
+                      $style = $medals[$rank];
+                  ?>
+                    <div class="col-md-4">
+                      <div class="card h-100">
+                        <div class="card-body text-center">
+                          <div class="avatar avatar-md mx-auto mb-3">
+                            <span class="avatar-initial rounded-circle <?php echo $style['bg']; ?>">
+                              <i class="bi <?php echo $style['icon']; ?> fs-3"></i>
+                            </span>
+                          </div>
+                          <h5 class="card-title"><?php echo htmlspecialchars($student['first_name'] . ' ' . $student['last_name']); ?></h5>
+                          <p class="card-text text-muted"><?php echo $student['course']; ?></p>
+                          <div class="d-flex justify-content-center align-items-center mt-3">
+                            <div class="badge bg-primary rounded-pill">
+                              <?php echo $student['session_count']; ?> Sessions
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  <?php } ?>
+                </div>
+              </div>
+            </div>
+            <!-- / Student Leaderboard -->
+
+            <!-- Statistics and Announcements Row -->
+            <div class="row g-4 mb-4">
+              <!-- Statistics Column -->
+              <div class="col-md-6">
+                <!-- Statistics Cards -->
+                <div class="row g-3 mb-4">
+                  <div class="col-sm-4">
+                    <div class="card h-100">
+                      <div class="card-body">
+                        <div class="d-flex align-items-start justify-content-between">
+                          <div class="content-left">
+                            <span class="fw-semibold d-block mb-1">Students</span>
+                            <div class="d-flex align-items-end mt-2">
+                              <h3 class="mb-0 me-2"><?= $students ?></h3>
+                              <small class="text-success">(+Registered)</small>
+                            </div>
+                          </div>
+                          <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-primary">
+                              <i class="bi bi-person-badge fs-4"></i>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-sm-4">
+                    <div class="card h-100">
+                      <div class="card-body">
+                        <div class="d-flex align-items-start justify-content-between">
+                          <div class="content-left">
+                            <span class="fw-semibold d-block mb-1">Currently In</span>
+                            <div class="d-flex align-items-end mt-2">
+                              <h3 class="mb-0 me-2"><?= $current_sit_in ?></h3>
+                              <small class="text-success">(Active)</small>
+                            </div>
+                          </div>
+                          <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-success">
+                              <i class="bi bi-people-fill fs-4"></i>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-sm-4">
+                    <div class="card h-100">
+                      <div class="card-body">
+                        <div class="d-flex align-items-start justify-content-between">
+                          <div class="content-left">
+                            <span class="fw-semibold d-block mb-1">Total Visits</span>
+                            <div class="d-flex align-items-end mt-2">
+                              <h3 class="mb-0 me-2"><?= $total_sit_in ?></h3>
+                              <small class="text-muted">(Sessions)</small>
+                            </div>
+                          </div>
+                          <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-warning">
+                              <i class="bi bi-clipboard-check fs-4"></i>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Pie Chart Card -->
+                <div class="card h-100">
+                  <div class="card-header d-flex align-items-center justify-content-between">
+                    <h5 class="card-title m-0 me-2">Programming Language Distribution</h5>
+                  </div>
+                  <div class="card-body">
+                    <div id="statsChart" style="min-height: 350px;"></div>
+                  </div>
+                </div>
+              </div>
+              <!-- / Statistics Column -->
+              
+              <!-- Announcements Column -->
+              <div class="col-md-6">
+                <div class="card h-100">
+                  <div class="card-header">
+                    <h5 class="card-title"><i class="bi bi-megaphone me-2"></i>Announcements</h5>
+                  </div>
+                  <div class="card-body">
+                    <form method="POST" class="mb-4">
+                      <div class="mb-3">
+                        <textarea 
+                          name="announcement" 
+                          class="form-control"
+                          rows="3"
+                          placeholder="Write an announcement..." 
+                          required
+                        ></textarea>
+                      </div>
+                      <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="submit" class="btn btn-primary">
+                          <i class="bi bi-send me-1"></i> Post Announcement
+                        </button>
+                      </div>
+                    </form>
+                    <h6 class="mb-3 fw-semibold">Recent Announcements</h6>
+                    <div id="announcementContainer" class="overflow-auto" style="max-height: 295px;">
+                      <!-- Announcements will load here -->
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- / Announcements Column -->
+            </div>
+            <!-- / Statistics and Announcements Row -->
+
+            <!-- Year Level Chart -->
+            <div class="card mb-4">
+              <div class="card-header d-flex align-items-center justify-content-between">
+                <h5 class="card-title m-0 me-2">Student Year Level Distribution</h5>
+              </div>
+              <div class="card-body">
+                <div class="d-flex justify-content-center">
+                  <div style="height: 300px; width: 100%;">
+                    <canvas id="yearLevelChart"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- / Year Level Chart -->
+          </div>
+          <!-- / Content -->
+
+          <!-- Footer -->
+          <footer class="content-footer footer bg-footer-theme">
+            <div class="container-xxl d-flex flex-wrap justify-content-between py-2 flex-md-row flex-column">
+              <div class="mb-2 mb-md-0">
+                ©
+                <script>
+                  document.write(new Date().getFullYear());
+                </script>
+                Sit-In System Admin Dashboard
+              </div>
+            </div>
+          </footer>
+          <!-- / Footer -->
+
+          <div class="content-backdrop fade"></div>
+        </div>
+        <!-- / Content wrapper -->
+      </div>
+      <!-- / Layout page -->
     </div>
-</div> <!-- End of container -->
-<script>
-    // Replace the existing statsChart initialization with this
+
+    <!-- Overlay -->
+    <div class="layout-overlay layout-menu-toggle"></div>
+  </div>
+  <!-- / Layout wrapper -->
+
+  <!-- Logout Modal -->
+  <div class="modal fade" id="logoutModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Confirm Logout</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="text-center mb-4">
+            <i class="bi bi-box-arrow-right text-danger" style="font-size: 3rem;"></i>
+            <h4 class="mt-3">Are you sure you want to logout?</h4>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+            Cancel
+          </button>
+          <a href="logout.php" class="btn btn-danger">Logout</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Core JS -->
+  <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/jquery/jquery.js"></script>
+  <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/popper/popper.js"></script>
+  <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/js/bootstrap.js"></script>
+  <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js"></script>
+  <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/js/menu.js"></script>
+
+  <!-- Main JS -->
+  <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/js/main.js"></script>
+
+  <script>
+    // Stats Chart (ECharts)
     const statsChart = echarts.init(document.getElementById('statsChart'));
-
+    
     const statsOption = {
-        backgroundColor: '#2c343c',
-        title: {
-            text: 'Programming Language Distribution',
-            left: 'center',
-            top: 20,
-            textStyle: {
-                color: '#ccc'
-            }
-        },
-        tooltip: {
-            trigger: 'item',
-            formatter: '{a} <br/>{b}: {c} ({d}%)'
-        },
-        visualMap: {
+      tooltip: {
+        trigger: 'item',
+        formatter: '{a} <br/>{b}: {c} ({d}%)'
+      },
+      legend: {
+        orient: 'vertical',
+        left: 'left',
+        textStyle: {
+          color: '#697a8d'
+        }
+      },
+      series: [
+        {
+          name: 'Programming Languages',
+          type: 'pie',
+          radius: ['40%', '70%'],
+          avoidLabelOverlap: false,
+          itemStyle: {
+            borderRadius: 10,
+            borderColor: '#fff',
+            borderWidth: 2
+          },
+          label: {
             show: false,
-            min: 0,
-            max: Math.max(...<?php echo json_encode($purposeCounts); ?>),
-            inRange: {
-                colorLightness: [0, 1]
+            position: 'center'
+          },
+          emphasis: {
+            label: {
+              show: true,
+              fontSize: '16',
+              fontWeight: 'bold'
             }
-        },
-        series: [
-            {
-                name: 'Programming Languages',
-                type: 'pie',
-                radius: '55%',
-                center: ['50%', '50%'],
-                data: <?php
-                    $chartData = array_map(function($name, $value) {
-                        return ['value' => $value, 'name' => $name];
-                    }, $purposes, $purposeCounts);
-                    echo json_encode($chartData);
-                ?>.sort(function(a, b) {
-                    return a.value - b.value;
-                }),
-                roseType: 'radius',
-                label: {
-                    color: 'rgba(255, 255, 255, 0.3)'
-                },
-                labelLine: {
-                    lineStyle: {
-                        color: 'rgba(255, 255, 255, 0.3)'
-                    },
-                    smooth: 0.2,
-                    length: 10,
-                    length2: 20
-                },
-                itemStyle: {
-                    color: '#c23531',
-                    shadowBlur: 200,
-                    shadowColor: 'rgba(0, 0, 0, 0.5)'
-                },
-                animationType: 'scale',
-                animationEasing: 'elasticOut',
-                animationDelay: function(idx) {
-                    return Math.random() * 200;
-                }
-            }
-        ]
+          },
+          labelLine: {
+            show: false
+          },
+          data: <?php
+              $chartData = array_map(function($name, $value) {
+                  return ['value' => $value, 'name' => $name];
+              }, $purposes, $purposeCounts);
+              echo json_encode($chartData);
+          ?>
+        }
+      ]
     };
-
+    
     statsChart.setOption(statsOption);
-
-    // Add window resize handler
-    window.addEventListener('resize', function() {
-        statsChart.resize();
-    });
-
-    // Replace the existing yearLevelChart initialization
-    new Chart(document.getElementById('yearLevelChart'), {
-        type: 'bar',
-        data: {
-            labels: <?php echo json_encode($yearLevels); ?>,
-            datasets: [{
-                label: 'Number of Students',
-                data: <?php echo json_encode($yearLevelCounts); ?>,
-                backgroundColor: [
-                    'rgba(59, 130, 246, 0.8)', // blue
-                    'rgba(16, 185, 129, 0.8)', // green
-                    'rgba(251, 191, 36, 0.8)', // yellow
-                    'rgba(239, 68, 68, 0.8)'   // red
-                ],
-                borderColor: [
-                    'rgb(59, 130, 246)',
-                    'rgb(16, 185, 129)',
-                    'rgb(251, 191, 36)',
-                    'rgb(239, 68, 68)'
-                ],
-                borderWidth: 2,
-                borderRadius: 8,
-                borderSkipped: false,
-                barPercentage: 0.6,
-                categoryPercentage: 0.8
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                },
-                title: {
-                    display: true,
-                    text: 'Student Year Level Distribution',
-                    color: '#1f2937',
-                    font: {
-                        size: 16,
-                        weight: 'bold'
-                    },
-                    padding: 20
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        stepSize: 1,
-                        font: {
-                            size: 12
-                        }
-                    },
-                    grid: {
-                        display: true,
-                        color: 'rgba(0, 0, 0, 0.1)'
-                    }
-                },
-                x: {
-                    ticks: {
-                        font: {
-                            size: 12,
-                            weight: 'bold'
-                        }
-                    },
-                    grid: {
-                        display: false
-                    }
-                }
-            },
-            animation: {
-                duration: 2000,
-                easing: 'easeInOutQuart',
-                delay: (context) => context.dataIndex * 300
-            },
-            hover: {
-                mode: 'index',
-                intersect: false
-            },
-            elements: {
-                bar: {
-                    shadowOffsetX: 3,
-                    shadowOffsetY: 3,
-                    shadowBlur: 10,
-                    shadowColor: 'rgba(0, 0, 0, 0.2)'
-                }
+    
+    // Year Level Chart (Chart.js)
+    const yearLevelCtx = document.getElementById('yearLevelChart').getContext('2d');
+    const yearLevelChart = new Chart(yearLevelCtx, {
+      type: 'bar',
+      data: {
+        labels: <?php echo json_encode($yearLevels); ?>,
+        datasets: [{
+          label: 'Number of Students',
+          data: <?php echo json_encode($yearLevelCounts); ?>,
+          backgroundColor: [
+            'rgba(105, 108, 255, 0.8)',
+            'rgba(3, 195, 236, 0.8)',
+            'rgba(255, 171, 0, 0.8)',
+            'rgba(255, 62, 29, 0.8)'
+          ],
+          borderColor: [
+            'rgb(105, 108, 255)',
+            'rgb(3, 195, 236)',
+            'rgb(255, 171, 0)',
+            'rgb(255, 62, 29)'
+          ],
+          borderWidth: 1,
+          borderRadius: 8,
+          barPercentage: 0.6,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: {
+              color: 'rgba(105, 122, 141, 0.1)'
             }
+          },
+          x: {
+            grid: {
+              display: false
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: false
+          }
         }
+      }
     });
-
-    // Replace the existing loadAnnouncements function
+    
+    // Handle announcements
     function loadAnnouncements() {
-        fetch('get_announcements.php')
-            .then(response => response.json())
-            .then(data => {
-                const container = document.getElementById('announcementContainer');
-                container.innerHTML = ''; // Clear previous content
-                if (data.status === 'success') {
-                    data.announcements.forEach(announcement => {
-                        const announcementDiv = document.createElement('div');
-                        announcementDiv.classList.add('p-2', 'border-b', 'relative', 'group');
-                        announcementDiv.innerHTML = `
-                            <div class="flex justify-between items-start">
-                                <div class="flex-1">
-                                    <div class="flex items-center gap-2">
-                                        <strong class="text-blue-600">${announcement.admin_name}</strong>
-                                        <span class="text-gray-500">${announcement.date}</span>
-                                    </div>
-                                    <p class="mt-1">${announcement.message}</p>
-                                </div>
-                                <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button onclick="editAnnouncement(${announcement.id})" 
-                                            class="text-blue-600 hover:text-blue-800 p-1">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" 
-                                             viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                        </svg>
-                                    </button>
-                                    <button onclick="deleteAnnouncement(${announcement.id})" 
-                                            class="text-red-600 hover:text-red-800 p-1">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" 
-                                             viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>`;
-                        container.appendChild(announcementDiv);
-                    });
-                } else {
-                    container.innerHTML = '<p class="text-gray-500">No announcements available.</p>';
-                }
-            })
-            .catch(error => console.error('Error loading announcements:', error));
-    }
-
-    // Replace the existing editAnnouncement function with this:
-    function editAnnouncement(id) {
-        if (confirm('Do you want to edit this announcement?')) {
-            // First get the announcements data
-            fetch('get_announcements.php')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        // Find the specific announcement
-                        const announcement = data.announcements.find(a => a.id == id);
-                        if (announcement) {
-                            const newMessage = prompt('Edit announcement:', announcement.message);
-                            if (newMessage !== null && newMessage.trim() !== '') {
-                                const formData = new FormData();
-                                formData.append('id', id);
-                                formData.append('message', newMessage.trim());
-
-                                fetch('update_announcement.php', {
-                                    method: 'POST',
-                                    body: formData
-                                })
-                                .then(response => response.json())
-                                .then(data => {
-                                    if (data.status === 'success') {
-                                        alert('Announcement updated successfully!');
-                                        loadAnnouncements();
-                                    } else {
-                                        alert('Failed to update announcement: ' + data.message);
-                                    }
-                                })
-                                .catch(error => {
-                                    console.error('Error:', error);
-                                    alert('An error occurred while updating the announcement');
-                                });
-                            }
-                        } else {
-                            alert('Announcement not found');
-                        }
-                    } else {
-                        alert('Failed to fetch announcements');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred while fetching the announcements');
-                });
-        }
-    }
-
-    // Add these new functions for edit and delete functionality
-    function deleteAnnouncement(id) {
-        if (confirm('Are you sure you want to delete this announcement?')) {
-            fetch('delete_announcement.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: `id=${id}`
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    loadAnnouncements();
-                } else {
-                    alert('Failed to delete announcement');
-                }
+      fetch('get_announcements.php')
+        .then(response => response.json())
+        .then(data => {
+          const container = document.getElementById('announcementContainer');
+          container.innerHTML = ''; // Clear previous content
+          if (data.status === 'success') {
+            data.announcements.forEach(announcement => {
+              const announcementDiv = document.createElement('div');
+              announcementDiv.classList.add('mb-3', 'p-3', 'border', 'rounded');
+              announcementDiv.innerHTML = `
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <div>
+                    <span class="badge bg-label-primary mb-1">${announcement.admin_name}</span>
+                    <small class="text-muted d-block">${announcement.date}</small>
+                  </div>
+                  <div class="dropdown">
+                    <button class="btn p-0" data-bs-toggle="dropdown" aria-expanded="false">
+                      <i class="bi bi-three-dots-vertical"></i>
+                    </button>
+                    <ul class="dropdown-menu">
+                      <li><a class="dropdown-item" href="#" onclick="editAnnouncement(${announcement.id})">
+                        <i class="bi bi-pencil me-2"></i>Edit
+                      </a></li>
+                      <li><a class="dropdown-item text-danger" href="#" onclick="deleteAnnouncement(${announcement.id})">
+                        <i class="bi bi-trash me-2"></i>Delete
+                      </a></li>
+                    </ul>
+                  </div>
+                </div>
+                <p class="mb-0">${announcement.message}</p>
+              `;
+              container.appendChild(announcementDiv);
             });
-        }
+          } else {
+            container.innerHTML = '<p class="text-muted">No announcements available.</p>';
+          }
+        })
+        .catch(error => console.error('Error loading announcements:', error));
     }
+    
+    function editAnnouncement(id) {
+      if (confirm('Do you want to edit this announcement?')) {
+        fetch('get_announcements.php')
+          .then(response => response.json())
+          .then(data => {
+            if (data.status === 'success') {
+              const announcement = data.announcements.find(a => a.id == id);
+              if (announcement) {
+                const newMessage = prompt('Edit announcement:', announcement.message);
+                if (newMessage !== null && newMessage.trim() !== '') {
+                  const formData = new FormData();
+                  formData.append('id', id);
+                  formData.append('message', newMessage.trim());
 
-    // Load announcements on page load & refresh every minute
-    window.onload = loadAnnouncements;
-    setInterval(loadAnnouncements, 60000);
-</script>
-
-<!-- Add this before </body> tag -->
-<!-- Logout confirmation modal -->
-<div id="logoutModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
-        <div class="mt-3 text-center">
-            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
-                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                </svg>
-            </div>
-            <h3 class="text-lg leading-6 font-medium text-gray-900">Confirm Logout</h3>
-            <div class="mt-2 px-7 py-3">
-                <p class="text-sm text-gray-500">Are you sure you want to logout?</p>
-            </div>
-            <div class="flex justify-center gap-4 mt-3">
-                <button id="cancelLogout" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium rounded-md">
-                    Cancel
-                </button>
-                <button id="confirmLogout" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md">
-                    Logout
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-<script>
-    // Add these event listeners for logout functionality
-    document.querySelector('a[href="logout.php"]').addEventListener('click', function(e) {
-        e.preventDefault();
-        document.getElementById('logoutModal').classList.remove('hidden');
+                  fetch('update_announcement.php', {
+                    method: 'POST',
+                    body: formData
+                  })
+                  .then(response => response.json())
+                  .then(data => {
+                    if (data.status === 'success') {
+                      alert('Announcement updated successfully!');
+                      loadAnnouncements();
+                    } else {
+                      alert('Failed to update announcement: ' + data.message);
+                    }
+                  })
+                  .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while updating the announcement');
+                  });
+                }
+              } else {
+                alert('Announcement not found');
+              }
+            } else {
+              alert('Failed to fetch announcements');
+            }
+          })
+          .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while fetching the announcements');
+          });
+      }
+    }
+    
+    function deleteAnnouncement(id) {
+      if (confirm('Are you sure you want to delete this announcement?')) {
+        fetch('delete_announcement.php', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: `id=${id}`
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === 'success') {
+            loadAnnouncements();
+          } else {
+            alert('Failed to delete announcement');
+          }
+        });
+      }
+    }
+    
+    // Logout modal
+    document.getElementById('logoutBtn').addEventListener('click', function() {
+      const logoutModal = new bootstrap.Modal(document.getElementById('logoutModal'));
+      logoutModal.show();
     });
-
-    document.getElementById('cancelLogout').addEventListener('click', function() {
-        document.getElementById('logoutModal').classList.add('hidden');
+    
+    // Responsive chart resizing
+    window.addEventListener('resize', function() {
+      statsChart.resize();
     });
-
-    document.getElementById('confirmLogout').addEventListener('click', function() {
-        window.location.href = 'logout.php';
+    
+    // Load announcements on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      loadAnnouncements();
+      // Refresh announcements every minute
+      setInterval(loadAnnouncements, 60000);
     });
-
-    // Close modal when clicking outside
-    document.getElementById('logoutModal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            this.classList.add('hidden');
-        }
-    });
-</script>
+  </script>
 </body>
 </html>

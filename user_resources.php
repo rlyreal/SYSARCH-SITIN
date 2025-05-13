@@ -6,251 +6,683 @@ if (!isset($_SESSION['user_id'])) {
     header('Location: index.php');
     exit();
 }
+
+// Get user details
+$user_id = $_SESSION['user_id'];
+$stmt = $conn->prepare("SELECT id_no, first_name, last_name, course, profile_picture FROM users WHERE id = ?");
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$user_data = $result->fetch_assoc();
+$profile_picture = !empty($user_data['profile_picture']) ? $user_data['profile_picture'] : 'profile.jpg';
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light-style layout-menu-fixed" dir="ltr" data-theme="theme-default">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lab Resources</title>
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.7.2/dist/full.min.css" rel="stylesheet" type="text/css" />
-    <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <title>Lab Resources | Sit-In System</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/img/favicon/favicon.ico" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700&display=swap" rel="stylesheet" />
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" />
+    
+    <!-- Core CSS -->
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/css/core.css" class="template-customizer-core-css" />
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/css/theme-default.css" class="template-customizer-theme-css" />
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/css/demo.css" />
+
+    <!-- Vendors CSS -->
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />
+    
+    <!-- Page CSS -->
+    <style>
+        .resource-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            height: 100%;
+        }
+        
+        .resource-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1);
+        }
+        
+        .card-img-top {
+            height: 180px;
+            object-fit: cover;
+            background-color: #f8f9fa;
+        }
+        
+        .resource-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+        
+        .resource-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .card-img-wrapper {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .card-img-wrapper:hover .resource-overlay {
+            opacity: 1;
+        }
+        
+        .resource-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .resource-description {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+    </style>
+    
+    <!-- Helpers -->
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/js/helpers.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/js/config.js"></script>
 </head>
-<body class="bg-gray-50">
-    <div class="navbar bg-[#2c343c] shadow-lg">
-        <div class="navbar-start">
-            <div class="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-                <span class="text-xl font-bold text-white ml-2">Resources</span>
+
+<body>
+    <!-- Layout wrapper -->
+    <div class="layout-wrapper layout-content-navbar">
+        <div class="layout-container">
+            <!-- Menu -->
+            <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
+                <div class="app-brand demo">
+                    <a href="dashboard.php" class="app-brand-link">
+                        <span class="app-brand-logo demo">
+                            <svg width="25" viewBox="0 0 25 42" xmlns="http://www.w3.org/2000/svg">
+                                <defs><linearGradient id="a" x1="50%" x2="50%" y1="0%" y2="100%">
+                                <stop offset="0%" stop-color="#5A8DEE"/><stop offset="100%" stop-color="#699AF9"/></linearGradient></defs>
+                                <path fill="url(#a)" d="M12.5 0 25 14H0z"/><path fill="#FDAC41" d="M0 14 12.5 28 25 14H0z"/>
+                                <path fill="#E89A3C" d="M0 28 12.5 42 25 28H0z"/><path fill="#FDAC41" d="M12.5 14 25 28 12.5 42 0 28z"/>
+                            </svg>
+                        </span>
+                        <span class="app-brand-text demo menu-text fw-bolder ms-2">UC Sit-In</span>
+                    </a>
+
+                    <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-block d-xl-none">
+                        <i class="bi bi-x bi-middle"></i>
+                    </a>
+                </div>
+
+                <div class="menu-inner-shadow"></div>
+
+                <ul class="menu-inner py-1">
+                    <!-- Dashboard -->
+                    <li class="menu-item">
+                        <a href="dashboard.php" class="menu-link">
+                            <i class="menu-icon bi bi-house-door"></i>
+                            <div data-i18n="Dashboard">Dashboard</div>
+                        </a>
+                    </li>
+
+                    <li class="menu-header small text-uppercase">
+                        <span class="menu-header-text">Student Features</span>
+                    </li>
+
+                    <!-- Edit Profile -->
+                    <li class="menu-item">
+                        <a href="editprofile.php" class="menu-link">
+                            <i class="menu-icon bi bi-person-gear"></i>
+                            <div data-i18n="Edit Profile">Edit Profile</div>
+                        </a>
+                    </li>
+
+                    <!-- History -->
+                    <li class="menu-item">
+                        <a href="history.php" class="menu-link">
+                            <i class="menu-icon bi bi-clock-history"></i>
+                            <div data-i18n="History">History</div>
+                        </a>
+                    </li>
+
+                    <!-- Reservation -->
+                    <li class="menu-item">
+                        <a href="user_reservation.php" class="menu-link">
+                            <i class="menu-icon bi bi-calendar-check"></i>
+                            <div data-i18n="Reservation">Reservation</div>
+                        </a>
+                    </li>
+
+                    <!-- Resources -->
+                    <li class="menu-item active">
+                        <a href="user_resources.php" class="menu-link">
+                            <i class="menu-icon bi bi-box"></i>
+                            <div data-i18n="Resources">Resources</div>
+                        </a>
+                    </li>
+                </ul>
+            </aside>
+            <!-- / Menu -->
+
+            <!-- Layout container -->
+            <div class="layout-page">
+                <!-- Navbar -->
+                <nav class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme" id="layout-navbar">
+                    <div class="layout-menu-toggle navbar-nav align-items-xl-center me-3 me-xl-0 d-xl-none">
+                        <a class="nav-item nav-link px-0 me-xl-4" href="javascript:void(0)">
+                            <i class="bi bi-list bi-middle"></i>
+                        </a>
+                    </div>
+
+                    <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
+                        <!-- Search -->
+                        <div class="navbar-nav align-items-center">
+                            <div class="nav-item d-flex align-items-center">
+                                <i class="bi bi-search fs-4 lh-0"></i>
+                                <input 
+                                    type="text" 
+                                    id="searchInput"
+                                    class="form-control border-0 shadow-none" 
+                                    placeholder="Search resources..." 
+                                    aria-label="Search resources...">
+                            </div>
+                        </div>
+                        <!-- /Search -->
+
+                        <ul class="navbar-nav flex-row align-items-center ms-auto">
+                            <!-- Filter Dropdown -->
+                            <li class="nav-item dropdown d-none d-lg-block me-3">
+                                <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown">
+                                    <i class="bi bi-funnel-fill fs-4"></i>
+                                </a>
+                                <div class="dropdown-menu dropdown-menu-end">
+                                    <a class="dropdown-item filter-item" href="javascript:void(0);" data-filter="all">
+                                        <i class="bi bi-check-all me-2"></i>
+                                        <span class="align-middle">All Resources</span>
+                                    </a>
+                                    <a class="dropdown-item filter-item" href="javascript:void(0);" data-filter="Programming">
+                                        <i class="bi bi-code-slash me-2"></i>
+                                        <span class="align-middle">Programming</span>
+                                    </a>
+                                    <a class="dropdown-item filter-item" href="javascript:void(0);" data-filter="Database">
+                                        <i class="bi bi-database me-2"></i>
+                                        <span class="align-middle">Database</span>
+                                    </a>
+                                    <a class="dropdown-item filter-item" href="javascript:void(0);" data-filter="Web">
+                                        <i class="bi bi-globe me-2"></i>
+                                        <span class="align-middle">Web Development</span>
+                                    </a>
+                                    <a class="dropdown-item filter-item" href="javascript:void(0);" data-filter="Recent">
+                                        <i class="bi bi-clock me-2"></i>
+                                        <span class="align-middle">Recently Added</span>
+                                    </a>
+                                </div>
+                            </li>
+
+                            <!-- User -->
+                            <li class="nav-item navbar-dropdown dropdown-user dropdown">
+                                <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown">
+                                    <div class="avatar avatar-online">
+                                        <img src="<?php echo htmlspecialchars($profile_picture); ?>" alt="profile" class="w-px-40 h-auto rounded-circle">
+                                    </div>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item" href="#">
+                                            <div class="d-flex">
+                                                <div class="flex-shrink-0 me-3">
+                                                    <div class="avatar avatar-online">
+                                                        <img src="<?php echo htmlspecialchars($profile_picture); ?>" alt="profile" class="w-px-40 h-auto rounded-circle">
+                                                    </div>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <span class="fw-semibold d-block"><?php echo htmlspecialchars($user_data['first_name'] . ' ' . $user_data['last_name']); ?></span>
+                                                    <small class="text-muted"><?php echo htmlspecialchars($user_data['course']); ?></small>
+                                                </div>
+                                            </div>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <div class="dropdown-divider"></div>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="editprofile.php">
+                                            <i class="bi bi-person-gear me-2"></i>
+                                            <span class="align-middle">My Profile</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="history.php">
+                                            <i class="bi bi-clock-history me-2"></i>
+                                            <span class="align-middle">History</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <div class="dropdown-divider"></div>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="javascript:void(0);" id="logoutBtn">
+                                            <i class="bi bi-box-arrow-right me-2"></i>
+                                            <span class="align-middle">Log Out</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <!--/ User -->
+                        </ul>
+                    </div>
+                </nav>
+                <!-- / Navbar -->
+
+                <!-- Content wrapper -->
+                <div class="content-wrapper">
+                    <!-- Content -->
+                    <div class="container-xxl flex-grow-1 container-p-y">
+                        <h4 class="fw-bold py-3 mb-4">
+                            <i class="bi bi-box me-1"></i> Laboratory Resources
+                        </h4>
+
+                        <!-- Resources Filters -->
+                        <div class="mb-4">
+                            <div class="nav-align-top">
+                                <ul class="nav nav-pills mb-3 nav-fill" role="tablist">
+                                    <li class="nav-item">
+                                        <button type="button" class="nav-link active filter-btn" role="tab" data-bs-toggle="tab" data-filter="all">
+                                            <i class="bi bi-grid me-1"></i> All Resources
+                                        </button>
+                                    </li>
+                                    <li class="nav-item">
+                                        <button type="button" class="nav-link filter-btn" role="tab" data-bs-toggle="tab" data-filter="Programming">
+                                            <i class="bi bi-code-slash me-1"></i> Programming
+                                        </button>
+                                    </li>
+                                    <li class="nav-item">
+                                        <button type="button" class="nav-link filter-btn" role="tab" data-bs-toggle="tab" data-filter="Database">
+                                            <i class="bi bi-database me-1"></i> Database
+                                        </button>
+                                    </li>
+                                    <li class="nav-item">
+                                        <button type="button" class="nav-link filter-btn" role="tab" data-bs-toggle="tab" data-filter="Web">
+                                            <i class="bi bi-globe me-1"></i> Web Development
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Resources Grid -->
+                        <div class="row g-4 mb-4" id="resourcesGrid">
+                            <!-- Resources will be loaded here -->
+                            
+                            <!-- Loading Spinner -->
+                            <div id="loadingSpinner" class="col-12 text-center py-5">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-3 text-muted">Loading resources...</p>
+                            </div>
+                        </div>
+
+                    </div>
+                    <!-- / Content -->
+
+                    <!-- Footer -->
+                    <footer class="content-footer footer bg-footer-theme">
+                        <div class="container-xxl d-flex flex-wrap justify-content-between py-2 flex-md-row flex-column">
+                            <div class="mb-2 mb-md-0">
+                                ©
+                                <script>
+                                    document.write(new Date().getFullYear());
+                                </script>
+                                University of Cebu - College of Computer Studies
+                            </div>
+                        </div>
+                    </footer>
+                    <!-- / Footer -->
+
+                    <div class="content-backdrop fade"></div>
+                </div>
+                <!-- / Content wrapper -->
             </div>
+            <!-- / Layout page -->
         </div>
-        
-        <div class="navbar-center hidden lg:flex">
-            <ul class="menu menu-horizontal px-1 gap-2">
-                <li>
-                    <a href="dashboard.php" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                        </svg>
-                        Home
+
+        <!-- Overlay -->
+        <div class="layout-overlay layout-menu-toggle"></div>
+    </div>
+    <!-- / Layout wrapper -->
+
+    <!-- Resource Viewer Modal -->
+    <div class="modal fade" id="resourceModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="resourceTitle">Resource Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <img id="resourceImage" src="" alt="Resource Preview" class="img-fluid rounded">
+                        </div>
+                        <div class="col-md-6">
+                            <h5 id="resourceModalTitle" class="mb-2"></h5>
+                            <div class="mb-2">
+                                <span class="badge bg-label-primary me-1" id="resourceCategory"></span>
+                                <span class="badge bg-label-info" id="resourceDate"></span>
+                            </div>
+                            <div class="mb-3">
+                                <small class="text-muted">Provided by:</small>
+                                <p class="mb-0" id="resourceProfessor"></p>
+                            </div>
+                            <div class="mb-3">
+                                <small class="text-muted">Description:</small>
+                                <p id="resourceDescription"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        Close
+                    </button>
+                    <a href="#" id="resourceLink" target="_blank" class="btn btn-primary">
+                        <i class="bi bi-box-arrow-up-right me-1"></i> Open Resource
                     </a>
-                </li>
-                <li>
-                    <a href="#" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                        </svg>
-                        Notifications
-                    </a>
-                </li>
-                <li>
-                    <a href="editprofile.php" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                        Edit Profile
-                    </a>
-                </li>
-                <li>
-                    <a href="history.php" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        History
-                    </a>
-                </li>
-                <li>
-                    <a href="user_reservation.php" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        Reservation
-                    </a>
-                </li>
-            </ul>
-        </div>
-        
-        <div class="navbar-end">
-            <a href="#" onclick="event.preventDefault(); document.getElementById('logoutModal').classList.remove('hidden');" 
-               class="btn btn-error btn-outline gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                Logout
-            </a>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Header -->
-    <header class="bg-white shadow">
-        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-            <h1 class="text-2xl font-semibold text-gray-800">Lab Resources</h1>
-        </div>
-    </header>
-
-    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <!-- Search Section -->
-        <div class="px-4 sm:px-0 mb-8">
-            <div class="max-w-xl mx-auto">
-                <div class="relative flex items-center">
-                    <input type="text" 
-                           id="searchInput"
-                           placeholder="Search resources..."
-                           class="w-full px-4 py-2 pl-10 pr-4 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                        </svg>
+    <!-- Logout Modal -->
+    <div class="modal fade" id="logoutModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Logout</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-box-arrow-right text-danger" style="font-size: 3rem;"></i>
+                        <h4 class="mt-3">Are you sure you want to logout?</h4>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Resources Grid -->
-        <div id="resourcesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 px-4 sm:px-0">
-            <!-- Resources will be loaded here -->
-        </div>
-
-        <!-- Loading State -->
-        <div id="loadingState" class="hidden">
-            <div class="flex justify-center items-center py-12">
-                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-            </div>
-        </div>
-    </main>
-
-    <!-- Logout confirmation modal -->
-    <div id="logoutModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
-            <div class="mt-3 text-center">
-                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
-                    <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                    </svg>
-                </div>
-                <h3 class="text-lg leading-6 font-medium text-gray-900">Confirm Logout</h3>
-                <div class="mt-2 px-7 py-3">
-                    <p class="text-sm text-gray-500">Are you sure you want to logout?</p>
-                </div>
-                <div class="flex justify-center gap-4 mt-3">
-                    <button id="cancelLogout" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium rounded-md">
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
                         Cancel
                     </button>
-                    <button id="confirmLogout" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md">
-                        Logout
-                    </button>
+                    <a href="logout.php" class="btn btn-danger">Logout</a>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Core JS -->
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/jquery/jquery.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/popper/popper.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/js/bootstrap.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/js/menu.js"></script>
+
+    <!-- Main JS -->
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/js/main.js"></script>
+
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const grid = document.getElementById('resourcesGrid');
-        const loadingState = document.getElementById('loadingState');
-        
-        function showLoading() {
-            loadingState.classList.remove('hidden');
-            grid.classList.add('opacity-50');
-        }
-        
-        function hideLoading() {
-            loadingState.classList.add('hidden');
-            grid.classList.remove('opacity-50');
-        }
-
-        async function loadResources(query = '') {
-            showLoading();
-            try {
-                const response = await fetch(`get_user_resources.php${query ? '?query=' + encodeURIComponent(query) : ''}`);
-                const data = await response.json();
-                
-                if (data.length === 0) {
-                    grid.innerHTML = `
-                        <div class="col-span-full flex flex-col items-center justify-center py-12">
-                            <svg class="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-                            </svg>
-                            <p class="text-gray-500 text-lg">${query ? `No resources found matching "${query}"` : 'No resources available'}</p>
-                        </div>`;
-                    return;
-                }
-
-                grid.innerHTML = data.map(resource => `
-                    <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden">
-                        <div class="aspect-w-16 aspect-h-9 bg-gray-100">
-                            <img src="${resource.cover_image || 'placeholder.png'}" 
-                                 alt="${resource.title}"
-                                 class="w-full h-48 object-cover">
-                        </div>
-                        <div class="p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-2 line-clamp-1">${resource.title}</h3>
-                            <div class="flex items-center text-sm text-gray-500 mb-3">
-                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                                </svg>
-                                ${resource.professor}
+        document.addEventListener('DOMContentLoaded', function() {
+            const grid = document.getElementById('resourcesGrid');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const resourceModal = new bootstrap.Modal(document.getElementById('resourceModal'));
+            
+            // Load resources from API
+            async function loadResources(query = '', filter = 'all') {
+                try {
+                    // Show loading spinner
+                    loadingSpinner.style.display = 'block';
+                    
+                    // API endpoint with query params if available
+                    const endpoint = `get_user_resources.php${query ? '?query=' + encodeURIComponent(query) : ''}`;
+                    const response = await fetch(endpoint);
+                    const data = await response.json();
+                    
+                    // Hide loading spinner
+                    loadingSpinner.style.display = 'none';
+                    
+                    // Clear previous resources
+                    grid.innerHTML = '';
+                    
+                    // Filter resources if needed
+                    let filteredData = data;
+                    if (filter !== 'all') {
+                        if (filter === 'Recent') {
+                            // Sort by date, most recent first
+                            filteredData = [...data].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                            // Get first 6 items only
+                            filteredData = filteredData.slice(0, 6);
+                        } else {
+                            // Filter by category
+                            filteredData = data.filter(resource => 
+                                resource.category && resource.category.includes(filter)
+                            );
+                        }
+                    }
+                    
+                    // Display no resources message if needed
+                    if (filteredData.length === 0) {
+                        grid.innerHTML = `
+                            <div class="col-12 text-center py-5">
+                                <div class="mb-3">
+                                    <i class="bi bi-search text-primary" style="font-size: 3rem;"></i>
+                                </div>
+                                <h5 class="mb-2">No Resources Found</h5>
+                                <p class="text-muted">
+                                    ${query ? `No resources matching "${query}"` : 'No resources available in this category.'}
+                                </p>
                             </div>
-                            <p class="text-gray-600 text-sm mb-4 line-clamp-2">${resource.description}</p>
-                            <div class="flex items-center justify-between">
-                                <span class="text-xs text-gray-400">
-                                    Added ${new Date(resource.created_at).toLocaleDateString()}
+                        `;
+                        return;
+                    }
+                    
+                    // Generate resource cards
+                    filteredData.forEach(resource => {
+                        // Default image if none is provided
+                        const coverImage = resource.cover_image || 'placeholder.png';
+                        
+                        // Format date
+                        const date = new Date(resource.created_at);
+                        const formattedDate = date.toLocaleDateString('en-US', {
+                            year: 'numeric', 
+                            month: 'short', 
+                            day: 'numeric'
+                        });
+                        
+                        // Create category badge
+                        let categoryBadge = '';
+                        if (resource.category) {
+                            const category = resource.category;
+                            let badgeClass = 'bg-label-primary';
+                            let icon = 'bi-book';
+                            
+                            if (category.includes('Programming')) {
+                                badgeClass = 'bg-label-danger';
+                                icon = 'bi-code-slash';
+                            } else if (category.includes('Database')) {
+                                badgeClass = 'bg-label-info';
+                                icon = 'bi-database';
+                            } else if (category.includes('Web')) {
+                                badgeClass = 'bg-label-success';
+                                icon = 'bi-globe';
+                            }
+                            
+                            categoryBadge = `
+                                <span class="badge ${badgeClass} resource-badge">
+                                    <i class="bi ${icon} me-1"></i> ${category}
                                 </span>
-                                <a href="${resource.resource_link}" 
-                                   target="_blank"
-                                   class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors duration-200">
-                                    Open
-                                    <svg class="w-4 h-4 ml-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                                    </svg>
-                                </a>
+                            `;
+                        }
+                        
+                        // Create card HTML
+                        const card = document.createElement('div');
+                        card.className = 'col-md-6 col-lg-4';
+                        card.innerHTML = `
+                            <div class="card resource-card">
+                                <div class="card-img-wrapper">
+                                    <img src="${coverImage}" class="card-img-top" alt="${resource.title}">
+                                    ${categoryBadge}
+                                    <div class="resource-overlay">
+                                        <div class="resource-actions">
+                                            <button type="button" class="btn btn-icon btn-sm btn-primary view-resource" 
+                                                data-id="${resource.id}" 
+                                                data-bs-toggle="tooltip" 
+                                                data-bs-placement="top" 
+                                                title="View Details">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <a href="${resource.resource_link}" target="_blank" 
+                                                class="btn btn-icon btn-sm btn-secondary" 
+                                                data-bs-toggle="tooltip" 
+                                                data-bs-placement="top" 
+                                                title="Open Resource">
+                                                <i class="bi bi-box-arrow-up-right"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <h5 class="card-title mb-1">${resource.title}</h5>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <small class="text-muted">
+                                            <i class="bi bi-person me-1"></i> ${resource.professor}
+                                        </small>
+                                    </div>
+                                    <p class="card-text resource-description">${resource.description}</p>
+                                </div>
+                                <div class="card-footer">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">
+                                            <i class="bi bi-calendar-event me-1"></i> ${formattedDate}
+                                        </small>
+                                        <button type="button" class="btn btn-sm btn-primary view-resource" data-id="${resource.id}">
+                                            View Details
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
+                        `;
+                        
+                        grid.appendChild(card);
+                    });
+                    
+                    // Initialize tooltips
+                    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                    tooltipTriggerList.map(function (tooltipTriggerEl) {
+                        return new bootstrap.Tooltip(tooltipTriggerEl);
+                    });
+                    
+                    // Add event listeners to view buttons
+                    document.querySelectorAll('.view-resource').forEach(button => {
+                        button.addEventListener('click', () => {
+                            const resourceId = button.getAttribute('data-id');
+                            const resource = filteredData.find(r => r.id == resourceId);
+                            
+                            if (resource) {
+                                document.getElementById('resourceModalTitle').textContent = resource.title;
+                                document.getElementById('resourceTitle').textContent = resource.title;
+                                document.getElementById('resourceImage').src = resource.cover_image || 'placeholder.png';
+                                document.getElementById('resourceCategory').textContent = resource.category || 'General';
+                                document.getElementById('resourceProfessor').textContent = resource.professor;
+                                document.getElementById('resourceDescription').textContent = resource.description;
+                                document.getElementById('resourceLink').href = resource.resource_link;
+                                
+                                const date = new Date(resource.created_at);
+                                const formattedDate = date.toLocaleDateString('en-US', {
+                                    year: 'numeric', 
+                                    month: 'short', 
+                                    day: 'numeric'
+                                });
+                                document.getElementById('resourceDate').textContent = formattedDate;
+                                
+                                resourceModal.show();
+                            }
+                        });
+                    });
+                    
+                } catch (error) {
+                    console.error('Error loading resources:', error);
+                    
+                    // Hide loading spinner
+                    loadingSpinner.style.display = 'none';
+                    
+                    // Show error message
+                    grid.innerHTML = `
+                        <div class="col-12 text-center py-5">
+                            <div class="mb-3">
+                                <i class="bi bi-exclamation-triangle text-danger" style="font-size: 3rem;"></i>
+                            </div>
+                            <h5 class="mb-2">Failed to Load Resources</h5>
+                            <p class="text-muted">An error occurred while loading resources. Please try again later.</p>
                         </div>
-                    </div>
-                `).join('');
-            } catch (error) {
-                console.error('Error:', error);
-                grid.innerHTML = `
-                    <div class="col-span-full text-center py-12">
-                        <p class="text-red-500">Failed to load resources. Please try again later.</p>
-                    </div>`;
-            } finally {
-                hideLoading();
+                    `;
+                }
             }
-        }
-
-        // Initialize resources
-        loadResources();
-
-        // Search with debounce
-        const searchInput = document.getElementById('searchInput');
-        let debounceTimer;
-        
-        searchInput.addEventListener('input', function() {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => {
-                loadResources(this.value.trim());
-            }, 300);
+            
+            // Initialize resources
+            loadResources();
+            
+            // Search functionality
+            const searchInput = document.getElementById('searchInput');
+            let debounceTimer;
+            
+            searchInput.addEventListener('input', function() {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    loadResources(this.value.trim());
+                }, 300);
+            });
+            
+            // Filter functionality
+            document.querySelectorAll('.filter-btn, .filter-item').forEach(button => {
+                button.addEventListener('click', function() {
+                    const filter = this.getAttribute('data-filter');
+                    
+                    // Update active state for nav buttons
+                    document.querySelectorAll('.filter-btn').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    if (this.classList.contains('filter-btn')) {
+                        this.classList.add('active');
+                    }
+                    
+                    // Load resources with filter
+                    loadResources(searchInput.value.trim(), filter);
+                });
+            });
+            
+            // Logout modal
+            document.getElementById('logoutBtn').addEventListener('click', function() {
+                const logoutModal = new bootstrap.Modal(document.getElementById('logoutModal'));
+                logoutModal.show();
+            });
         });
-    });
-
-    // Logout modal functionality
-    document.getElementById('cancelLogout').addEventListener('click', function() {
-        document.getElementById('logoutModal').classList.add('hidden');
-    });
-
-    document.getElementById('confirmLogout').addEventListener('click', function() {
-        window.location.href = 'logout.php';
-    });
-
-    document.getElementById('logoutModal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            this.classList.add('hidden');
-        }
-    });
     </script>
 </body>
 </html>

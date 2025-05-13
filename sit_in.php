@@ -10,7 +10,9 @@ if (!$conn) {
 // Disable caching to always get the latest session count
 $conn->query("SET SESSION query_cache_type = OFF;");
 
-// Add this after your existing session_start() and database connection
+// Keep your existing AJAX handlers
+
+// For get_points action
 if (isset($_GET['action']) && $_GET['action'] === 'get_points') {
     header('Content-Type: application/json');
     
@@ -51,7 +53,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_points') {
     exit;
 }
 
-// Replace the existing AJAX handler with this code
+// For logout_id action
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['logout_id'])) {
     $logout_id = intval($_POST['logout_id']);
 
@@ -102,12 +104,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['logout_id'])) {
     exit;
 }
 
-// Replace the existing add_point handler with this updated version
+// For add_point action
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_point'])) {
     $idno = $_POST['idno'];
     $conn->begin_transaction();
     
     try {
+        // Keep your existing add_point logic here
         // First check current session count
         $stmt = $conn->prepare("SELECT session_count FROM sit_in WHERE idno = ? AND time_out IS NULL");
         $stmt->bind_param("s", $idno);
@@ -187,673 +190,663 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_point'])) {
     exit;
 }
 
-// Add this check when inserting new sit-in records
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['new_sitin'])) {
-    $idno = $_POST['idno'];
-    $conn->begin_transaction();
-    
-    try {
-        // Check if user already has an active session
-        $stmt = $conn->prepare("SELECT id FROM sit_in WHERE idno = ? AND time_out IS NULL");
-        $stmt->bind_param("s", $idno);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        
-        if ($result->num_rows > 0) {
-            throw new Exception("This user already has an active sit-in session!");
-        }
-        $stmt->close();
-
-        // If no active session, proceed with insert
-        $stmt = $conn->prepare("INSERT INTO sit_in (idno, fullname, purpose, laboratory, session_count) VALUES (?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssssi", $idno, $fullname, $purpose, $laboratory, $session_count);
-        $stmt->execute();
-        $stmt->close();
-        
-        $conn->commit();
-        echo json_encode(["success" => true, "message" => "Sit-in session started successfully"]);
-    } catch (Exception $e) {
-        $conn->rollback();
-        echo json_encode(["success" => false, "message" => $e->getMessage()]);
-    }
-    exit;
-}
+// Keep other AJAX handlers as is
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light-style layout-menu-fixed" dir="ltr" data-theme="theme-default" data-assets-path="../assets/">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Current Sit-in</title>
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.7.2/dist/full.min.css" rel="stylesheet" type="text/css" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            themes: ["light"],
-            plugins: [require("daisyui")],
-        }
-    </script>
+    <title>Current Sit-in | Admin</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/img/favicon/favicon.ico" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
+
+    <!-- Icons. Required if you use Bootstrap Icons-->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    
+    <!-- Sneat Template Core CSS -->
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/css/core.css" class="template-customizer-core-css" />
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/css/theme-default.css" class="template-customizer-theme-css" />
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/css/demo.css" />
+    
+    <!-- Vendors CSS -->
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />
+
+    <!-- Helpers -->
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/js/helpers.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/js/config.js"></script>
 </head>
+
 <body>
-<div class="navbar bg-[#2c343c] shadow-lg">
-    <div class="navbar-start">
-        <div class="flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
-            <span class="text-xl font-bold text-white ml-2">Admin</span>
-        </div>
-    </div>
-    
-    <div class="navbar-center hidden lg:flex">
-        <ul class="menu menu-horizontal px-1 gap-2">
-            <li>
-                <a href="admin_dashboard.php" class="btn btn-ghost text-white hover:bg-white/10">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                    </svg>
-                    Home
-                </a>
-            </li>
-            <li>
-                <a href="search.php" class="btn btn-ghost text-white hover:bg-white/10">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    Search
-                </a>
-            </li>
-            <li>
-                <a href="students.php" class="btn btn-ghost text-white hover:bg-white/10">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                    Students
-                </a>
-            </li>
-            <li>
-                <a href="sit_in.php" class="btn btn-ghost text-white hover:bg-white/10">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                    Sit-in
-                </a>
-            </li>
-            <li>
-                <a href="sit_in_records.php" class="btn btn-ghost text-white hover:bg-white/10">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                    View Records
-                </a>
-            </li>
-            <li>
-                <a href="admin_reservation.php" class="btn btn-ghost text-white hover:bg-white/10">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    Reservation
-                </a>
-            </li>
-            <li>
-                <a href="reports.php" class="btn btn-ghost text-white hover:bg-white/10">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Reports
-                </a>
-            </li>
-            <li>
-                <a href="feedback.php" class="btn btn-ghost text-white hover:bg-white/10">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                    </svg>
-                    Feedback Reports
-                </a>
-            </li>
-        </ul>
-    </div>
-    
-    <div class="navbar-end">
-        <button id="logoutBtn" class="btn btn-error btn-outline gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-            Logout
-        </button>
-    </div>
-</div>
-
-<!-- Replace the existing table container section with this fixed version -->
-<div class="container mx-auto px-4 py-8">
-    <div class="bg-white rounded-lg shadow-lg overflow-hidden">
-        <div class="p-6 border-b border-gray-200">
-            <h2 class="text-2xl font-bold text-gray-800">Current Sit-in Sessions</h2>
-        </div>
-        
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            ID Number
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Name
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Purpose
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Sit Lab
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Session
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Status
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Actions
-                        </th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    <?php
-                    // Alternative version using created_at timestamp
-                    $sql = "SELECT id, idno, fullname, purpose, laboratory, session_count 
-                            FROM sit_in 
-                            WHERE time_out IS NULL 
-                            ORDER BY created_at DESC, id DESC";
-                    
-                    $result = $conn->query($sql);
-                    
-                    // Update colspan from 6 to 7 in error messages
-                    if (!$result) {
-                        echo '<tr><td colspan="7" class="px-6 py-4 text-center text-red-500">SQL Error: ' . $conn->error . '</td></tr>';
-                    } elseif ($result->num_rows == 0) {
-                        echo '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">No active sit-in sessions found</td></tr>';
-                    } else {
-                        while ($row = $result->fetch_assoc()) {
-                            echo '<tr id="row-' . $row['id'] . '" class="hover:bg-gray-50 transition-colors duration-200">';
-                            echo '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' . htmlspecialchars($row['idno']) . '</td>';
-                            echo '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' . htmlspecialchars($row['fullname']) . '</td>';
-                            echo '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' . htmlspecialchars($row['purpose']) . '</td>';
-                            echo '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' . htmlspecialchars($row['laboratory']) . '</td>';
-                            echo '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">';
-                            echo '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">' 
-                                . htmlspecialchars($row['session_count']) . '</span>';
-                            echo '</td>';
-                            echo '<td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">';
-                            echo '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Active</span>';
-                            echo '</td>';
-                            echo '<td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium flex items-center justify-center space-x-2">';
-                            // Add button
-                            echo '<button class="add-point-btn p-1 hover:bg-gray-100 rounded-full transition-colors duration-200 inline-flex items-center" data-idno="' . htmlspecialchars($row['idno']) . '">';
-                            echo '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">';
-                            echo '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />';
-                            echo '</svg>';
-                            echo '</button>';
-                            // Time Out button
-                            echo '<button class="logout-btn inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-colors duration-200" data-id="' . $row['id'] . '">';
-                            echo '<svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">';
-                            echo '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />';
-                            echo '</svg>Time Out</button>';
-                            echo '</td>';
-                            echo '</tr>';
-                        }
-                    }
-                    ?>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Add Student Points Table -->
-    <div class="bg-white rounded-lg shadow-lg overflow-hidden mt-8">
-        <div class="p-6 border-b border-gray-200">
-            <h2 class="text-2xl font-bold text-gray-800">Student Points</h2>
-        </div>
-        
-        <div class="overflow-x-auto">
-            <table class="student-points-table min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            ID Number
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Name
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Course
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Year Level
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Points
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Current Sessions
-                        </th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    <?php
-                    // Replace the existing Student Points SQL query with this fixed version
-                    $sql = "SELECT 
-                        u.id_no as idno,
-                        CONCAT(u.last_name, ', ', u.first_name, ' ', COALESCE(u.middle_name, '')) as full_name,
-                        u.course,
-                        u.year_level,
-                        u.points,
-                        COALESCE(
-                            (SELECT si.session_count 
-                             FROM sit_in si 
-                             WHERE si.idno = u.id_no 
-                             ORDER BY si.created_at DESC 
-                             LIMIT 1),
-                            30
-                        ) as current_sessions
-                    FROM users u
-                    ORDER BY u.last_name, u.first_name";
-                    
-                    $result = $conn->query($sql);
-                    
-                    if (!$result) {
-                        echo '<tr><td colspan="6" class="px-6 py-4 text-center text-red-500">SQL Error: ' . $conn->error . '</td></tr>';
-                    } elseif ($result->num_rows == 0) {
-                        echo '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No active students found</td></tr>';
-                    } else {
-                        while ($row = $result->fetch_assoc()) {
-                            echo '<tr class="hover:bg-gray-50 transition-colors duration-200">';
-                            echo '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' . htmlspecialchars($row['idno']) . '</td>';
-                            echo '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' . htmlspecialchars($row['full_name']) . '</td>';
-                            echo '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' . htmlspecialchars($row['course']) . '</td>';
-                            echo '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' . htmlspecialchars($row['year_level']) . '</td>';
-                            echo '<td class="px-6 py-4 whitespace-nowrap text-sm">';
-                            echo '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">' 
-                                . htmlspecialchars($row['points']) . '</span>';
-                            echo '</td>';
-                            echo '<td class="px-6 py-4 whitespace-nowrap text-sm">';
-                            echo '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">' 
-                                . htmlspecialchars($row['current_sessions']) . '</span>';
-                            echo '</td>';
-                            echo '</tr>';
-                        }
-                    }
-                    ?>
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-<!-- Replace the existing script with this version -->
-<script>
-// Function to update student points table
-function updateStudentPoints() {
-    const tbody = document.querySelector('.student-points-table tbody');
-    if (!tbody) return;
-
-    fetch('sit_in.php?action=get_points', {
-        method: 'GET',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.students) {
-            tbody.innerHTML = data.students.map(student => `
-                <tr class="hover:bg-gray-50 transition-colors duration-200">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${student.idno}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${student.full_name}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${student.course}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${student.year_level}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                            ${student.points}
+    <!-- Layout wrapper -->
+    <div class="layout-wrapper layout-content-navbar">
+        <div class="layout-container">
+            <!-- Menu -->
+            <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
+                <div class="app-brand demo">
+                    <a href="admin_dashboard.php" class="app-brand-link">
+                        <span class="app-brand-logo demo">
+                            <svg width="25" viewBox="0 0 25 42" xmlns="http://www.w3.org/2000/svg">
+                                <defs><linearGradient id="a" x1="50%" x2="50%" y1="0%" y2="100%">
+                                <stop offset="0%" stop-color="#5A8DEE"/><stop offset="100%" stop-color="#699AF9"/></linearGradient></defs>
+                                <path fill="url(#a)" d="M12.5 0 25 14H0z"/><path fill="#FDAC41" d="M0 14 12.5 28 25 14H0z"/>
+                                <path fill="#E89A3C" d="M0 28 12.5 42 25 28H0z"/><path fill="#FDAC41" d="M12.5 14 25 28 12.5 42 0 28z"/>
+                            </svg>
                         </span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                            ${student.current_sessions}
-                        </span>
-                    </td>
-                </tr>
-            `).join('');
-        }
-    })
-    .catch(error => console.error('Error:', error));
-}
+                        <span class="app-brand-text demo menu-text fw-bolder ms-2">Sit-In Admin</span>
+                    </a>
 
-// Update the timeout success handler in your existing script
-document.addEventListener("DOMContentLoaded", function() {
-    const confirmPopup = document.getElementById("confirmPopup");
-    const timeoutPopup = document.getElementById("timeoutPopup");
-    const timeoutMessage = document.getElementById("timeoutMessage");
-    const closeTimeoutPopup = document.getElementById("closeTimeoutPopup");
-    const confirmTimeOut = document.getElementById("confirmTimeOut");
-    const cancelTimeOut = document.getElementById("cancelTimeOut");
-    
-    let currentLogoutId = null;
-    let currentRow = null;
+                    <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-block d-xl-none">
+                        <i class="bi bi-x bi-middle"></i>
+                    </a>
+                </div>
 
-    document.querySelectorAll(".logout-btn").forEach(button => {
-        button.addEventListener("click", function (event) {
-            event.preventDefault();
-            currentLogoutId = this.getAttribute("data-id");
-            currentRow = document.getElementById("row-" + currentLogoutId);
-            confirmPopup.classList.remove('hidden');
-        });
-    });
+                <div class="menu-inner-shadow"></div>
 
-    confirmTimeOut.addEventListener("click", function() {
-        confirmPopup.classList.add('hidden');
-        
-        fetch("sit_in.php", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded"
-            },
-            body: "logout_id=" + currentLogoutId
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                currentRow.remove();
-                timeoutMessage.textContent = data.message;
-                timeoutPopup.classList.remove('hidden');
-                // Update student points table after successful timeout
-                updateStudentPoints();
-            } else {
-                timeoutMessage.textContent = "Error: " + data.message;
-                timeoutPopup.classList.remove('hidden');
-            }
-        })
-        .catch(error => {
-            console.error("Error:", error);
-            timeoutMessage.textContent = "An error occurred while processing your request.";
-            timeoutPopup.classList.remove('hidden');
-        });
-    });
+                <ul class="menu-inner py-1">
+                    <!-- Dashboard -->
+                    <li class="menu-item">
+                        <a href="admin_dashboard.php" class="menu-link">
+                            <i class="menu-icon bi bi-house-door"></i>
+                            <div>Dashboard</div>
+                        </a>
+                    </li>
 
-    cancelTimeOut.addEventListener("click", function() {
-        confirmPopup.classList.add('hidden');
-    });
+                    <li class="menu-header small text-uppercase">
+                        <span class="menu-header-text">Management</span>
+                    </li>
 
-    // Close confirm popup when clicking outside
-    confirmPopup.addEventListener("click", function(e) {
-        if (e.target === confirmPopup) {
-            confirmPopup.classList.add('hidden');
-        }
-    });
+                    <!-- Search -->
+                    <li class="menu-item">
+                        <a href="search.php" class="menu-link">
+                            <i class="menu-icon bi bi-search"></i>
+                            <div>Search</div>
+                        </a>
+                    </li>
 
-    // Close timeout popup when clicking continue button
-    closeTimeoutPopup.addEventListener("click", function() {
-        timeoutPopup.classList.add('hidden');
-    });
+                    <!-- Students -->
+                    <li class="menu-item">
+                        <a href="students.php" class="menu-link">
+                            <i class="menu-icon bi bi-people"></i>
+                            <div>Students</div>
+                        </a>
+                    </li>
 
-    // Close timeout popup when clicking outside
-    timeoutPopup.addEventListener("click", function(e) {
-        if (e.target === timeoutPopup) {
-            timeoutPopup.classList.add('hidden');
-        }
-    });
+                    <!-- Sit-in -->
+                    <li class="menu-item active">
+                        <a href="sit_in.php" class="menu-link">
+                            <i class="menu-icon bi bi-clipboard-check"></i>
+                            <div>Sit-in</div>
+                        </a>
+                    </li>
 
-    const logoutBtn = document.getElementById('logoutBtn');
-    const logoutModal = document.getElementById('logoutModal');
-    const cancelLogout = document.getElementById('cancelLogout');
-    const confirmLogout = document.getElementById('confirmLogout');
+                    <!-- View Records -->
+                    <li class="menu-item">
+                        <a href="sit_in_records.php" class="menu-link">
+                            <i class="menu-icon bi bi-clipboard-data"></i>
+                            <div>View Records</div>
+                        </a>
+                    </li>
 
-    // Show modal when logout button is clicked
-    logoutBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        logoutModal.classList.remove('hidden');
-    });
+                    <li class="menu-header small text-uppercase">
+                        <span class="menu-header-text">Features</span>
+                    </li>
 
-    // Hide modal when cancel is clicked
-    cancelLogout.addEventListener('click', function() {
-        logoutModal.classList.add('hidden');
-    });
+                    <!-- Reservation -->
+                    <li class="menu-item">
+                        <a href="admin_reservation.php" class="menu-link">
+                            <i class="menu-icon bi bi-calendar-check"></i>
+                            <div>Reservation</div>
+                        </a>
+                    </li>
 
-    // Perform logout when confirm is clicked
-    confirmLogout.addEventListener('click', function() {
-        window.location.href = 'logout.php';
-    });
+                    <!-- Reports -->
+                    <li class="menu-item">
+                        <a href="reports.php" class="menu-link">
+                            <i class="menu-icon bi bi-file-earmark-bar-graph"></i>
+                            <div>Reports</div>
+                        </a>
+                    </li>
 
-    // Close modal when clicking outside
-    logoutModal.addEventListener('click', function(e) {
-        if (e.target === this) {
-            this.classList.add('hidden');
-        }
-    });
+                    <!-- Feedback Reports -->
+                    <li class="menu-item">
+                        <a href="feedback.php" class="menu-link">
+                            <i class="menu-icon bi bi-chat-left-text"></i>
+                            <div>Feedback Reports</div>
+                        </a>
+                    </li>
 
-    // Add max sessions popup handlers
-    const maxSessionsPopup = document.getElementById('maxSessionsPopup');
-    const closeMaxSessionsPopup = document.getElementById('closeMaxSessionsPopup');
+                    <!-- Resources -->
+                    <li class="menu-item">
+                        <a href="lab_resources.php" class="menu-link">
+                            <i class="menu-icon bi bi-box"></i>
+                            <div>Resources</div>
+                        </a>
+                    </li>
+                </ul>
+            </aside>
+            <!-- / Menu -->
 
-    if (closeMaxSessionsPopup) {
-        closeMaxSessionsPopup.addEventListener('click', function() {
-            maxSessionsPopup.classList.add('hidden');
-        });
-    }
+            <!-- Layout container -->
+            <div class="layout-page">
+                <!-- Navbar -->
+                <nav class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme" id="layout-navbar">
+                    <div class="layout-menu-toggle navbar-nav align-items-xl-center me-3 me-xl-0 d-xl-none">
+                        <a class="nav-item nav-link px-0 me-xl-4" href="javascript:void(0)">
+                            <i class="bi bi-list bi-middle"></i>
+                        </a>
+                    </div>
 
-    // Close popup when clicking outside
-    if (maxSessionsPopup) {
-        maxSessionsPopup.addEventListener('click', function(e) {
-            if (e.target === this) {
-                this.classList.add('hidden');
-            }
-        });
-    }
+                    <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
+                        <!-- Search -->
+                        <div class="navbar-nav align-items-center">
+                            <div class="nav-item d-flex align-items-center">
+                                <i class="bi bi-search fs-4 lh-0"></i>
+                                <input type="text" class="form-control border-0 shadow-none" placeholder="Search..." aria-label="Search...">
+                            </div>
+                        </div>
+                        <!-- /Search -->
 
-    // Add Points Modal Event Listeners
-    const addPointsModal = document.getElementById('addPointsModal');
-    const closeAddPointsModal = document.getElementById('closeAddPointsModal');
+                        <ul class="navbar-nav flex-row align-items-center ms-auto">
+                            <!-- User -->
+                            <li class="nav-item navbar-dropdown dropdown-user dropdown">
+                                <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown">
+                                    <div class="avatar avatar-online">
+                                        <img src="https://ui-avatars.com/api/?name=Admin&background=696cff&color=fff" alt class="w-px-40 h-auto rounded-circle">
+                                    </div>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item" href="#">
+                                            <div class="d-flex">
+                                                <div class="flex-shrink-0 me-3">
+                                                    <div class="avatar avatar-online">
+                                                        <img src="https://ui-avatars.com/api/?name=Admin&background=696cff&color=fff" alt class="w-px-40 h-auto rounded-circle">
+                                                    </div>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <span class="fw-semibold d-block">Admin</span>
+                                                    <small class="text-muted">Administrator</small>
+                                                </div>
+                                            </div>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <div class="dropdown-divider"></div>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#">
+                                            <i class="bi bi-gear me-2"></i>
+                                            <span class="align-middle">Settings</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <div class="dropdown-divider"></div>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="javascript:void(0);" id="logoutBtn">
+                                            <i class="bi bi-box-arrow-right me-2"></i>
+                                            <span class="align-middle">Log Out</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <!--/ User -->
+                        </ul>
+                    </div>
+                </nav>
+                <!-- / Navbar -->
 
-    if (closeAddPointsModal) {
-        closeAddPointsModal.addEventListener('click', function() {
-            addPointsModal.classList.add('hidden');
-            location.reload(); // Refresh the page to update points display
-        });
-    }
+                <!-- Content wrapper -->
+                <div class="content-wrapper">
+                    <!-- Content -->
+                    <div class="container-xxl flex-grow-1 container-p-y">
+                        <h4 class="fw-bold py-3 mb-4">
+                            <span class="text-muted fw-light">Student Management /</span> Current Sit-in Sessions
+                        </h4>
+                        
+                        <!-- Current Sit-in Sessions Card -->
+                        <div class="card">
+                            <h5 class="card-header">Current Sit-in Sessions</h5>
+                            <div class="table-responsive text-nowrap">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>ID Number</th>
+                                            <th>Name</th>
+                                            <th>Purpose</th>
+                                            <th>Sit Lab</th>
+                                            <th>Session</th>
+                                            <th>Status</th>
+                                            <th class="text-center">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="table-border-bottom-0">
+                                        <?php
+                                        $sql = "SELECT id, idno, fullname, purpose, laboratory, session_count 
+                                                FROM sit_in 
+                                                WHERE time_out IS NULL 
+                                                ORDER BY created_at DESC, id DESC";
+                                        
+                                        $result = $conn->query($sql);
+                                        
+                                        if (!$result) {
+                                            echo '<tr><td colspan="7" class="text-center text-danger">SQL Error: ' . $conn->error . '</td></tr>';
+                                        } elseif ($result->num_rows == 0) {
+                                            echo '<tr><td colspan="7" class="text-center text-muted">No active sit-in sessions found</td></tr>';
+                                        } else {
+                                            while ($row = $result->fetch_assoc()) {
+                                                echo '<tr id="row-' . $row['id'] . '">';
+                                                echo '<td><i class="bi bi-person-badge me-2"></i>' . htmlspecialchars($row['idno']) . '</td>';
+                                                echo '<td>' . htmlspecialchars($row['fullname']) . '</td>';
+                                                echo '<td>' . htmlspecialchars($row['purpose']) . '</td>';
+                                                echo '<td>' . htmlspecialchars($row['laboratory']) . '</td>';
+                                                echo '<td><span class="badge bg-label-primary">' . htmlspecialchars($row['session_count']) . '</span></td>';
+                                                echo '<td><span class="badge bg-label-success">Active</span></td>';
+                                                echo '<td class="text-center">';
+                                                // Add button
+                                                echo '<button class="add-point-btn btn btn-icon btn-sm btn-outline-primary me-2" data-idno="' . htmlspecialchars($row['idno']) . '">';
+                                                echo '<i class="bi bi-plus"></i>';
+                                                echo '</button>';
+                                                // Time Out button
+                                                echo '<button class="logout-btn btn btn-sm btn-warning" data-id="' . $row['id'] . '">';
+                                                echo '<i class="bi bi-box-arrow-right me-1"></i>Time Out</button>';
+                                                echo '</td>';
+                                                echo '</tr>';
+                                            }
+                                        }
+                                        ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <!-- / Current Sit-in Sessions Card -->
+                        
+                        <!-- Student Points Card -->
+                        <div class="card mt-4">
+                            <h5 class="card-header">Student Points</h5>
+                            <div class="table-responsive text-nowrap">
+                                <table class="table table-hover student-points-table">
+                                    <thead>
+                                        <tr>
+                                            <th>ID Number</th>
+                                            <th>Name</th>
+                                            <th>Course</th>
+                                            <th>Year Level</th>
+                                            <th>Points</th>
+                                            <th>Current Sessions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="table-border-bottom-0">
+                                        <?php
+                                        $sql = "SELECT 
+                                            u.id_no as idno,
+                                            CONCAT(u.last_name, ', ', u.first_name, ' ', COALESCE(u.middle_name, '')) as full_name,
+                                            u.course,
+                                            u.year_level,
+                                            u.points,
+                                            COALESCE(
+                                                (SELECT si.session_count 
+                                                FROM sit_in si 
+                                                WHERE si.idno = u.id_no 
+                                                ORDER BY si.created_at DESC 
+                                                LIMIT 1),
+                                                30
+                                            ) as current_sessions
+                                        FROM users u
+                                        ORDER BY u.last_name, u.first_name";
+                                        
+                                        $result = $conn->query($sql);
+                                        
+                                        if (!$result) {
+                                            echo '<tr><td colspan="6" class="text-center text-danger">SQL Error: ' . $conn->error . '</td></tr>';
+                                        } elseif ($result->num_rows == 0) {
+                                            echo '<tr><td colspan="6" class="text-center text-muted">No active students found</td></tr>';
+                                        } else {
+                                            while ($row = $result->fetch_assoc()) {
+                                                echo '<tr>';
+                                                echo '<td><i class="bi bi-person-badge me-2"></i>' . htmlspecialchars($row['idno']) . '</td>';
+                                                echo '<td>' . htmlspecialchars($row['full_name']) . '</td>';
+                                                echo '<td>' . htmlspecialchars($row['course']) . '</td>';
+                                                echo '<td>' . htmlspecialchars($row['year_level']) . '</td>';
+                                                echo '<td><span class="badge bg-label-info">' . htmlspecialchars($row['points']) . '</span></td>';
+                                                echo '<td><span class="badge bg-label-primary">' . htmlspecialchars($row['current_sessions']) . '</span></td>';
+                                                echo '</tr>';
+                                            }
+                                        }
+                                        ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <!-- / Student Points Card -->
+                    </div>
+                    <!-- / Content -->
 
-    // Close modal when clicking outside
-    if (addPointsModal) {
-        addPointsModal.addEventListener('click', function(e) {
-            if (e.target === this) {
-                this.classList.add('hidden');
-                location.reload(); // Refresh the page to update points display
-            }
-        });
-    }
+                    <!-- Footer -->
+                    <footer class="content-footer footer bg-footer-theme">
+                        <div class="container-xxl d-flex flex-wrap justify-content-between py-2 flex-md-row flex-column">
+                            <div class="mb-2 mb-md-0">
+                                ©
+                                <script>
+                                    document.write(new Date().getFullYear());
+                                </script>
+                                Sit-In System Admin Dashboard
+                            </div>
+                        </div>
+                    </footer>
+                    <!-- / Footer -->
 
-    // Add point button handler
-    document.querySelectorAll('.add-point-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const idno = this.getAttribute('data-idno');
-            
-            fetch('sit_in.php', {
-                method: 'POST',
+                    <div class="content-backdrop fade"></div>
+                </div>
+                <!-- / Content wrapper -->
+            </div>
+            <!-- / Layout page -->
+        </div>
+
+        <!-- Overlay -->
+        <div class="layout-overlay layout-menu-toggle"></div>
+    </div>
+    <!-- / Layout wrapper -->
+
+    <!-- Modals -->
+    <!-- Confirm Timeout Modal -->
+    <div class="modal fade" id="confirmTimeoutModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Time Out</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-12 mb-3 text-center">
+                            <div class="avatar avatar-md mx-auto mb-3">
+                                <span class="avatar-initial rounded-circle bg-label-warning">
+                                    <i class="bi bi-exclamation-triangle-fill"></i>
+                                </span>
+                            </div>
+                            <p>Are you sure you want to time out this student?</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        Cancel
+                    </button>
+                    <button type="button" class="btn btn-warning" id="confirmTimeOut">
+                        Time Out
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Success!</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-12 mb-3 text-center">
+                            <div class="avatar avatar-md mx-auto mb-3">
+                                <span class="avatar-initial rounded-circle bg-label-success">
+                                    <i class="bi bi-check-lg"></i>
+                                </span>
+                            </div>
+                            <p id="successMessage"></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                        Continue
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Max Sessions Modal -->
+    <div class="modal fade" id="maxSessionsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Maximum Sessions Reached</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-12 mb-3 text-center">
+                            <div class="avatar avatar-md mx-auto mb-3">
+                                <span class="avatar-initial rounded-circle bg-label-danger">
+                                    <i class="bi bi-exclamation-triangle-fill"></i>
+                                </span>
+                            </div>
+                            <p>Cannot add more sessions. Maximum limit of 30 sessions reached for this user.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                        Understood
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Points Success Modal -->
+    <div class="modal fade" id="addPointsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Points Added!</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-12 mb-3 text-center">
+                            <div class="avatar avatar-md mx-auto mb-3">
+                                <span class="avatar-initial rounded-circle bg-label-success">
+                                    <i class="bi bi-check-lg"></i>
+                                </span>
+                            </div>
+                            <p id="pointsMessage"></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                        Continue
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logout Modal -->
+    <div class="modal fade" id="logoutModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Logout</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-12 mb-3 text-center">
+                            <div class="avatar avatar-md mx-auto mb-3">
+                                <span class="avatar-initial rounded-circle bg-label-danger">
+                                    <i class="bi bi-box-arrow-right"></i>
+                                </span>
+                            </div>
+                            <p>Are you sure you want to logout?</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        Cancel
+                    </button>
+                    <a href="logout.php" class="btn btn-danger">Logout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Core JS -->
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/jquery/jquery.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/popper/popper.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/js/bootstrap.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/js/menu.js"></script>
+
+    <!-- Main JS -->
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/js/main.js"></script>
+
+    <script>
+        // Function to update student points table
+        function updateStudentPoints() {
+            fetch('sit_in.php?action=get_points', {
+                method: 'GET',
                 headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: `add_point=1&idno=${idno}`
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
             })
             .then(response => response.json())
             .then(data => {
-                if (data.success) {
-                    // Show success modal with message
-                    document.getElementById('pointsMessage').textContent = data.message;
-                    document.getElementById('addPointsModal').classList.remove('hidden');
-                    // Update student points table
-                    updateStudentPoints();
-                } else if (data.maxSessionsReached) {
-                    maxSessionsPopup.classList.remove('hidden');
-                } else {
-                    alert('Error: ' + data.message);
+                if (data.students) {
+                    const tbody = document.querySelector('.student-points-table tbody');
+                    if (!tbody) return;
+                    
+                    tbody.innerHTML = data.students.map(student => `
+                        <tr>
+                            <td><i class="bi bi-person-badge me-2"></i>${student.idno}</td>
+                            <td>${student.full_name}</td>
+                            <td>${student.course}</td>
+                            <td>${student.year_level}</td>
+                            <td><span class="badge bg-label-info">${student.points}</span></td>
+                            <td><span class="badge bg-label-primary">${student.current_sessions}</span></td>
+                        </tr>
+                    `).join('');
                 }
             })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred while processing your request.');
+            .catch(error => console.error('Error:', error));
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            let currentLogoutId = null;
+            let currentRow = null;
+
+            // Logout button handler
+            document.querySelectorAll(".logout-btn").forEach(button => {
+                button.addEventListener("click", function() {
+                    currentLogoutId = this.getAttribute("data-id");
+                    currentRow = document.getElementById("row-" + currentLogoutId);
+                    const modal = new bootstrap.Modal(document.getElementById('confirmTimeoutModal'));
+                    modal.show();
+                });
+            });
+
+            // Confirm timeout button handler
+            document.getElementById('confirmTimeOut').addEventListener('click', function() {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('confirmTimeoutModal'));
+                modal.hide();
+                
+                fetch("sit_in.php", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    body: "logout_id=" + currentLogoutId
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        currentRow.remove();
+                        document.getElementById('successMessage').textContent = data.message;
+                        const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                        successModal.show();
+                        // Update student points table after successful timeout
+                        updateStudentPoints();
+                    } else {
+                        document.getElementById('successMessage').textContent = "Error: " + data.message;
+                        const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                        successModal.show();
+                    }
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                    document.getElementById('successMessage').textContent = "An error occurred while processing your request.";
+                    const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                    successModal.show();
+                });
+            });
+
+            // Logout button handler
+            document.getElementById('logoutBtn').addEventListener('click', function() {
+                const logoutModal = new bootstrap.Modal(document.getElementById('logoutModal'));
+                logoutModal.show();
+            });
+
+            // Add point button handler
+            document.querySelectorAll('.add-point-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const idno = this.getAttribute('data-idno');
+                    
+                    fetch('sit_in.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `add_point=1&idno=${idno}`
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Show success modal with message
+                            document.getElementById('pointsMessage').textContent = data.message;
+                            const addPointsModal = new bootstrap.Modal(document.getElementById('addPointsModal'));
+                            addPointsModal.show();
+                            // Update student points table
+                            updateStudentPoints();
+                        } else if (data.maxSessionsReached) {
+                            const maxSessionsModal = new bootstrap.Modal(document.getElementById('maxSessionsModal'));
+                            maxSessionsModal.show();
+                        } else {
+                            alert('Error: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while processing your request.');
+                    });
+                });
+            });
+
+            // Modal events - refresh page after success
+            document.getElementById('addPointsModal').addEventListener('hidden.bs.modal', function () {
+                // No need to refresh when using AJAX update
+                // updateStudentPoints();
+            });
+
+            document.getElementById('successModal').addEventListener('hidden.bs.modal', function () {
+                // No need to refresh when using AJAX update
+                // window.location.reload();
             });
         });
-    });
-});
-
-// Add event listener for closing max sessions popup
-document.getElementById('closeMaxSessionsPopup').addEventListener('click', function() {
-    document.getElementById('maxSessionsPopup').classList.add('hidden');
-});
-
-// Close popup when clicking outside
-document.getElementById('maxSessionsPopup').addEventListener('click', function(e) {
-    if (e.target === this) {
-        this.classList.add('hidden');
-    }
-});
-
-// Add event listener for closing add points modal
-document.getElementById('closeAddPointsModal').addEventListener('click', function() {
-    document.getElementById('addPointsModal').classList.add('hidden');
-    window.location.reload(); // Refresh the page to show updated points
-});
-
-// Close modal when clicking outside
-document.getElementById('addPointsModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        this.classList.add('hidden');
-        window.location.reload();
-    }
-});
-</script>
-
-<!-- Add this before the timeoutPopup div -->
-<div id="confirmPopup" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3 text-center">
-            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100">
-                <svg class="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                </svg>
-            </div>
-            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Confirm Time Out</h3>
-            <div class="mt-2 px-7 py-3">
-                <p class="text-sm text-gray-500">Are you sure you want to time out this student?</p>
-            </div>
-            <div class="items-center px-4 py-3 flex space-x-4">
-                <button id="confirmTimeOut" 
-                        class="flex-1 px-4 py-2 bg-yellow-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-300">
-                    Yes
-                </button>
-                <button id="cancelTimeOut"
-                        class="flex-1 px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300">
-                    Cancel
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Add this before </body> -->
-<div id="timeoutPopup" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3 text-center">
-            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
-                <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                </svg>
-            </div>
-            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Success!</h3>
-            <div class="mt-2 px-7 py-3">
-                <p class="text-sm text-gray-500" id="timeoutMessage"></p>
-            </div>
-            <div class="items-center px-4 py-3">
-                <button id="closeTimeoutPopup" 
-                        class="px-4 py-2 bg-green-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300">
-                    Continue
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Add max sessions popup -->
-<div id="maxSessionsPopup" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3 text-center">
-            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                </svg>
-            </div>
-            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Maximum Sessions Reached</h3>
-            <div class="mt-2 px-7 py-3">
-                <p class="text-sm text-gray-500">Cannot add more sessions. Maximum limit of 30 sessions reached for this user.</p>
-            </div>
-            <div class="items-center px-4 py-3">
-                <button id="closeMaxSessionsPopup" 
-                    class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300">
-                    Understood
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Add Points Success Modal -->
-<div id="addPointsModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3 text-center">
-            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
-                <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                </svg>
-            </div>
-            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Points Added!</h3>
-            <div class="mt-2 px-7 py-3">
-                <p class="text-sm text-gray-500" id="pointsMessage"></p>
-            </div>
-            <div class="items-center px-4 py-3">
-                <button id="closeAddPointsModal" 
-                    class="px-4 py-2 bg-green-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300">
-                    Continue
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Logout confirmation modal -->
-<div id="logoutModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
-        <div class="mt-3 text-center">
-            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
-                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                </svg>
-            </div>
-            <h3 class="text-lg leading-6 font-medium text-gray-900">Confirm Logout</h3>
-            <div class="mt-2 px-7 py-3">
-                <p class="text-sm text-gray-500">Are you sure you want to logout?</p>
-            </div>
-            <div class="flex justify-center gap-4 mt-3">
-                <button id="cancelLogout" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium rounded-md">
-                    Cancel
-                </button>
-                <button id="confirmLogout" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md">
-                    Logout
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    </script>
 </body>
 </html>

@@ -10,13 +10,14 @@ if (!isset($_SESSION['user_id'])) {
 
 // Get the current user's ID number from the users table
 $user_id = $_SESSION['user_id'];
-$id_query = "SELECT id_no FROM users WHERE id = ?";
+$id_query = "SELECT id_no, profile_picture, first_name, last_name, course FROM users WHERE id = ?";
 $stmt = $conn->prepare($id_query);
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $id_result = $stmt->get_result();
 $user_data = $id_result->fetch_assoc();
 $user_id_no = $user_data['id_no'];
+$profile_picture = !empty($user_data['profile_picture']) ? $user_data['profile_picture'] : 'profile.jpg';
 
 // Fetch history data for current user only using their ID number
 $sql = "SELECT 
@@ -48,398 +49,593 @@ if ($result->num_rows === 0) {
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light-style layout-menu-fixed" dir="ltr" data-theme="theme-default">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CCS Sit-In Monitoring</title>
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.7.2/dist/full.min.css" rel="stylesheet" type="text/css" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            themes: ["light"],
-            plugins: [require("daisyui")],
-        }
-    </script>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="dashboard.css">
-</head>
-<body>
-
-<!-- Add navigation bar -->
-<div class="navbar bg-[#2c343c] shadow-lg">
-    <div class="navbar-start">
-        <div class="flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
-            <span class="text-xl font-bold text-white ml-2">Dashboard</span>
-        </div>
-    </div>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <title>History | Sit-In System</title>
     
-    <div class="navbar-center hidden lg:flex">
-        <ul class="menu menu-horizontal px-1 gap-2">
-            <li>
-                <a href="dashboard.php" class="btn btn-ghost text-white hover:bg-white/10">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                    </svg>
-                    Home
-                </a>
-            </li>
-            <li>
-                <a href="#" class="btn btn-ghost text-white hover:bg-white/10">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                    </svg>
-                    Notifications
-                </a>
-            </li>
-            <li>
-                <a href="editprofile.php" class="btn btn-ghost text-white hover:bg-white/10">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                    Edit Profile
-                </a>
-            </li>
-            <li>
-                <a href="history.php" class="btn btn-ghost text-white hover:bg-white/10">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    History
-                </a>
-            </li>
-            <li>
-                <a href="user_reservation.php" class="btn btn-ghost text-white hover:bg-white/10">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    Reservation
-                </a>
-            </li>
-        </ul>
-    </div>
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/img/favicon/favicon.ico" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700&display=swap" rel="stylesheet" />
     
-    <div class="navbar-end">
-        <a href="logout.php" class="btn btn-error btn-outline gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-            Logout
-        </a>
-    </div>
-</div>
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" />
+    
+    <!-- Core CSS -->
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/css/core.css" class="template-customizer-core-css" />
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/css/theme-default.css" class="template-customizer-theme-css" />
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/css/demo.css" />
 
-<div class="container mx-auto px-4 py-8">
-    <div class="text-center mb-8">
-        <div class="flex items-center justify-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <h4 class="text-xl font-semibold">HISTORY INFORMATION</h4>
-        </div>
-    </div>
-
-    <div class="card bg-base-100 shadow-xl">
-        <div class="card-body p-0">
-            <div class="overflow-x-auto">
-                <table class="table table-zebra">
-                    <!-- Table head -->
-                    <thead class="text-xs uppercase">
-                        <tr class="bg-[#2c343c] text-white"> <!-- Changed to match navbar color -->
-                            <th class="w-28">ID Number</th>
-                            <th>Name</th>
-                            <th>Purpose</th>
-                            <th>Laboratory</th>
-                            <th>Time In</th>
-                            <th>Time Out</th>
-                            <th>Date</th>
-                            <th>Status</th>
-                            <th class="w-24">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php
-                        if ($result->num_rows > 0) {
-                            while($row = $result->fetch_assoc()) {
-                                $statusBadge = $row['status'] === 'Completed' 
-                                    ? 'badge bg-green-100 text-green-800 border-none' // Light green for completed
-                                    : 'badge badge-warning';
-                                ?>
-                                <tr class="hover">
-                                    <td class="font-mono"><?php echo $row['idno']; ?></td>
-                                    <td><?php echo $row['fullname']; ?></td>
-                                    <td><?php echo $row['purpose']; ?></td>
-                                    <td>
-                                        <div class="badge badge-ghost"><?php echo $row['laboratory']; ?></div>
-                                    </td>
-                                    <td class="font-mono"><?php echo date('h:i A', strtotime($row['time_in'])); ?></td>
-                                    <td class="font-mono"><?php echo $row['time_out'] ? date('h:i A', strtotime($row['time_out'])) : '-'; ?></td>
-                                    <td class="font-mono"><?php echo $row['date']; ?></td>
-                                    <td>
-                                        <div class="<?php echo $statusBadge; ?>">
-                                            <?php echo $row['status']; ?>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <button class="btn btn-primary btn-xs feedback-btn" 
-                                                data-sitinid="<?php echo $row['id']; ?>">
-                                            Feedback
-                                        </button>
-                                    </td>
-                                </tr>
-                                <?php
-                            }
-                        } else {
-                            ?>
-                            <tr>
-                                <td colspan="9" class="text-center py-4">
-                                    <div class="flex flex-col items-center justify-center text-gray-500">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                                        </svg>
-                                        <span class="font-medium">No records found</span>
-                                    </div>
-                                </td>
-                            </tr>
-                            <?php
-                        }
-                        ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Update the modal HTML with star rating -->
-<div id="feedbackModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3 text-center">
-            <h3 class="text-lg leading-6 font-medium text-gray-900">Feedback Form</h3>
-            
-            <!-- Add star rating system -->
-            <div class="flex justify-center items-center space-x-1 my-4">
-                <div class="rating">
-                    <?php for($i = 5; $i >= 1; $i--): ?>
-                    <input type="radio" id="star<?= $i ?>" name="rating" value="<?= $i ?>" class="hidden" />
-                    <label for="star<?= $i ?>" class="cursor-pointer text-3xl text-gray-300 hover:text-yellow-400 peer-checked:text-yellow-400">★</label>
-                    <?php endfor; ?>
-                </div>
-            </div>
-            
-            <div class="mt-2 px-7 py-3">
-                <textarea id="feedbackText" class="w-full px-3 py-2 text-gray-700 border rounded-lg focus:outline-none focus:border-blue-500" rows="4" placeholder="Enter your feedback here..."></textarea>
-            </div>
-            <div class="items-center px-4 py-3">
-                <button id="submitFeedback" class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
-                    Submit Feedback
-                </button>
-                <button id="closeFeedback" class="mt-3 px-4 py-2 bg-gray-300 text-gray-800 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500">
-                    Close
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Logout confirmation modal -->
-<div id="logoutModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
-        <div class="mt-3 text-center">
-            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
-                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                </svg>
-            </div>
-            <h3 class="text-lg leading-6 font-medium text-gray-900">Confirm Logout</h3>
-            <div class="mt-2 px-7 py-3">
-                <p class="text-sm text-gray-500">Are you sure you want to logout?</p>
-            </div>
-            <div class="flex justify-center gap-4 mt-3">
-                <button id="cancelLogout" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium rounded-md">
-                    Cancel
-                </button>
-                <button id="confirmLogout" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md">
-                    Logout
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Update the JavaScript for handling ratings -->
-<script>
-    // Add styles for star rating
-    const style = document.createElement('style');
-    style.textContent = `
+    <!-- Vendors CSS -->
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />
+    
+    <!-- Page CSS -->
+    <style>
         .rating {
             display: flex;
             flex-direction: row-reverse;
             justify-content: center;
         }
+        
+        .rating input {
+            display: none;
+        }
+        
+        .rating label {
+            cursor: pointer;
+            width: 1.5rem;
+            font-size: 1.5rem;
+            color: #d4d4d4;
+            transition: all 0.2s;
+        }
+        
         .rating input:checked ~ label,
         .rating label:hover,
         .rating label:hover ~ label {
             color: #FBBF24;
         }
-    `;
-    document.head.appendChild(style);
+    </style>
+    
+    <!-- Helpers -->
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/js/helpers.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/js/config.js"></script>
+</head>
 
-    // Get all feedback buttons
-    document.querySelectorAll('.feedback-btn').forEach(button => {
-        button.addEventListener('click', () => {
-            document.getElementById('feedbackModal').classList.remove('hidden');
-        });
-    });
+<body>
+    <!-- Layout wrapper -->
+    <div class="layout-wrapper layout-content-navbar">
+        <div class="layout-container">
+            <!-- Menu -->
+            <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
+                <div class="app-brand demo">
+                    <a href="dashboard.php" class="app-brand-link">
+                        <span class="app-brand-logo demo">
+                            <svg width="25" viewBox="0 0 25 42" xmlns="http://www.w3.org/2000/svg">
+                                <defs><linearGradient id="a" x1="50%" x2="50%" y1="0%" y2="100%">
+                                <stop offset="0%" stop-color="#5A8DEE"/><stop offset="100%" stop-color="#699AF9"/></linearGradient></defs>
+                                <path fill="url(#a)" d="M12.5 0 25 14H0z"/><path fill="#FDAC41" d="M0 14 12.5 28 25 14H0z"/>
+                                <path fill="#E89A3C" d="M0 28 12.5 42 25 28H0z"/><path fill="#FDAC41" d="M12.5 14 25 28 12.5 42 0 28z"/>
+                            </svg>
+                        </span>
+                        <span class="app-brand-text demo menu-text fw-bolder ms-2">UC Sit-In</span>
+                    </a>
 
-    // Close modal when clicking close button
-    document.getElementById('closeFeedback').addEventListener('click', () => {
-        document.getElementById('feedbackModal').classList.add('hidden');
-        resetFeedbackForm();
-    });
+                    <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-block d-xl-none">
+                        <i class="bi bi-x bi-middle"></i>
+                    </a>
+                </div>
 
-    // Close modal when clicking outside
-    document.getElementById('feedbackModal').addEventListener('click', (e) => {
-        if (e.target.id === 'feedbackModal') {
-            document.getElementById('feedbackModal').classList.add('hidden');
-            resetFeedbackForm();
-        }
-    });
+                <div class="menu-inner-shadow"></div>
 
-    // Replace the existing submitFeedback event listener
-    document.getElementById('submitFeedback').addEventListener('click', () => {
-        const feedback = document.getElementById('feedbackText').value;
-        const rating = document.querySelector('input[name="rating"]:checked')?.value;
-        const sitInId = document.querySelector('.feedback-btn[data-sitinid]').dataset.sitinid;
+                <ul class="menu-inner py-1">
+                    <!-- Dashboard -->
+                    <li class="menu-item">
+                        <a href="dashboard.php" class="menu-link">
+                            <i class="menu-icon bi bi-house-door"></i>
+                            <div data-i18n="Dashboard">Dashboard</div>
+                        </a>
+                    </li>
 
-        if (!rating) {
-            alert('Please select a rating');
-            return;
-        }
+                    <li class="menu-header small text-uppercase">
+                        <span class="menu-header-text">Student Features</span>
+                    </li>
 
-        if (!feedback.trim()) {
-            alert('Please enter your feedback');
-            return;
-        }
+                    <!-- Edit Profile -->
+                    <li class="menu-item">
+                        <a href="editprofile.php" class="menu-link">
+                            <i class="menu-icon bi bi-person-gear"></i>
+                            <div data-i18n="Edit Profile">Edit Profile</div>
+                        </a>
+                    </li>
 
-        // Submit feedback using fetch
-        fetch('submit_feedback.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                sit_in_id: sitInId,
-                rating: rating,
-                feedback_text: feedback
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Create and show success popup
-                const popup = document.createElement('div');
-                popup.className = 'fixed inset-0 flex items-center justify-center z-50';
-                popup.innerHTML = `
-                    <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity"></div>
-                    <div class="bg-white rounded-lg px-8 py-6 max-w-sm mx-auto relative transform transition-all">
-                        <div class="flex items-center justify-center mb-4">
-                            <div class="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
-                                <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                </svg>
+                    <!-- History -->
+                    <li class="menu-item active">
+                        <a href="history.php" class="menu-link">
+                            <i class="menu-icon bi bi-clock-history"></i>
+                            <div data-i18n="History">History</div>
+                        </a>
+                    </li>
+
+                    <!-- Reservation -->
+                    <li class="menu-item">
+                        <a href="user_reservation.php" class="menu-link">
+                            <i class="menu-icon bi bi-calendar-check"></i>
+                            <div data-i18n="Reservation">Reservation</div>
+                        </a>
+                    </li>
+
+                    <!-- Resources -->
+                    <li class="menu-item">
+                        <a href="user_resources.php" class="menu-link">
+                            <i class="menu-icon bi bi-box"></i>
+                            <div data-i18n="Resources">Resources</div>
+                        </a>
+                    </li>
+                </ul>
+            </aside>
+            <!-- / Menu -->
+
+            <!-- Layout container -->
+            <div class="layout-page">
+                <!-- Navbar -->
+                <nav class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme" id="layout-navbar">
+                    <div class="layout-menu-toggle navbar-nav align-items-xl-center me-3 me-xl-0 d-xl-none">
+                        <a class="nav-item nav-link px-0 me-xl-4" href="javascript:void(0)">
+                            <i class="bi bi-list bi-middle"></i>
+                        </a>
+                    </div>
+
+                    <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
+                        <!-- Search -->
+                        <div class="navbar-nav align-items-center">
+                            <div class="nav-item d-flex align-items-center">
+                                <i class="bi bi-search fs-4 lh-0"></i>
+                                <input type="text" id="historySearch" class="form-control border-0 shadow-none" placeholder="Search history..." aria-label="Search...">
                             </div>
                         </div>
-                        <h3 class="text-center text-lg font-medium text-gray-900 mb-4">Success!</h3>
-                        <p class="text-center text-gray-500 mb-6">Your feedback has been submitted successfully.</p>
+                        <!-- /Search -->
+
+                        <ul class="navbar-nav flex-row align-items-center ms-auto">
+                            <!-- User -->
+                            <li class="nav-item navbar-dropdown dropdown-user dropdown">
+                                <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown">
+                                    <div class="avatar avatar-online">
+                                        <img src="<?php echo htmlspecialchars($profile_picture); ?>" alt="profile" class="w-px-40 h-auto rounded-circle">
+                                    </div>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item" href="#">
+                                            <div class="d-flex">
+                                                <div class="flex-shrink-0 me-3">
+                                                    <div class="avatar avatar-online">
+                                                        <img src="<?php echo htmlspecialchars($profile_picture); ?>" alt="profile" class="w-px-40 h-auto rounded-circle">
+                                                    </div>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <span class="fw-semibold d-block"><?php echo htmlspecialchars($user_data['first_name'] . ' ' . $user_data['last_name']); ?></span>
+                                                    <small class="text-muted"><?php echo htmlspecialchars($user_data['course']); ?></small>
+                                                </div>
+                                            </div>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <div class="dropdown-divider"></div>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="editprofile.php">
+                                            <i class="bi bi-person-gear me-2"></i>
+                                            <span class="align-middle">My Profile</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="history.php">
+                                            <i class="bi bi-clock-history me-2"></i>
+                                            <span class="align-middle">History</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <div class="dropdown-divider"></div>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="javascript:void(0);" id="logoutBtn">
+                                            <i class="bi bi-box-arrow-right me-2"></i>
+                                            <span class="align-middle">Log Out</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <!--/ User -->
+                        </ul>
                     </div>
-                `;
+                </nav>
+                <!-- / Navbar -->
 
-                document.body.appendChild(popup);
+                <!-- Content wrapper -->
+                <div class="content-wrapper">
+                    <!-- Content -->
+                    <div class="container-xxl flex-grow-1 container-p-y">
+                        <h4 class="fw-bold py-3 mb-4">
+                            <i class="bi bi-clock-history me-2"></i> Sit-In History
+                        </h4>
 
-                // Close feedback modal
-                document.getElementById('feedbackModal').classList.add('hidden');
-                resetFeedbackForm();
-
-                // Remove success popup after 2 seconds
-                setTimeout(() => {
-                    popup.classList.add('opacity-0');
-                    setTimeout(() => {
-                        document.body.removeChild(popup);
-                    }, 300);
-                }, 2000);
-            } else {
-                // Create and show error popup
-                const popup = document.createElement('div');
-                popup.className = 'fixed inset-0 flex items-center justify-center z-50';
-                popup.innerHTML = `
-                    <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity"></div>
-                    <div class="bg-white rounded-lg px-8 py-6 max-w-sm mx-auto relative transform transition-all">
-                        <div class="flex items-center justify-center mb-4">
-                            <div class="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center">
-                                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                </svg>
+                        <!-- History Table -->
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Your Lab Activity History</h5>
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="bi bi-filter me-1"></i> Filter
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item filter-btn" data-filter="all" href="javascript:void(0);">All</a></li>
+                                        <li><a class="dropdown-item filter-btn" data-filter="active" href="javascript:void(0);">Active</a></li>
+                                        <li><a class="dropdown-item filter-btn" data-filter="completed" href="javascript:void(0);">Completed</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item filter-btn" data-filter="thisweek" href="javascript:void(0);">This Week</a></li>
+                                        <li><a class="dropdown-item filter-btn" data-filter="thismonth" href="javascript:void(0);">This Month</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="table-responsive text-nowrap">
+                                <table class="table table-hover" id="historyTable">
+                                    <thead>
+                                        <tr>
+                                            <th>ID Number</th>
+                                            <th>Name</th>
+                                            <th>Purpose</th>
+                                            <th>Laboratory</th>
+                                            <th>Time In</th>
+                                            <th>Time Out</th>
+                                            <th>Date</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="table-border-bottom-0">
+                                        <?php
+                                        if ($result->num_rows > 0) {
+                                            while($row = $result->fetch_assoc()) {
+                                                $statusBadge = $row['status'] === 'Completed' 
+                                                    ? 'badge bg-label-success' 
+                                                    : 'badge bg-label-warning';
+                                                ?>
+                                                <tr>
+                                                    <td><span class="fw-medium"><?php echo htmlspecialchars($row['idno']); ?></span></td>
+                                                    <td><?php echo htmlspecialchars($row['fullname']); ?></td>
+                                                    <td><?php echo htmlspecialchars($row['purpose']); ?></td>
+                                                    <td><span class="badge bg-label-primary"><?php echo htmlspecialchars($row['laboratory']); ?></span></td>
+                                                    <td><?php echo htmlspecialchars($row['time_in']); ?></td>
+                                                    <td><?php echo $row['time_out'] ? htmlspecialchars($row['time_out']) : '<i class="text-muted">--:--</i>'; ?></td>
+                                                    <td><?php echo htmlspecialchars($row['date']); ?></td>
+                                                    <td><span class="<?php echo $statusBadge; ?>"><?php echo htmlspecialchars($row['status']); ?></span></td>
+                                                    <td>
+                                                        <button type="button" class="btn btn-sm btn-primary feedback-btn" 
+                                                                data-bs-toggle="modal" 
+                                                                data-bs-target="#feedbackModal" 
+                                                                data-sitinid="<?php echo $row['id']; ?>">
+                                                            <i class="bi bi-chat-dots me-1"></i> Feedback
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                                <?php
+                                            }
+                                        } else {
+                                            ?>
+                                            <tr>
+                                                <td colspan="9" class="text-center py-3">
+                                                    <div class="d-flex justify-content-center align-items-center flex-column">
+                                                        <i class="bi bi-folder2-open text-primary mb-2" style="font-size: 2rem;"></i>
+                                                        <h6 class="mb-0 text-muted">No records found</h6>
+                                                        <p class="mb-0 small text-muted">You haven't used the laboratory yet.</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <?php
+                                        }
+                                        ?>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
-                        <h3 class="text-center text-lg font-medium text-gray-900 mb-4">Error</h3>
-                        <p class="text-center text-gray-500 mb-6">${data.message || 'Error submitting feedback'}</p>
+                        <!--/ History Table -->
                     </div>
-                `;
+                    <!-- / Content -->
 
-                document.body.appendChild(popup);
+                    <!-- Footer -->
+                    <footer class="content-footer footer bg-footer-theme">
+                        <div class="container-xxl d-flex flex-wrap justify-content-between py-2 flex-md-row flex-column">
+                            <div class="mb-2 mb-md-0">
+                                ©
+                                <script>
+                                    document.write(new Date().getFullYear());
+                                </script>
+                                University of Cebu - College of Computer Studies
+                            </div>
+                        </div>
+                    </footer>
+                    <!-- / Footer -->
 
-                // Remove error popup after 3 seconds
-                setTimeout(() => {
-                    popup.classList.add('opacity-0');
-                    setTimeout(() => {
-                        document.body.removeChild(popup);
-                    }, 300);
-                }, 3000);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error submitting feedback');
+                    <div class="content-backdrop fade"></div>
+                </div>
+                <!-- / Content wrapper -->
+            </div>
+            <!-- / Layout page -->
+        </div>
+
+        <!-- Overlay -->
+        <div class="layout-overlay layout-menu-toggle"></div>
+    </div>
+    <!-- / Layout wrapper -->
+
+    <!-- Feedback Modal -->
+    <div class="modal fade" id="feedbackModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Lab Session Feedback</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-chat-square-heart text-primary" style="font-size: 3rem;"></i>
+                        <h5 class="mt-2">Rate your experience</h5>
+                    </div>
+
+                    <!-- Star Rating -->
+                    <div class="rating mb-4">
+                        <input type="radio" id="star5" name="rating" value="5" />
+                        <label for="star5">★</label>
+                        <input type="radio" id="star4" name="rating" value="4" />
+                        <label for="star4">★</label>
+                        <input type="radio" id="star3" name="rating" value="3" />
+                        <label for="star3">★</label>
+                        <input type="radio" id="star2" name="rating" value="2" />
+                        <label for="star2">★</label>
+                        <input type="radio" id="star1" name="rating" value="1" />
+                        <label for="star1">★</label>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="feedbackText" class="form-label">Comments & Suggestions</label>
+                        <textarea class="form-control" id="feedbackText" rows="3" placeholder="Share your experience and suggestions for improvement..."></textarea>
+                    </div>
+
+                    <input type="hidden" id="sitInIdField" value="">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        Cancel
+                    </button>
+                    <button type="button" id="submitFeedback" class="btn btn-primary">Submit Feedback</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logout Modal -->
+    <div class="modal fade" id="logoutModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Logout</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-box-arrow-right text-danger" style="font-size: 3rem;"></i>
+                        <h4 class="mt-3">Are you sure you want to logout?</h4>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        Cancel
+                    </button>
+                    <a href="logout.php" class="btn btn-danger">Logout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Core JS -->
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/jquery/jquery.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/popper/popper.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/js/bootstrap.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/js/menu.js"></script>
+
+    <!-- Sweet Alert for notifications -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Main JS -->
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/js/main.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get the feedback modal
+            const feedbackModal = new bootstrap.Modal(document.getElementById('feedbackModal'));
+            
+            // Handle feedback button clicks
+            const feedbackBtns = document.querySelectorAll('.feedback-btn');
+            feedbackBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const sitInId = this.getAttribute('data-sitinid');
+                    document.getElementById('sitInIdField').value = sitInId;
+                    // Reset form on open
+                    document.querySelectorAll('input[name="rating"]').forEach(radio => radio.checked = false);
+                    document.getElementById('feedbackText').value = '';
+                });
+            });
+            
+            // Handle submit feedback
+            document.getElementById('submitFeedback').addEventListener('click', function() {
+                const sitInId = document.getElementById('sitInIdField').value;
+                const rating = document.querySelector('input[name="rating"]:checked')?.value;
+                const feedbackText = document.getElementById('feedbackText').value.trim();
+                
+                if (!rating) {
+                    Swal.fire({
+                        title: 'Rating Required',
+                        text: 'Please select a star rating',
+                        icon: 'warning',
+                        confirmButtonText: 'OK',
+                        customClass: {
+                            confirmButton: 'btn btn-primary'
+                        },
+                        buttonsStyling: false
+                    });
+                    return;
+                }
+                
+                if (!feedbackText) {
+                    Swal.fire({
+                        title: 'Feedback Required',
+                        text: 'Please enter your feedback or comments',
+                        icon: 'warning',
+                        confirmButtonText: 'OK',
+                        customClass: {
+                            confirmButton: 'btn btn-primary'
+                        },
+                        buttonsStyling: false
+                    });
+                    return;
+                }
+                
+                // Submit feedback using fetch
+                fetch('submit_feedback.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        sit_in_id: sitInId,
+                        rating: rating,
+                        feedback_text: feedbackText
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    feedbackModal.hide();
+                    
+                    if (data.success) {
+                        Swal.fire({
+                            title: 'Thank You!',
+                            text: 'Your feedback has been submitted successfully',
+                            icon: 'success',
+                            confirmButtonText: 'OK',
+                            customClass: {
+                                confirmButton: 'btn btn-primary'
+                            },
+                            buttonsStyling: false
+                        });
+                    } else {
+                        Swal.fire({
+                            title: 'Error',
+                            text: data.message || 'There was a problem submitting your feedback',
+                            icon: 'error',
+                            confirmButtonText: 'OK',
+                            customClass: {
+                                confirmButton: 'btn btn-primary'
+                            },
+                            buttonsStyling: false
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    feedbackModal.hide();
+                    
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'An unexpected error occurred. Please try again later.',
+                        icon: 'error',
+                        confirmButtonText: 'OK',
+                        customClass: {
+                            confirmButton: 'btn btn-primary'
+                        },
+                        buttonsStyling: false
+                    });
+                });
+            });
+            
+            // Search functionality
+            document.getElementById('historySearch').addEventListener('keyup', function() {
+                const searchValue = this.value.toLowerCase();
+                const table = document.getElementById('historyTable');
+                const rows = table.getElementsByTagName('tr');
+                
+                for (let i = 1; i < rows.length; i++) { // Start from 1 to skip header
+                    const row = rows[i];
+                    const cols = row.getElementsByTagName('td');
+                    
+                    // Skip the no records row
+                    if (cols.length === 1) continue;
+                    
+                    let found = false;
+                    for (let j = 0; j < cols.length - 1; j++) { // Exclude the actions column
+                        const text = cols[j].textContent.toLowerCase();
+                        if (text.indexOf(searchValue) > -1) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    
+                    row.style.display = found ? '' : 'none';
+                }
+            });
+            
+            // Filter functionality
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const filterType = this.getAttribute('data-filter');
+                    const table = document.getElementById('historyTable');
+                    const rows = table.getElementsByTagName('tr');
+                    
+                    for (let i = 1; i < rows.length; i++) { // Start from 1 to skip header
+                        const row = rows[i];
+                        const cols = row.getElementsByTagName('td');
+                        
+                        // Skip the no records row
+                        if (cols.length === 1) continue;
+                        
+                        const statusCell = cols[7]; // Status column
+                        const dateCell = cols[6];   // Date column
+                        
+                        let show = true;
+                        
+                        if (filterType === 'active') {
+                            show = statusCell.textContent.trim() === 'Active';
+                        } else if (filterType === 'completed') {
+                            show = statusCell.textContent.trim() === 'Completed';
+                        } else if (filterType === 'thisweek') {
+                            const date = new Date(dateCell.textContent);
+                            const now = new Date();
+                            const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
+                            const weekEnd = new Date(new Date().setDate(weekStart.getDate() + 6));
+                            show = date >= weekStart && date <= weekEnd;
+                        } else if (filterType === 'thismonth') {
+                            const date = new Date(dateCell.textContent);
+                            const now = new Date();
+                            show = date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+                        }
+                        
+                        row.style.display = show ? '' : 'none';
+                    }
+                });
+            });
+            
+            // Logout modal
+            document.getElementById('logoutBtn').addEventListener('click', function() {
+                const logoutModal = new bootstrap.Modal(document.getElementById('logoutModal'));
+                logoutModal.show();
+            });
         });
-    });
-
-    // Function to reset the feedback form
-    function resetFeedbackForm() {
-        document.getElementById('feedbackText').value = '';
-        const checkedStar = document.querySelector('input[name="rating"]:checked');
-        if (checkedStar) {
-            checkedStar.checked = false;
-        }
-    }
-
-    // Update the logout button click handler
-    document.querySelector('a[href="logout.php"]').addEventListener('click', function(e) {
-        e.preventDefault();
-        document.getElementById('logoutModal').classList.remove('hidden');
-    });
-
-    // Handle cancel button
-    document.getElementById('cancelLogout').addEventListener('click', function() {
-        document.getElementById('logoutModal').classList.add('hidden');
-    });
-
-    // Handle confirm logout
-    document.getElementById('confirmLogout').addEventListener('click', function() {
-        window.location.href = 'logout.php';
-    });
-
-    // Close modal when clicking outside
-    document.getElementById('logoutModal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            this.classList.add('hidden');
-        }
-    });
-</script>
-
+    </script>
 </body>
 </html>
 

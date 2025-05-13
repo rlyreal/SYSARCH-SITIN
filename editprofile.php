@@ -24,7 +24,7 @@ if ($result->num_rows > 0) {
     $year_level = $row['year_level'];
     $email = $row['email'];
     $address = $row['address'];
-    $profile_picture = !empty($row['profile_picture']) ? $row['profile_picture'] : 'default_profile.png';
+    $profile_picture = !empty($row['profile_picture']) ? $row['profile_picture'] : 'profile.jpg';
 } else {
     header('Location: dashboard.php');
     exit();
@@ -32,449 +32,496 @@ if ($result->num_rows > 0) {
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light-style layout-menu-fixed" dir="ltr" data-theme="theme-default">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Profile</title>
-    <link rel="stylesheet" href="editprofile.css">
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.7.2/dist/full.min.css" rel="stylesheet" type="text/css" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            themes: ["light"],
-            plugins: [require("daisyui")],
-        }
-    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <title>Edit Profile | Sit-In System</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/img/favicon/favicon.ico" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700&display=swap" rel="stylesheet" />
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" />
+    
+    <!-- Core CSS -->
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/css/core.css" class="template-customizer-core-css" />
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/css/theme-default.css" class="template-customizer-theme-css" />
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/css/demo.css" />
+
+    <!-- Vendors CSS -->
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />
+    
+    <!-- Alerts -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const profileInput = document.getElementById("profile_picture");
-        const profilePreview = document.getElementById("profile_preview");
-        const profileContainer = document.querySelector(".profile-container");
-
-        profileContainer.addEventListener("click", function () {
-            profileInput.click();
-        });
-
-        profileInput.addEventListener("change", function (event) {
-            const file = event.target.files[0];
-            if (file) {
-                profilePreview.src = URL.createObjectURL(file);
-            }
-        });
-
-        // SweetAlert2 for success message with redirect
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.has("message")) {
-            Swal.fire({
-                title: "Success!",
-                text: urlParams.get("message"),
-                icon: "success",
-                timer: 2000,
-                showConfirmButton: false
-            }).then(() => {
-                window.location.href = "dashboard.php"; // Redirect to dashboard
-            });
-
-            // Remove the message from URL after showing the alert
-            window.history.replaceState(null, "", window.location.pathname);
-        }
-    });
-    </script>
+    
+    <!-- Helpers -->
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/js/helpers.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/js/config.js"></script>
+    
     <style>
-        #success_toast {
-            display: none;
+        .upload-area {
+            border: 2px dashed #ced4da;
+            border-radius: 50%;
+            width: 160px;
+            height: 160px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            overflow: hidden;
+            margin: 0 auto;
+        }
+        
+        .upload-area:hover {
+            border-color: #696cff;
+        }
+        
+        .upload-area .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            border-radius: 50%;
+        }
+        
+        .upload-area:hover .overlay {
             opacity: 1;
-            transition: opacity 0.3s ease-in-out;
+        }
+        
+        .upload-area img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .upload-area .overlay i {
+            color: white;
+            font-size: 24px;
         }
     </style>
 </head>
+
 <body>
-    <!-- Add this toast container after body tag -->
-    <div class="toast toast-end z-50" id="success_toast">
-        <div class="alert alert-success">
-            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span id="toast_message"></span>
-        </div>
-    </div>
-    <div class="navbar bg-[#2c343c] shadow-lg">
-        <div class="navbar-start">
-            <div class="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-                <span class="text-xl font-bold text-white ml-2">Dashboard</span>
-            </div>
-        </div>
-        
-        <div class="navbar-center hidden lg:flex">
-            <ul class="menu menu-horizontal px-1 gap-2">
-                <li>
-                    <a href="dashboard.php" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                        </svg>
-                        Home
+    <!-- Layout wrapper -->
+    <div class="layout-wrapper layout-content-navbar">
+        <div class="layout-container">
+            <!-- Menu -->
+            <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
+                <div class="app-brand demo">
+                    <a href="dashboard.php" class="app-brand-link">
+                        <span class="app-brand-logo demo">
+                            <svg width="25" viewBox="0 0 25 42" xmlns="http://www.w3.org/2000/svg">
+                                <defs><linearGradient id="a" x1="50%" x2="50%" y1="0%" y2="100%">
+                                <stop offset="0%" stop-color="#5A8DEE"/><stop offset="100%" stop-color="#699AF9"/></linearGradient></defs>
+                                <path fill="url(#a)" d="M12.5 0 25 14H0z"/><path fill="#FDAC41" d="M0 14 12.5 28 25 14H0z"/>
+                                <path fill="#E89A3C" d="M0 28 12.5 42 25 28H0z"/><path fill="#FDAC41" d="M12.5 14 25 28 12.5 42 0 28z"/>
+                            </svg>
+                        </span>
+                        <span class="app-brand-text demo menu-text fw-bolder ms-2">UC Sit-In</span>
                     </a>
-                </li>
-                <li>
-                    <a href="#" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                        </svg>
-                        Notifications
-                    </a>
-                </li>
-                <li>
-                    <a href="editprofile.php" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                        Edit Profile
-                    </a>
-                </li>
-                <li>
-                    <a href="history.php" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        History
-                    </a>
-                </li>
-                <li>
-                    <a href="#" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        Reservation
-                    </a>
-                </li>
-            </ul>
-        </div>
-        
-        <div class="navbar-end">
-            <a href="logout.php" class="btn btn-error btn-outline gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                Logout
-            </a>
-        </div>
-    </div>
 
-    <div class="container mx-auto px-4 py-6 max-w-2xl"> <!-- Changed from max-w-xl and increased padding -->
-        <div class="card bg-base-100 shadow-xl">
-            <div class="card-header bg-[#2c343c] px-3 py-1.5"> <!-- Reduced padding -->
-                <h2 class="card-title text-white text-sm">Edit Profile</h2> <!-- Smaller text -->
-            </div>
-            
-            <div class="card-body p-4"> <!-- Increased padding -->
-                <form action="updateprofile.php" method="POST" enctype="multipart/form-data" class="space-y-4"> <!-- Increased spacing -->
-                    <!-- Profile Picture Upload -->
-                    <div class="flex justify-center mb-3"> <!-- Increased margin -->
-                        <div class="avatar cursor-pointer hover:opacity-80 transition-opacity" onclick="document.getElementById('profile_picture').click()">
-                            <div class="w-24 h-24 rounded-full ring ring-[#2c343c] ring-offset-2"> <!-- Larger avatar -->
-                                <img id="profile_preview" src="<?php echo htmlspecialchars($profile_picture); ?>" alt="Profile"/>
-                            </div>
-                            <input type="file" id="profile_picture" name="profile_picture" accept="image/*" class="hidden">
-                        </div>
+                    <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-block d-xl-none">
+                        <i class="bi bi-x bi-middle"></i>
+                    </a>
+                </div>
+
+                <div class="menu-inner-shadow"></div>
+
+                <ul class="menu-inner py-1">
+                    <!-- Dashboard -->
+                    <li class="menu-item">
+                        <a href="dashboard.php" class="menu-link">
+                            <i class="menu-icon bi bi-house-door"></i>
+                            <div data-i18n="Dashboard">Dashboard</div>
+                        </a>
+                    </li>
+
+                    <li class="menu-header small text-uppercase">
+                        <span class="menu-header-text">Student Features</span>
+                    </li>
+
+                    <!-- Edit Profile -->
+                    <li class="menu-item active">
+                        <a href="editprofile.php" class="menu-link">
+                            <i class="menu-icon bi bi-person-gear"></i>
+                            <div data-i18n="Edit Profile">Edit Profile</div>
+                        </a>
+                    </li>
+
+                    <!-- History -->
+                    <li class="menu-item">
+                        <a href="history.php" class="menu-link">
+                            <i class="menu-icon bi bi-clock-history"></i>
+                            <div data-i18n="History">History</div>
+                        </a>
+                    </li>
+
+                    <!-- Reservation -->
+                    <li class="menu-item">
+                        <a href="user_reservation.php" class="menu-link">
+                            <i class="menu-icon bi bi-calendar-check"></i>
+                            <div data-i18n="Reservation">Reservation</div>
+                        </a>
+                    </li>
+
+                    <!-- Resources -->
+                    <li class="menu-item">
+                        <a href="user_resources.php" class="menu-link">
+                            <i class="menu-icon bi bi-box"></i>
+                            <div data-i18n="Resources">Resources</div>
+                        </a>
+                    </li>
+                </ul>
+            </aside>
+            <!-- / Menu -->
+
+            <!-- Layout container -->
+            <div class="layout-page">
+                <!-- Navbar -->
+                <nav class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme" id="layout-navbar">
+                    <div class="layout-menu-toggle navbar-nav align-items-xl-center me-3 me-xl-0 d-xl-none">
+                        <a class="nav-item nav-link px-0 me-xl-4" href="javascript:void(0)">
+                            <i class="bi bi-list bi-middle"></i>
+                        </a>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3"> <!-- Increased gap -->
-                        <!-- ID Number -->
-                        <div class="form-control">
-                            <label class="label py-1"> <!-- Increased label padding -->
-                                <span class="label-text text-sm">ID Number</span> <!-- Larger label text -->
-                            </label>
-                            <input type="text" id="id_number" name="id_number" 
-                                   value="<?php echo htmlspecialchars($id_number); ?>" 
-                                   class="input input-bordered input-sm w-full" readonly> <!-- Changed to input-sm -->
-                        </div>
-
-                        <!-- Course -->
-                        <div class="form-control">
-                            <label class="label py-1"> <!-- Increased label padding -->
-                                <span class="label-text text-sm">Course</span> <!-- Larger label text -->
-                            </label>
-                            <select id="course" name="course" class="select select-bordered select-sm w-full"> <!-- Changed to select-sm -->
-                                <option value="BSIT" <?php echo ($course == "BSIT") ? 'selected' : ''; ?>>BSIT</option>
-                                <option value="BSCS" <?php echo ($course == "BSCS") ? 'selected' : ''; ?>>BSCS</option>
-                                <option value="BSECE" <?php echo ($course == "BSECE") ? 'selected' : ''; ?>>BSECE</option>
-                                <option value="BSIS" <?php echo ($course == "BSIS") ? 'selected' : ''; ?>>BSIS</option>
-                            </select>
-                        </div>
-
-                        <!-- Last Name -->
-                        <div class="form-control">
-                            <label class="label py-1"> <!-- Increased label padding -->
-                                <span class="label-text text-sm">Last Name</span> <!-- Larger label text -->
-                            </label>
-                            <input type="text" id="last_name" name="last_name" 
-                                   value="<?php echo htmlspecialchars($last_name); ?>" 
-                                   class="input input-bordered input-sm w-full" 
-                                   pattern="[A-Za-z\s]+" required> <!-- Changed to input-sm -->
-                        </div>
-
-                        <!-- First Name -->
-                        <div class="form-control">
-                            <label class="label py-1"> <!-- Increased label padding -->
-                                <span class="label-text text-sm">First Name</span> <!-- Larger label text -->
-                            </label>
-                            <input type="text" id="first_name" name="first_name" 
-                                   value="<?php echo htmlspecialchars($first_name); ?>" 
-                                   class="input input-bordered input-sm w-full" 
-                                   pattern="[A-Za-z\s]+" required> <!-- Changed to input-sm -->
-                        </div>
-
-                        <!-- Middle Name -->
-                        <div class="form-control">
-                            <label class="label py-1"> <!-- Increased label padding -->
-                                <span class="label-text text-sm">Middle Name</span> <!-- Larger label text -->
-                            </label>
-                            <input type="text" id="middle_name" name="middle_name" 
-                                   value="<?php echo htmlspecialchars($middle_name); ?>" 
-                                   class="input input-bordered input-sm w-full" 
-                                   pattern="[A-Za-z\s]+"> <!-- Changed to input-sm -->
-                        </div>
-
-                        <!-- Year Level -->
-                        <div class="form-control">
-                            <label class="label py-1">
-                                <span class="label-text text-sm">Year Level</span>
-                            </label>
-                            <select id="course_level" name="course_level" class="select select-bordered select-sm w-full">
-                                <option value="1" <?php echo ($year_level == 1) ? 'selected' : ''; ?>>1st Year</option>
-                                <option value="2" <?php echo ($year_level == 2) ? 'selected' : ''; ?>>2nd Year</option>
-                                <option value="3" <?php echo ($year_level == 3) ? 'selected' : ''; ?>>3rd Year</option>
-                                <option value="4" <?php echo ($year_level == 4) ? 'selected' : ''; ?>>4th Year</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Full Width Fields -->
-                    <div class="space-y-3"> <!-- Reduced spacing -->
-                        <div class="form-control">
-                            <label class="label py-1"> <!-- Increased label padding -->
-                                <span class="label-text text-sm">Email</span> <!-- Larger label text -->
-                            </label>
-                            <input type="email" id="email" name="email" 
-                                   value="<?php echo htmlspecialchars($email); ?>" 
-                                   class="input input-bordered input-sm w-full"> <!-- Changed to input-sm -->
-                        </div>
-
-                        <div class="form-control">
-                            <label class="label py-1"> <!-- Increased label padding -->
-                                <span class="label-text text-sm">Address</span> <!-- Larger label text -->
-                            </label>
-                            <input type="text" id="address" name="address" 
-                                   value="<?php echo htmlspecialchars($address); ?>" 
-                                   class="input input-bordered input-sm w-full"> <!-- Changed to input-sm -->
-                        </div>
-                    </div>
-
-                    <!-- Replace the existing save changes button and add this modal -->
-                    <div class="card-actions justify-end mt-4">
-                        <button type="button" id="saveButton" class="btn btn-primary btn-sm">Save Changes</button>
-                        <a href="dashboard.php" class="btn btn-ghost btn-sm">Cancel</a>
-                    </div>
-
-                    <!-- Add this modal dialog -->
-                    <div id="confirmModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-                        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-                            <div class="mt-3 text-center">
-                                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100">
-                                    <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                </div>
-                                <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Save Changes?</h3>
-                                <div class="mt-2 px-7 py-3">
-                                    <p class="text-sm text-gray-500">
-                                        Are you sure you want to save these changes to your profile?
-                                    </p>
-                                </div>
-                                <div class="flex justify-end gap-2 mt-4">
-                                    <button id="closeModal" type="button" 
-                                            class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium rounded-md">
-                                        Cancel
-                                    </button>
-                                    <button id="confirmSave" type="button" 
-                                            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md">
-                                        Save Changes
-                                    </button>
-                                </div>
+                    <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
+                        <!-- Search -->
+                        <div class="navbar-nav align-items-center">
+                            <div class="nav-item d-flex align-items-center">
+                                <i class="bi bi-search fs-4 lh-0"></i>
+                                <input type="text" class="form-control border-0 shadow-none" placeholder="Search..." aria-label="Search...">
                             </div>
                         </div>
-                    </div>
+                        <!-- /Search -->
 
-                    <!-- Add this script for modal functionality -->
-                    <script>
-                        const modal = document.getElementById('confirmModal');
-                        const saveButton = document.getElementById('saveButton');
-                        const closeModal = document.getElementById('closeModal');
-                        const confirmSave = document.getElementById('confirmSave');
-                        const form = document.querySelector('form');
-
-                        // Show modal
-                        saveButton.addEventListener('click', () => {
-                            modal.classList.remove('hidden');
-                            // Prevent body scrolling when modal is open
-                            document.body.style.overflow = 'hidden';
-                        });
-
-                        // Hide modal
-                        closeModal.addEventListener('click', () => {
-                            modal.classList.add('hidden');
-                            document.body.style.overflow = 'auto';
-                        });
-
-                        // Click outside to close
-                        modal.addEventListener('click', (e) => {
-                            if (e.target === modal) {
-                                modal.classList.add('hidden');
-                                document.body.style.overflow = 'auto';
-                            }
-                        });
-
-                        // Handle form submission
-                        confirmSave.addEventListener('click', () => {
-                            form.submit();
-                        });
-
-                        // Show success message
-                        const urlParams = new URLSearchParams(window.location.search);
-                        if (urlParams.has("message")) {
-                            const successModal = document.createElement('div');
-                            successModal.className = 'fixed inset-0 flex items-center justify-center z-50';
-                            successModal.innerHTML = `
-                                <div class="fixed inset-0 bg-gray-600 bg-opacity-50"></div>
-                                <div class="relative bg-white rounded-lg px-8 py-6 max-w-sm mx-auto">
-                                    <div class="flex items-center justify-center mb-4">
-                                        <div class="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
-                                            <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                            </svg>
-                                        </div>
+                        <ul class="navbar-nav flex-row align-items-center ms-auto">
+                            <!-- User -->
+                            <li class="nav-item navbar-dropdown dropdown-user dropdown">
+                                <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown">
+                                    <div class="avatar avatar-online">
+                                        <img src="<?php echo htmlspecialchars($profile_picture); ?>" alt="profile" class="w-px-40 h-auto rounded-circle">
                                     </div>
-                                    <h3 class="text-center text-lg font-medium text-gray-900 mb-4">Success!</h3>
-                                    <p class="text-center text-gray-500 mb-6">${urlParams.get("message")}</p>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item" href="#">
+                                            <div class="d-flex">
+                                                <div class="flex-shrink-0 me-3">
+                                                    <div class="avatar avatar-online">
+                                                        <img src="<?php echo htmlspecialchars($profile_picture); ?>" alt="profile" class="w-px-40 h-auto rounded-circle">
+                                                    </div>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <span class="fw-semibold d-block"><?php echo htmlspecialchars("$first_name $last_name"); ?></span>
+                                                    <small class="text-muted"><?php echo htmlspecialchars($course); ?></small>
+                                                </div>
+                                            </div>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <div class="dropdown-divider"></div>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="editprofile.php">
+                                            <i class="bi bi-person-gear me-2"></i>
+                                            <span class="align-middle">My Profile</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="history.php">
+                                            <i class="bi bi-clock-history me-2"></i>
+                                            <span class="align-middle">History</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <div class="dropdown-divider"></div>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="javascript:void(0);" id="logoutBtn">
+                                            <i class="bi bi-box-arrow-right me-2"></i>
+                                            <span class="align-middle">Log Out</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <!--/ User -->
+                        </ul>
+                    </div>
+                </nav>
+                <!-- / Navbar -->
+
+                <!-- Content wrapper -->
+                <div class="content-wrapper">
+                    <!-- Content -->
+                    <div class="container-xxl flex-grow-1 container-p-y">
+                        <h4 class="fw-bold py-3 mb-4">
+                            <span class="text-muted fw-light">Account Settings /</span> Profile
+                        </h4>
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="card mb-4">
+                                    <h5 class="card-header">Profile Details</h5>
+                                    <!-- Account -->
+                                    <div class="card-body">
+                                        <form id="formAccountSettings" action="updateprofile.php" method="POST" enctype="multipart/form-data">
+                                            <div class="d-flex align-items-start align-items-sm-center gap-4 mb-4">
+                                                <div class="upload-area" id="profile_upload_area">
+                                                    <img id="profile_preview" src="<?php echo htmlspecialchars($profile_picture); ?>" alt="Profile Picture" class="d-block rounded-circle">
+                                                    <div class="overlay">
+                                                        <i class="bi bi-camera"></i>
+                                                    </div>
+                                                    <input type="file" id="profile_picture" name="profile_picture" accept="image/*" class="d-none">
+                                                </div>
+                                                <div class="button-wrapper">
+                                                    <label for="profile_picture" class="btn btn-primary me-2 mb-3">
+                                                        <i class="bi bi-upload me-2"></i>
+                                                        <span class="d-none d-sm-block">Upload new photo</span>
+                                                    </label>
+                                                    <button type="button" id="reset_image" class="btn btn-outline-secondary mb-3">
+                                                        <i class="bi bi-arrow-counterclockwise me-2"></i>
+                                                        <span class="d-none d-sm-block">Reset</span>
+                                                    </button>
+                                                    <p class="text-muted mb-0">Allowed JPG, GIF or PNG. Max size of 800K</p>
+                                                </div>
+                                            </div>
+                                            <hr class="my-4" />
+                                            <div class="row">
+                                                <div class="mb-3 col-md-6">
+                                                    <label for="id_number" class="form-label">ID Number</label>
+                                                    <input class="form-control" type="text" id="id_number" name="id_number" value="<?php echo htmlspecialchars($id_number); ?>" readonly />
+                                                </div>
+                                                <div class="mb-3 col-md-6">
+                                                    <label for="course" class="form-label">Course</label>
+                                                    <select id="course" name="course" class="select2 form-select">
+                                                        <option value="BSIT" <?php echo ($course == "BSIT") ? 'selected' : ''; ?>>BSIT (Information Technology)</option>
+                                                        <option value="BSCS" <?php echo ($course == "BSCS") ? 'selected' : ''; ?>>BSCS (Computer Science)</option>
+                                                        <option value="BSIS" <?php echo ($course == "BSIS") ? 'selected' : ''; ?>>BSIS (Information Systems)</option>
+                                                        <option value="BSECE" <?php echo ($course == "BSECE") ? 'selected' : ''; ?>>BSECE (Electronics Engineering)</option>
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3 col-md-4">
+                                                    <label for="last_name" class="form-label">Last Name</label>
+                                                    <input class="form-control" type="text" id="last_name" name="last_name" value="<?php echo htmlspecialchars($last_name); ?>" pattern="[A-Za-z\s]+" required />
+                                                </div>
+                                                <div class="mb-3 col-md-4">
+                                                    <label for="first_name" class="form-label">First Name</label>
+                                                    <input class="form-control" type="text" id="first_name" name="first_name" value="<?php echo htmlspecialchars($first_name); ?>" pattern="[A-Za-z\s]+" required />
+                                                </div>
+                                                <div class="mb-3 col-md-4">
+                                                    <label for="middle_name" class="form-label">Middle Name</label>
+                                                    <input class="form-control" type="text" id="middle_name" name="middle_name" value="<?php echo htmlspecialchars($middle_name); ?>" pattern="[A-Za-z\s]+" />
+                                                </div>
+                                                <div class="mb-3 col-md-6">
+                                                    <label for="course_level" class="form-label">Year Level</label>
+                                                    <select id="course_level" name="course_level" class="select2 form-select">
+                                                        <option value="1" <?php echo ($year_level == 1) ? 'selected' : ''; ?>>1st Year</option>
+                                                        <option value="2" <?php echo ($year_level == 2) ? 'selected' : ''; ?>>2nd Year</option>
+                                                        <option value="3" <?php echo ($year_level == 3) ? 'selected' : ''; ?>>3rd Year</option>
+                                                        <option value="4" <?php echo ($year_level == 4) ? 'selected' : ''; ?>>4th Year</option>
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3 col-md-6">
+                                                    <label for="email" class="form-label">Email</label>
+                                                    <input class="form-control" type="email" id="email" name="email" value="<?php echo htmlspecialchars($email); ?>" required />
+                                                </div>
+                                                <div class="mb-3 col-md-12">
+                                                    <label for="address" class="form-label">Address</label>
+                                                    <input type="text" class="form-control" id="address" name="address" value="<?php echo htmlspecialchars($address); ?>" required />
+                                                </div>
+                                            </div>
+                                            <div class="mt-2 d-flex justify-content-end">
+                                                <button type="button" class="btn btn-outline-secondary me-2" onclick="window.location.href='dashboard.php'">Cancel</button>
+                                                <button type="button" id="saveChangesBtn" class="btn btn-primary">Save changes</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    <!-- /Account -->
                                 </div>
-                            `;
-                            document.body.appendChild(successModal);
+                            </div>
+                        </div>
+                    </div>
+                    <!-- / Content -->
 
-                            setTimeout(() => {
-                                window.location.href = "dashboard.php";
-                            }, 2000);
+                    <!-- Footer -->
+                    <footer class="content-footer footer bg-footer-theme">
+                        <div class="container-xxl d-flex flex-wrap justify-content-between py-2 flex-md-row flex-column">
+                            <div class="mb-2 mb-md-0">
+                                ©
+                                <script>
+                                    document.write(new Date().getFullYear());
+                                </script>
+                                University of Cebu - College of Computer Studies
+                            </div>
+                        </div>
+                    </footer>
+                    <!-- / Footer -->
 
-                            window.history.replaceState(null, "", window.location.pathname);
-                        }
-                    </script>
-                </form>
+                    <div class="content-backdrop fade"></div>
+                </div>
+                <!-- / Content wrapper -->
             </div>
+            <!-- / Layout page -->
         </div>
+
+        <!-- Overlay -->
+        <div class="layout-overlay layout-menu-toggle"></div>
     </div>
+    <!-- / Layout wrapper -->
 
-    <!-- Add this modal markup before closing body tag -->
-    <dialog id="confirm_modal" class="modal modal-bottom sm:modal-middle">
-        <div class="modal-box">
-            <h3 class="font-bold text-lg">Confirm Changes</h3>
-            <p class="py-4">Are you sure you want to save these changes to your profile?</p>
-            <div class="modal-action">
-                <form method="dialog">
-                    <button id="cancelBtn" class="btn btn-ghost btn-sm">Cancel</button>
-                    <button id="confirmBtn" class="btn btn-primary btn-sm">Save Changes</button>
-                </form>
-            </div>
-        </div>
-    </dialog>
-
-    <script>
-        // Update the form submission handling
-        document.querySelector('form').addEventListener('submit', function(e) {
-            e.preventDefault(); // Prevent direct form submission
-            const modal = document.getElementById('confirm_modal');
-            modal.showModal();
-
-            // Handle confirmation
-            document.getElementById('confirmBtn').onclick = () => {
-                this.submit(); // Submit the form
-            };
-
-            // Handle cancellation
-            document.getElementById('cancelBtn').onclick = () => {
-                modal.close();
-            };
-        });
-
-        // Show success message using Daisy UI toast
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.has("message")) {
-            const toast = document.getElementById('success_toast');
-            const toastMessage = document.getElementById('toast_message');
-            
-            toastMessage.textContent = urlParams.get("message");
-            toast.style.display = 'flex';
-            
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                setTimeout(() => {
-                    window.location.href = "dashboard.php";
-                }, 300);
-            }, 2000);
-
-            window.history.replaceState(null, "", window.location.pathname);
-        }
-    </script>
-
-    <!-- Logout confirmation modal -->
-    <div id="logoutModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
-            <div class="mt-3 text-center">
-                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
-                    <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                    </svg>
+    <!-- Save Changes Modal -->
+    <div class="modal fade" id="saveChangesModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Changes</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <h3 class="text-lg leading-6 font-medium text-gray-900">Confirm Logout</h3>
-                <div class="mt-2 px-7 py-3">
-                    <p class="text-sm text-gray-500">Are you sure you want to logout?</p>
+                <div class="modal-body">
+                    <div class="text-center mb-3">
+                        <i class="bi bi-question-circle text-primary" style="font-size: 3rem;"></i>
+                        <h4 class="mt-3">Are you sure you want to save these changes?</h4>
+                        <p class="text-muted">Your profile information will be updated.</p>
+                    </div>
                 </div>
-                <div class="flex justify-center gap-4 mt-3">
-                    <button id="cancelLogout" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium rounded-md">
-                        Cancel
-                    </button>
-                    <button id="confirmLogout" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md">
-                        Logout
-                    </button>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" id="confirmSaveBtn" class="btn btn-primary">Save Changes</button>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Logout Modal -->
+    <div class="modal fade" id="logoutModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Logout</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-3">
+                        <i class="bi bi-box-arrow-right text-danger" style="font-size: 3rem;"></i>
+                        <h4 class="mt-3">Are you sure you want to logout?</h4>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <a href="logout.php" class="btn btn-danger">Logout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Core JS -->
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/jquery/jquery.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/popper/popper.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/js/bootstrap.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/js/menu.js"></script>
+
+    <!-- Main JS -->
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/js/main.js"></script>
+
     <script>
-        // Update the logout button click handler
-        document.querySelector('a[href="logout.php"]').addEventListener('click', function(e) {
-            e.preventDefault();
-            document.getElementById('logoutModal').classList.remove('hidden');
-        });
+        document.addEventListener('DOMContentLoaded', function() {
+            // Profile picture upload preview
+            const profileInput = document.getElementById('profile_picture');
+            const profilePreview = document.getElementById('profile_preview');
+            const profileUploadArea = document.getElementById('profile_upload_area');
+            const initialImageSrc = profilePreview.src;
 
-        // Handle cancel button
-        document.getElementById('cancelLogout').addEventListener('click', function() {
-            document.getElementById('logoutModal').classList.add('hidden');
-        });
+            // Trigger file input when clicking on the upload area
+            profileUploadArea.addEventListener('click', function() {
+                profileInput.click();
+            });
 
-        // Handle confirm logout
-        document.getElementById('confirmLogout').addEventListener('click', function() {
-            window.location.href = 'logout.php';
-        });
+            // Change preview image when a file is selected
+            profileInput.addEventListener('change', function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        profilePreview.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
 
-        // Close modal when clicking outside
-        document.getElementById('logoutModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                this.classList.add('hidden');
+            // Reset image button
+            document.getElementById('reset_image').addEventListener('click', function() {
+                profilePreview.src = initialImageSrc;
+                profileInput.value = '';
+            });
+
+            // Name input validation - only allow letters and spaces
+            const nameInputs = document.querySelectorAll('input[pattern="[A-Za-z\\s]+"]');
+            nameInputs.forEach(input => {
+                input.addEventListener('input', function(e) {
+                    this.value = this.value.replace(/[^A-Za-z\s]/g, '');
+                });
+            });
+
+            // Save changes button
+            const saveChangesBtn = document.getElementById('saveChangesBtn');
+            const saveChangesModal = new bootstrap.Modal(document.getElementById('saveChangesModal'));
+            const confirmSaveBtn = document.getElementById('confirmSaveBtn');
+            const form = document.getElementById('formAccountSettings');
+
+            saveChangesBtn.addEventListener('click', function() {
+                if (form.checkValidity()) {
+                    saveChangesModal.show();
+                } else {
+                    form.reportValidity();
+                }
+            });
+
+            confirmSaveBtn.addEventListener('click', function() {
+                form.submit();
+            });
+
+            // Logout button
+            document.getElementById('logoutBtn').addEventListener('click', function() {
+                const logoutModal = new bootstrap.Modal(document.getElementById('logoutModal'));
+                logoutModal.show();
+            });
+
+            // SweetAlert2 for success message
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has("message")) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: urlParams.get("message"),
+                    customClass: {
+                        confirmButton: 'btn btn-primary'
+                    },
+                    buttonsStyling: false,
+                    timer: 2000,
+                    timerProgressBar: true
+                }).then(() => {
+                    window.location.href = "dashboard.php"; // Redirect to dashboard
+                });
+
+                // Remove the message from URL after showing the alert
+                window.history.replaceState(null, "", window.location.pathname);
             }
         });
     </script>

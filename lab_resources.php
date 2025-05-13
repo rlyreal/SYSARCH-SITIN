@@ -7,644 +7,710 @@ if (!isset($_SESSION['admin_id'])) {
     header('Location: index.php');
     exit();
 }
+
+$admin_username = $_SESSION['username'] ?? 'Admin User';
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light-style layout-menu-fixed" dir="ltr" data-theme="theme-default">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lab Resources Management</title>
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.7.2/dist/full.min.css" rel="stylesheet" type="text/css" />
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Lab Resources | Admin</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/img/favicon/favicon.ico" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700&display=swap" rel="stylesheet" />
+    
+    <!-- Icons. Required if you use Bootstrap Icons-->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" />
+    
+    <!-- Sneat Template Core CSS -->
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/css/core.css" class="template-customizer-core-css" />
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/css/theme-default.css" class="template-customizer-theme-css" />
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/css/demo.css" />
+    
+    <!-- Vendors CSS -->
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />
+    
+    <!-- Helpers -->
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/js/helpers.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/js/config.js"></script>
 </head>
-<body class="bg-gray-100">
-    <!-- Admin Navbar -->
-    <div class="navbar bg-[#2c343c] shadow-lg">
-        <div class="navbar-start">
-            <div class="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-                <span class="text-xl font-bold text-white ml-2">Admin</span>
+
+<body>
+    <!-- Layout wrapper -->
+    <div class="layout-wrapper layout-content-navbar">
+        <div class="layout-container">
+            <!-- Menu -->
+            <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
+                <div class="app-brand demo">
+                    <a href="admin_dashboard.php" class="app-brand-link">
+                        <span class="app-brand-logo demo">
+                            <svg width="25" viewBox="0 0 25 42" xmlns="http://www.w3.org/2000/svg">
+                                <defs><linearGradient id="a" x1="50%" x2="50%" y1="0%" y2="100%">
+                                <stop offset="0%" stop-color="#5A8DEE"/><stop offset="100%" stop-color="#699AF9"/></linearGradient></defs>
+                                <path fill="url(#a)" d="M12.5 0 25 14H0z"/><path fill="#FDAC41" d="M0 14 12.5 28 25 14H0z"/>
+                                <path fill="#E89A3C" d="M0 28 12.5 42 25 28H0z"/><path fill="#FDAC41" d="M12.5 14 25 28 12.5 42 0 28z"/>
+                            </svg>
+                        </span>
+                        <span class="app-brand-text demo menu-text fw-bolder ms-2">Sit-In Admin</span>
+                    </a>
+
+                    <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-block d-xl-none">
+                        <i class="bi bi-x bi-middle"></i>
+                    </a>
+                </div>
+
+                <div class="menu-inner-shadow"></div>
+
+                <ul class="menu-inner py-1">
+                    <!-- Dashboard -->
+                    <li class="menu-item">
+                        <a href="admin_dashboard.php" class="menu-link">
+                            <i class="menu-icon bi bi-house-door"></i>
+                            <div data-i18n="Dashboard">Dashboard</div>
+                        </a>
+                    </li>
+
+                    <li class="menu-header small text-uppercase">
+                        <span class="menu-header-text">Management</span>
+                    </li>
+
+                    <!-- Search -->
+                    <li class="menu-item">
+                        <a href="search.php" class="menu-link">
+                            <i class="menu-icon bi bi-search"></i>
+                            <div data-i18n="Search">Search</div>
+                        </a>
+                    </li>
+
+                    <!-- Students -->
+                    <li class="menu-item">
+                        <a href="students.php" class="menu-link">
+                            <i class="menu-icon bi bi-people"></i>
+                            <div data-i18n="Students">Students</div>
+                        </a>
+                    </li>
+
+                    <!-- Sit-in -->
+                    <li class="menu-item">
+                        <a href="sit_in.php" class="menu-link">
+                            <i class="menu-icon bi bi-clipboard-check"></i>
+                            <div data-i18n="Sit-in">Sit-in</div>
+                        </a>
+                    </li>
+
+                    <!-- View Records -->
+                    <li class="menu-item">
+                        <a href="sit_in_records.php" class="menu-link">
+                            <i class="menu-icon bi bi-clipboard-data"></i>
+                            <div data-i18n="Records">View Records</div>
+                        </a>
+                    </li>
+
+                    <li class="menu-header small text-uppercase">
+                        <span class="menu-header-text">Features</span>
+                    </li>
+
+                    <!-- Reservation -->
+                    <li class="menu-item">
+                        <a href="admin_reservation.php" class="menu-link">
+                            <i class="menu-icon bi bi-calendar-check"></i>
+                            <div data-i18n="Reservation">Reservation</div>
+                        </a>
+                    </li>
+
+                    <!-- Reports -->
+                    <li class="menu-item">
+                        <a href="reports.php" class="menu-link">
+                            <i class="menu-icon bi bi-file-earmark-bar-graph"></i>
+                            <div data-i18n="Reports">Reports</div>
+                        </a>
+                    </li>
+
+                    <!-- Feedback Reports -->
+                    <li class="menu-item">
+                        <a href="feedback.php" class="menu-link">
+                            <i class="menu-icon bi bi-chat-left-text"></i>
+                            <div data-i18n="Feedback">Feedback Reports</div>
+                        </a>
+                    </li>
+
+                    <!-- Resources -->
+                    <li class="menu-item active">
+                        <a href="lab_resources.php" class="menu-link">
+                            <i class="menu-icon bi bi-box"></i>
+                            <div data-i18n="Resources">Resources</div>
+                        </a>
+                    </li>
+                </ul>
+            </aside>
+            <!-- / Menu -->
+
+            <!-- Layout container -->
+            <div class="layout-page">
+                <!-- Navbar -->
+                <nav class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme" id="layout-navbar">
+                    <div class="layout-menu-toggle navbar-nav align-items-xl-center me-3 me-xl-0 d-xl-none">
+                        <a class="nav-item nav-link px-0 me-xl-4" href="javascript:void(0)">
+                            <i class="bi bi-list bi-middle"></i>
+                        </a>
+                    </div>
+
+                    <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
+                        <!-- Search -->
+                        <div class="navbar-nav align-items-center">
+                            <div class="nav-item d-flex align-items-center">
+                                <i class="bi bi-search fs-4 lh-0"></i>
+                                <input type="text" class="form-control border-0 shadow-none search-resource" placeholder="Search resources..." aria-label="Search...">
+                            </div>
+                        </div>
+                        <!-- /Search -->
+
+                        <ul class="navbar-nav flex-row align-items-center ms-auto">
+                            <!-- User -->
+                            <li class="nav-item navbar-dropdown dropdown-user dropdown">
+                                <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown">
+                                    <div class="avatar avatar-online">
+                                        <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($admin_username); ?>&background=696cff&color=fff" alt class="w-px-40 h-auto rounded-circle">
+                                    </div>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item" href="#">
+                                            <div class="d-flex">
+                                                <div class="flex-shrink-0 me-3">
+                                                    <div class="avatar avatar-online">
+                                                        <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($admin_username); ?>&background=696cff&color=fff" alt class="w-px-40 h-auto rounded-circle">
+                                                    </div>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <span class="fw-semibold d-block"><?php echo htmlspecialchars($admin_username); ?></span>
+                                                    <small class="text-muted">Administrator</small>
+                                                </div>
+                                            </div>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <div class="dropdown-divider"></div>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#">
+                                            <i class="bi bi-gear me-2"></i>
+                                            <span class="align-middle">Settings</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <div class="dropdown-divider"></div>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="javascript:void(0);" id="logoutBtn">
+                                            <i class="bi bi-box-arrow-right me-2"></i>
+                                            <span class="align-middle">Log Out</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <!--/ User -->
+                        </ul>
+                    </div>
+                </nav>
+                <!-- / Navbar -->
+
+                <!-- Content wrapper -->
+                <div class="content-wrapper">
+                    <!-- Content -->
+                    <div class="container-xxl flex-grow-1 container-p-y">
+                        <h4 class="fw-bold py-3 mb-4">
+                            <span class="text-muted fw-light">Features /</span> Resources
+                        </h4>
+
+                        <!-- Resource Hub Section -->
+                        <div class="card mb-4">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Resource Hub</h5>
+                                <button class="btn btn-primary btn-sm" id="addResourceBtn">
+                                    <i class="bi bi-plus-circle me-1"></i> Add Resource
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <!-- No Resources Message (shown conditionally) -->
+                                <div id="noResourcesMessage" class="text-center py-5">
+                                    <div class="mb-4">
+                                        <i class="bi bi-folder text-primary" style="font-size: 3rem;"></i>
+                                    </div>
+                                    <h5 class="mb-2">No Resources Found</h5>
+                                    <p class="text-muted mb-4">Start adding educational resources to build your collection</p>
+                                </div>
+
+                                <!-- Resources Table -->
+                                <div class="table-responsive">
+                                    <table class="table table-hover" id="resourcesTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Resource</th>
+                                                <th>Professor</th>
+                                                <th>Description</th>
+                                                <th>Added</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="table-border-bottom-0">
+                                            <tr>
+                                                <td colspan="5" class="text-center py-3 text-muted">No resources added yet.</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- / Content -->
+
+                    <!-- Footer -->
+                    <footer class="content-footer footer bg-footer-theme">
+                        <div class="container-xxl d-flex flex-wrap justify-content-between py-2 flex-md-row flex-column">
+                            <div class="mb-2 mb-md-0">
+                                ©
+                                <script>
+                                    document.write(new Date().getFullYear());
+                                </script>
+                                Sit-In System Admin Dashboard
+                            </div>
+                        </div>
+                    </footer>
+                    <!-- / Footer -->
+
+                    <div class="content-backdrop fade"></div>
+                </div>
+                <!-- / Content wrapper -->
             </div>
+            <!-- / Layout page -->
         </div>
-        
-        <div class="navbar-center hidden lg:flex">
-            <ul class="menu menu-horizontal px-1 gap-2">
-                <li>
-                    <a href="admin_dashboard.php" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                        </svg>
-                        Home
-                    </a>
-                </li>
-                <li>
-                    <a href="search.php" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                        Search
-                    </a>
-                </li>
-                <li>
-                    <a href="students.php" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-                        Students
-                    </a>
-                </li>
-                <li>
-                    <a href="sit_in.php" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
-                        Sit-in
-                    </a>
-                </li>
-                <li>
-                    <a href="sit_in_records.php" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                        </svg>
-                        View Records
-                    </a>
-                </li>
-                <li>
-                    <a href="admin_reservation.php" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        Reservation
-                    </a>
-                </li>
-                <li>
-                    <a href="reports.php" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        Reports
-                    </a>
-                </li>
-                <li>
-                    <a href="feedback.php" class="btn btn-ghost text-white hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                        </svg>
-                        Feedback Reports
-                    </a>
-                </li>
-            </ul>
-        </div>
-        
-        <div class="navbar-end">
-            <button id="logoutBtn" class="btn btn-error btn-outline gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                Logout
-            </button>
-        </div>
+
+        <!-- Overlay -->
+        <div class="layout-overlay layout-menu-toggle"></div>
     </div>
-
-    <!-- Main Content -->
-    <div class="container mx-auto px-4 py-8">
-        <!-- Resource Hub Section -->
-        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-            <div class="flex items-center gap-4 mb-6">
-                <div class="bg-blue-100 p-3 rounded-lg">
-                    <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-                    </svg>
-                </div>
-                <div>
-                    <h2 class="text-xl font-semibold text-gray-800">Resource Hub</h2>
-                    <p class="text-gray-600">Access and manage educational assets</p>
-                </div>
-            </div>
-
-            <!-- Search Bar -->
-            <div class="flex justify-end mb-6">
-                <div class="relative w-64">
-                    <input type="text" placeholder="Find resources..." 
-                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <span class="absolute right-3 top-2.5 text-gray-400">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                        </svg>
-                    </span>
-                </div>
-            </div>
-
-            <!-- No Resources Message -->
-            <div class="text-center py-12 bg-gray-50 rounded-lg">
-                <div class="mb-4">
-                    <svg class="w-16 h-16 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"></path>
-                    </svg>
-                </div>
-                <h3 class="text-xl font-medium text-gray-600 mb-2">No Resources Found</h3>
-                <p class="text-gray-500 mb-6">Start adding educational resources to build your collection</p>
-                <button class="btn btn-primary">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                    </svg>
-                    Add Resource
-                </button>
-            </div>
-
-            <!-- Resources Table -->
-            <div class="mt-8">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Recently Added</h3>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full bg-white">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Resource</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Professor</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Added</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-200">
-                            <tr>
-                                <td class="px-6 py-4 text-sm text-gray-500" colspan="5">No resources added yet.</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- / Layout wrapper -->
 
     <!-- Add Resource Modal -->
-    <div id="addResourceModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-        <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
-            <div class="flex justify-between items-center mb-4">
-                <div class="flex items-center">
-                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                    </svg>
-                    <h3 class="text-lg font-semibold">New Resource</h3>
+    <div class="modal fade" id="addResourceModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle">Add New Resource</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-            </div>
-
-            <form id="resourceForm" class="space-y-6">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Cover Image</label>
-                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                        <div class="flex flex-col items-center">
-                            <svg class="w-12 h-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                            </svg>
-                            <p class="text-sm text-gray-600">Drop files here or click to upload</p>
-                            <p class="text-xs text-gray-500 mt-1">PNG, JPG up to 5MB</p>
-                        </div>
-                        <input type="file" class="hidden" accept="image/png, image/jpeg" id="coverImage">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Resource Title</label>
-                    <input type="text" id="resourceTitle" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Professor</label>
-                    <input type="text" id="professor" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                    <textarea id="description" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Resource Link</label>
-                    <input type="url" id="resourceLink" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-
-                <div class="mt-8">
-                    <h4 class="text-sm font-medium text-gray-700 mb-4">Resource Preview</h4>
-                    <div class="border rounded-lg p-4 bg-gray-50">
-                        <div class="flex items-start space-x-4">
-                            <div class="w-24 h-24 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0" id="previewImage">
-                                <div class="w-full h-full flex items-center justify-center text-gray-400">
-                                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                    </svg>
+                <div class="modal-body">
+                    <form id="resourceForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Cover Image</label>
+                                <div class="border rounded-3 p-3 text-center upload-zone" id="dropZone">
+                                    <div class="d-flex flex-column align-items-center">
+                                        <i class="bi bi-cloud-arrow-up text-primary mb-2" style="font-size: 2rem;"></i>
+                                        <p class="mb-1">Drop files here or click to upload</p>
+                                        <p class="text-muted small">PNG, JPG up to 5MB</p>
+                                    </div>
+                                    <input type="file" class="d-none" accept="image/png, image/jpeg" id="coverImage">
                                 </div>
                             </div>
-                            <div class="flex-1">
-                                <h3 class="text-lg font-medium text-gray-800" id="previewTitle">Resource Title</h3>
-                                <p class="text-sm text-gray-600 mt-1" id="previewProfessor">Professor Name</p>
-                                <p class="text-sm text-gray-700 mt-2" id="previewDescription">Resource description will appear here...</p>
-                                <a href="#" class="text-sm text-blue-600 hover:underline mt-2 inline-block" id="previewLink">Resource Link</a>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Resource Preview</label>
+                                <div class="border rounded-3 p-3 h-100">
+                                    <div class="d-flex">
+                                        <div class="flex-shrink-0 me-3">
+                                            <div class="avatar avatar-lg" id="previewImage">
+                                                <div class="avatar-initial rounded bg-label-primary">
+                                                    <i class="bi bi-file-earmark-text"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0" id="previewTitle">Resource Title</h6>
+                                            <small class="text-muted d-block mb-2" id="previewProfessor">Professor Name</small>
+                                            <p class="text-muted small mb-1" id="previewDescription">Resource description will appear here...</p>
+                                            <a href="#" class="small" id="previewLink">Resource Link</a>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </div>
 
-                <div class="flex justify-end space-x-3">
-                    <button type="button" onclick="closeModal()" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
-                        Cancel
-                    </button>
-                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                        Save Resource
-                    </button>
+                        <div class="row g-3">
+                            <div class="col-md-7 mb-3">
+                                <label class="form-label">Resource Title</label>
+                                <input type="text" id="resourceTitle" class="form-control" required>
+                            </div>
+                            <div class="col-md-5 mb-3">
+                                <label class="form-label">Professor</label>
+                                <input type="text" id="professor" class="form-control" required>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label class="form-label">Description</label>
+                                <textarea id="description" class="form-control" rows="3" required></textarea>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label class="form-label">Resource Link</label>
+                                <input type="url" id="resourceLink" class="form-control" required>
+                            </div>
+                        </div>
+                    </form>
                 </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Logout confirmation modal -->
-    <div id="logoutModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
-            <div class="mt-3 text-center">
-                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
-                    <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                    </svg>
-                </div>
-                <h3 class="text-lg leading-6 font-medium text-gray-900">Confirm Logout</h3>
-                <div class="mt-2 px-7 py-3">
-                    <p class="text-sm text-gray-500">Are you sure you want to logout?</p>
-                </div>
-                <div class="flex justify-center gap-4 mt-3">
-                    <button id="cancelLogout" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium rounded-md">
-                        Cancel
-                    </button>
-                    <button id="confirmLogout" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md">
-                        Logout
-                    </button>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" id="saveResource" class="btn btn-primary">Save Resource</button>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Logout Modal -->
+    <div class="modal fade" id="logoutModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Logout</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-box-arrow-right text-danger" style="font-size: 3rem;"></i>
+                        <h4 class="mt-3">Are you sure you want to logout?</h4>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <a href="logout.php" class="btn btn-danger">Logout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Core JS -->
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/jquery/jquery.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/popper/popper.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/js/bootstrap.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/js/menu.js"></script>
+
+    <!-- Main JS -->
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/js/main.js"></script>
 
     <script>
-        // Modal functions
-        function openModal() {
-            document.getElementById('addResourceModal').classList.remove('hidden');
-        }
-
-        function closeModal() {
-            document.getElementById('addResourceModal').classList.add('hidden');
-        }
-
-        // Update the "Add First Resource" button click handler
-        document.querySelector('.btn-primary').addEventListener('click', openModal);
-
-        // Handle form submission
-        document.getElementById('resourceForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize modals
+            const addResourceModal = new bootstrap.Modal(document.getElementById('addResourceModal'));
+            const logoutModal = new bootstrap.Modal(document.getElementById('logoutModal'));
             
-            const formData = new FormData();
-            formData.append('title', document.getElementById('resourceTitle').value);
-            formData.append('professor', document.getElementById('professor').value);
-            formData.append('description', document.getElementById('description').value);
-            formData.append('resource_link', document.getElementById('resourceLink').value);
-            formData.append('cover_image', document.getElementById('coverImage').files[0]);
-            formData.append('action', 'add_resource');
+            // Add Resource button
+            document.getElementById('addResourceBtn').addEventListener('click', function() {
+                // Reset form
+                document.getElementById('resourceForm').reset();
+                // Reset preview
+                document.getElementById('previewTitle').textContent = 'Resource Title';
+                document.getElementById('previewProfessor').textContent = 'Professor Name';
+                document.getElementById('previewDescription').textContent = 'Resource description will appear here...';
+                document.getElementById('previewLink').textContent = 'Resource Link';
+                document.getElementById('previewLink').href = '#';
+                document.getElementById('previewImage').innerHTML = `
+                    <div class="avatar-initial rounded bg-label-primary">
+                        <i class="bi bi-file-earmark-text"></i>
+                    </div>`;
+                
+                // Show modal
+                addResourceModal.show();
+            });
 
-            try {
-                const response = await fetch('handle_resource.php', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    closeModal();
-                    loadRecentResources(); // We'll create this function next
-                } else {
-                    alert('Error: ' + data.message);
+            // Logout button
+            document.getElementById('logoutBtn').addEventListener('click', function() {
+                logoutModal.show();
+            });
+
+            // File upload
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('coverImage');
+
+            dropZone.addEventListener('click', () => fileInput.click());
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('border-primary');
+            });
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('border-primary');
+            });
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('border-primary');
+                fileInput.files = e.dataTransfer.files;
+                handleFileUpload(e.dataTransfer.files[0]);
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handleFileUpload(e.target.files[0]);
                 }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('An error occurred while saving the resource');
+            });
+
+            function handleFileUpload(file) {
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        document.getElementById('previewImage').innerHTML = `
+                            <img src="${e.target.result}" class="rounded" alt="Resource Cover">`;
+                    };
+                    reader.readAsDataURL(file);
+                }
             }
-        });
 
-        // Function to load recent resources
-        function loadRecentResources() {
-            fetch('handle_resource.php?action=get_recent')
-                .then(response => response.json())
-                .then(data => {
-                    const tbody = document.querySelector('tbody');
-                    if (data.length === 0) {
-                        tbody.innerHTML = `
-                            <tr>
-                                <td class="px-6 py-4 text-sm text-gray-500" colspan="5">No resources added yet.</td>
-                            </tr>`;
-                        return;
-                    }
+            // Live preview updates
+            document.getElementById('resourceTitle').addEventListener('input', function(e) {
+                document.getElementById('previewTitle').textContent = e.target.value || 'Resource Title';
+            });
 
-                    tbody.innerHTML = data.map(resource => `
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4">
-                                <div class="flex items-center">
-                                    <div class="h-10 w-10 flex-shrink-0">
-                                        <img class="h-10 w-10 rounded-lg object-cover" 
-                                             src="${resource.cover_image || 'placeholder.png'}" 
-                                             alt="${resource.title}">
-                                    </div>
-                                    <div class="ml-4">
-                                        <div class="text-sm font-medium text-gray-900">${resource.title}</div>
-                                        <div class="text-xs text-gray-500 truncate max-w-xs">${resource.resource_link}</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-500">
-                                <span class="font-medium">${resource.professor}</span>
-                            </td>
-                            <td class="px-6 py-4">
-                                <p class="text-sm text-gray-500 truncate max-w-md">${resource.description}</p>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                                ${new Date(resource.created_at).toLocaleDateString('en-US', {
-                                    year: 'numeric',
-                                    month: 'short',
-                                    day: 'numeric'
-                                })}
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center space-x-3">
-                                    <a href="${resource.resource_link}" 
-                                       target="_blank" 
-                                       class="p-1.5 bg-blue-50 rounded-lg text-blue-600 hover:bg-blue-100 transition-colors"
-                                       title="Open resource">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                                        </svg>
-                                    </a>
-                                    <button onclick="editResource(${resource.id})" 
-                                            class="p-1.5 bg-gray-50 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
-                                            title="Edit resource">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                        </svg>
-                                    </button>
-                                    <button onclick="deleteResource(${resource.id})" 
-                                            class="p-1.5 bg-red-50 rounded-lg text-red-600 hover:bg-red-100 transition-colors"
-                                            title="Delete resource">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                        </svg>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    `).join('');
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
-        }
+            document.getElementById('professor').addEventListener('input', function(e) {
+                document.getElementById('previewProfessor').textContent = e.target.value || 'Professor Name';
+            });
 
-        // Add these functions to handle edit and delete actions
-        function editResource(id) {
-            // Fetch resource details and open edit modal
-            fetch(`handle_resource.php?action=get_resource&id=${id}`)
-                .then(response => response.json())
-                .then(resource => {
-                    // Populate form with resource details
-                    document.getElementById('resourceTitle').value = resource.title;
-                    document.getElementById('professor').value = resource.professor;
-                    document.getElementById('description').value = resource.description;
-                    document.getElementById('resourceLink').value = resource.resource_link;
-                    // Show modal
-                    openModal();
-                });
-        }
+            document.getElementById('description').addEventListener('input', function(e) {
+                document.getElementById('previewDescription').textContent = e.target.value || 'Resource description will appear here...';
+            });
 
-        function deleteResource(id) {
-            if (confirm('Are you sure you want to delete this resource?')) {
-                fetch('handle_resource.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: `action=delete_resource&id=${id}`
-                })
-                .then(response => response.json())
-                .then(data => {
+            document.getElementById('resourceLink').addEventListener('input', function(e) {
+                const link = document.getElementById('previewLink');
+                link.href = e.target.value;
+                link.textContent = e.target.value || 'Resource Link';
+            });
+
+            // Save resource
+            document.getElementById('saveResource').addEventListener('click', async function() {
+                const form = document.getElementById('resourceForm');
+                const title = document.getElementById('resourceTitle').value;
+                const professor = document.getElementById('professor').value;
+                const description = document.getElementById('description').value;
+                const resourceLink = document.getElementById('resourceLink').value;
+                const coverImage = document.getElementById('coverImage').files[0];
+                
+                if (!title || !professor || !description || !resourceLink) {
+                    alert('Please fill in all required fields');
+                    return;
+                }
+                
+                const formData = new FormData();
+                formData.append('title', title);
+                formData.append('professor', professor);
+                formData.append('description', description);
+                formData.append('resource_link', resourceLink);
+                if (coverImage) {
+                    formData.append('cover_image', coverImage);
+                }
+                formData.append('action', 'add_resource');
+                
+                try {
+                    const response = await fetch('handle_resource.php', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const data = await response.json();
+                    
                     if (data.success) {
-                        loadRecentResources(); // Refresh the table
+                        addResourceModal.hide();
+                        loadResources();
                     } else {
                         alert('Error: ' + data.message);
                     }
-                })
-                .catch(error => {
+                } catch (error) {
                     console.error('Error:', error);
-                    alert('An error occurred while deleting the resource');
-                });
-            }
-        }
+                    alert('An error occurred while saving the resource');
+                }
+            });
 
-        // Handle file drop zone
-        const dropZone = document.querySelector('.border-dashed');
-        const fileInput = document.getElementById('coverImage');
-
-        dropZone.addEventListener('click', () => fileInput.click());
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('border-blue-500');
-        });
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('border-blue-500');
-        });
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('border-blue-500');
-            fileInput.files = e.dataTransfer.files;
-            
-            const file = e.dataTransfer.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const previewImage = document.getElementById('previewImage');
-                    previewImage.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover">`;
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-
-        // Live Preview Updates
-        document.getElementById('resourceTitle').addEventListener('input', function(e) {
-            document.getElementById('previewTitle').textContent = e.target.value || 'Resource Title';
-        });
-
-        document.getElementById('professor').addEventListener('input', function(e) {
-            document.getElementById('previewProfessor').textContent = e.target.value || 'Professor Name';
-        });
-
-        document.getElementById('description').addEventListener('input', function(e) {
-            document.getElementById('previewDescription').textContent = e.target.value || 'Resource description will appear here...';
-        });
-
-        document.getElementById('resourceLink').addEventListener('input', function(e) {
-            const link = document.getElementById('previewLink');
-            link.href = e.target.value;
-            link.textContent = e.target.value || 'Resource Link';
-        });
-
-        // Image Preview
-        document.getElementById('coverImage').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const previewImage = document.getElementById('previewImage');
-                    previewImage.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover">`;
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-
-        // Add this at the end of your DOMContentLoaded event listener
-        document.addEventListener('DOMContentLoaded', function() {
-            loadRecentResources();
-        });
-
-        // Add this to your existing JavaScript section
-        function searchResources(query) {
-            fetch(`handle_resource.php?action=search&query=${encodeURIComponent(query)}`)
-                .then(response => response.json())
-                .then(data => {
-                    const tbody = document.querySelector('tbody');
-                    if (data.length === 0) {
-                        tbody.innerHTML = `
+            // Load resources
+            function loadResources() {
+                fetch('handle_resource.php?action=get_recent')
+                    .then(response => response.json())
+                    .then(data => {
+                        const noResourcesMsg = document.getElementById('noResourcesMessage');
+                        const tbody = document.querySelector('#resourcesTable tbody');
+                        
+                        if (data.length === 0) {
+                            noResourcesMsg.style.display = 'block';
+                            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-3 text-muted">No resources added yet.</td></tr>`;
+                            return;
+                        }
+                        
+                        noResourcesMsg.style.display = 'none';
+                        tbody.innerHTML = data.map(resource => `
                             <tr>
-                                <td class="px-6 py-4 text-sm text-gray-500" colspan="5">No resources found matching "${query}"</td>
-                            </tr>`;
-                        return;
-                    }
-
-                    tbody.innerHTML = data.map(resource => `
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4">
-                                <div class="flex items-center">
-                                    <div class="h-10 w-10 flex-shrink-0">
-                                        <img class="h-10 w-10 rounded-lg object-cover" 
-                                             src="${resource.cover_image || 'placeholder.png'}" 
-                                             alt="${resource.title}">
+                                <td>
+                                    <div class="d-flex">
+                                        <div class="avatar avatar-sm flex-shrink-0 me-3">
+                                            ${resource.cover_image ? 
+                                                `<img src="${resource.cover_image}" alt="${resource.title}" class="rounded">` : 
+                                                `<span class="avatar-initial rounded bg-label-primary"><i class="bi bi-file-earmark-text"></i></span>`
+                                            }
+                                        </div>
+                                        <div class="d-flex flex-column">
+                                            <h6 class="mb-0">${resource.title}</h6>
+                                            <small class="text-truncate" style="max-width: 150px;">${resource.resource_link}</small>
+                                        </div>
                                     </div>
-                                    <div class="ml-4">
-                                        <div class="text-sm font-medium text-gray-900">${resource.title}</div>
-                                        <div class="text-xs text-gray-500 truncate max-w-xs">${resource.resource_link}</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-500">
-                                <span class="font-medium">${resource.professor}</span>
-                            </td>
-                            <td class="px-6 py-4">
-                                <p class="text-sm text-gray-500 truncate max-w-md">${resource.description}</p>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                                ${new Date(resource.created_at).toLocaleDateString('en-US', {
+                                </td>
+                                <td>${resource.professor}</td>
+                                <td>
+                                    <span class="text-truncate d-inline-block" style="max-width: 200px;">${resource.description}</span>
+                                </td>
+                                <td>${new Date(resource.created_at).toLocaleDateString('en-US', {
                                     year: 'numeric',
                                     month: 'short',
                                     day: 'numeric'
-                                })}
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center space-x-3">
-                                    <a href="${resource.resource_link}" 
-                                       target="_blank" 
-                                       class="p-1.5 bg-blue-50 rounded-lg text-blue-600 hover:bg-blue-100 transition-colors"
-                                       title="Open resource">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                                        </svg>
-                                    </a>
-                                    <button onclick="editResource(${resource.id})" 
-                                            class="p-1.5 bg-gray-50 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
-                                            title="Edit resource">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                        </svg>
-                                    </button>
-                                    <button onclick="deleteResource(${resource.id})" 
-                                            class="p-1.5 bg-red-50 rounded-lg text-red-600 hover:bg-red-100 transition-colors"
-                                            title="Delete resource">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                        </svg>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    `).join('');
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
-        }
-
-        // Add debounce function to prevent too many requests
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
-        }
-
-        // Add event listener to search input
-        document.querySelector('input[placeholder="Find resources..."]').addEventListener('input', debounce(function(e) {
-            const query = e.target.value.trim();
-            if (query) {
-                searchResources(query);
-            } else {
-                loadRecentResources(); // Show all resources when search is empty
+                                })}</td>
+                                <td>
+                                    <div class="dropdown">
+                                        <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                                            <i class="bi bi-three-dots-vertical"></i>
+                                        </button>
+                                        <div class="dropdown-menu">
+                                            <a class="dropdown-item" href="${resource.resource_link}" target="_blank">
+                                                <i class="bi bi-box-arrow-up-right me-2"></i> Open
+                                            </a>
+                                            <a class="dropdown-item" href="javascript:void(0);" onclick="editResource(${resource.id})">
+                                                <i class="bi bi-pencil me-2"></i> Edit
+                                            </a>
+                                            <a class="dropdown-item text-danger" href="javascript:void(0);" onclick="deleteResource(${resource.id})">
+                                                <i class="bi bi-trash me-2"></i> Delete
+                                            </a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        `).join('');
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
             }
-        }, 300)); // Wait 300ms after user stops typing before searching
 
-        // Logout modal functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const logoutBtn = document.getElementById('logoutBtn');
-            const logoutModal = document.getElementById('logoutModal');
-            const cancelLogout = document.getElementById('cancelLogout');
-            const confirmLogout = document.getElementById('confirmLogout');
-
-            logoutBtn.addEventListener('click', function() {
-                logoutModal.classList.remove('hidden');
-            });
-
-            cancelLogout.addEventListener('click', function() {
-                logoutModal.classList.add('hidden');
-            });
-
-            confirmLogout.addEventListener('click', function() {
-                window.location.href = 'logout.php';
-            });
-
-            logoutModal.addEventListener('click', function(e) {
-                if (e.target === logoutModal) {
-                    logoutModal.classList.add('hidden');
+            // Search resources
+            const searchInput = document.querySelector('.search-resource');
+            searchInput.addEventListener('input', debounce(function(e) {
+                const query = e.target.value.trim();
+                if (query) {
+                    searchResources(query);
+                } else {
+                    loadResources();
                 }
-            });
+            }, 300));
+
+            function searchResources(query) {
+                fetch(`handle_resource.php?action=search&query=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const noResourcesMsg = document.getElementById('noResourcesMessage');
+                        const tbody = document.querySelector('#resourcesTable tbody');
+                        
+                        if (data.length === 0) {
+                            noResourcesMsg.style.display = 'none';
+                            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-3 text-muted">No resources found matching "${query}"</td></tr>`;
+                            return;
+                        }
+                        
+                        noResourcesMsg.style.display = 'none';
+                        // Use the same rendering logic as loadResources
+                        // The code to render table rows is the same
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+            }
+
+            // Debounce function
+            function debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+
+            // Add edit and delete functions to window object
+            window.editResource = function(id) {
+                fetch(`handle_resource.php?action=get_resource&id=${id}`)
+                    .then(response => response.json())
+                    .then(resource => {
+                        // Populate form with resource details
+                        document.getElementById('resourceTitle').value = resource.title;
+                        document.getElementById('professor').value = resource.professor;
+                        document.getElementById('description').value = resource.description;
+                        document.getElementById('resourceLink').value = resource.resource_link;
+                        
+                        // Update preview
+                        document.getElementById('previewTitle').textContent = resource.title;
+                        document.getElementById('previewProfessor').textContent = resource.professor;
+                        document.getElementById('previewDescription').textContent = resource.description;
+                        document.getElementById('previewLink').textContent = resource.resource_link;
+                        document.getElementById('previewLink').href = resource.resource_link;
+                        
+                        if (resource.cover_image) {
+                            document.getElementById('previewImage').innerHTML = `
+                                <img src="${resource.cover_image}" class="rounded" alt="Resource Cover">`;
+                        } else {
+                            document.getElementById('previewImage').innerHTML = `
+                                <div class="avatar-initial rounded bg-label-primary">
+                                    <i class="bi bi-file-earmark-text"></i>
+                                </div>`;
+                        }
+                        
+                        // Add resource ID for update
+                        const form = document.getElementById('resourceForm');
+                        const idInput = document.createElement('input');
+                        idInput.type = 'hidden';
+                        idInput.id = 'resourceId';
+                        idInput.value = resource.id;
+                        form.appendChild(idInput);
+                        
+                        // Show modal
+                        document.getElementById('modalTitle').textContent = 'Edit Resource';
+                        addResourceModal.show();
+                    });
+            };
+
+            window.deleteResource = function(id) {
+                if (confirm('Are you sure you want to delete this resource?')) {
+                    fetch('handle_resource.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `action=delete_resource&id=${id}`
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            loadResources();
+                        } else {
+                            alert('Error: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while deleting the resource');
+                    });
+                }
+            };
+
+            // Initial load
+            loadResources();
         });
     </script>
 </body>

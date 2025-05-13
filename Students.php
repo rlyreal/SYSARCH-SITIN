@@ -2,6 +2,14 @@
 session_start();
 include 'db.php';
 
+// Redirect if not logged in as admin
+if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+    header("Location: index.php");
+    exit;
+}
+
+$admin_username = $_SESSION['username'] ?? 'Admin User';
+
 // Reset all session counts if requested
 if (isset($_GET['reset_session'])) {
     // Update all session counts in sit_in table to 30
@@ -28,1016 +36,900 @@ $result = $conn->query($sql);
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light-style layout-menu-fixed" dir="ltr" data-theme="theme-default" data-assets-path="../assets/">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Information</title>
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.7.2/dist/full.min.css" rel="stylesheet" type="text/css" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            themes: ["light"],
-            plugins: [require("daisyui")],
-        }
-    </script>
+    <title>Student Information | Admin</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/img/favicon/favicon.ico" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700&display=swap" rel="stylesheet" />
+    
+    <!-- Icons. Required if you use Bootstrap Icons-->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" />
+    
+    <!-- Sneat Template Core CSS -->
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/css/core.css" class="template-customizer-core-css" />
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/css/theme-default.css" class="template-customizer-theme-css" />
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/css/demo.css" />
+    
+    <!-- Vendors CSS -->
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />
+
+    <!-- Helpers -->
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/js/helpers.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/js/config.js"></script>
 </head>
-<body class="bg-gray-50">
 
-<!-- Admin Navbar -->
-<div class="navbar bg-[#2c343c] shadow-lg">
-    <div class="navbar-start">
-        <div class="flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
-            <span class="text-xl font-bold text-white ml-2">Admin</span>
+<body>
+    <!-- Layout wrapper -->
+    <div class="layout-wrapper layout-content-navbar">
+        <div class="layout-container">
+            <!-- Menu -->
+            <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
+                <div class="app-brand demo">
+                    <a href="admin_dashboard.php" class="app-brand-link">
+                        <span class="app-brand-logo demo">
+                            <svg width="25" viewBox="0 0 25 42" xmlns="http://www.w3.org/2000/svg">
+                                <defs><linearGradient id="a" x1="50%" x2="50%" y1="0%" y2="100%">
+                                <stop offset="0%" stop-color="#5A8DEE"/><stop offset="100%" stop-color="#699AF9"/></linearGradient></defs>
+                                <path fill="url(#a)" d="M12.5 0 25 14H0z"/><path fill="#FDAC41" d="M0 14 12.5 28 25 14H0z"/>
+                                <path fill="#E89A3C" d="M0 28 12.5 42 25 28H0z"/><path fill="#FDAC41" d="M12.5 14 25 28 12.5 42 0 28z"/>
+                            </svg>
+                        </span>
+                        <span class="app-brand-text demo menu-text fw-bolder ms-2">Sit-In Admin</span>
+                    </a>
+
+                    <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-block d-xl-none">
+                        <i class="bi bi-x bi-middle"></i>
+                    </a>
+                </div>
+
+                <div class="menu-inner-shadow"></div>
+
+                <ul class="menu-inner py-1">
+                    <!-- Dashboard -->
+                    <li class="menu-item">
+                        <a href="admin_dashboard.php" class="menu-link">
+                            <i class="menu-icon bi bi-house-door"></i>
+                            <div data-i18n="Dashboard">Dashboard</div>
+                        </a>
+                    </li>
+
+                    <li class="menu-header small text-uppercase">
+                        <span class="menu-header-text">Management</span>
+                    </li>
+
+                    <!-- Search -->
+                    <li class="menu-item">
+                        <a href="search.php" class="menu-link">
+                            <i class="menu-icon bi bi-search"></i>
+                            <div data-i18n="Search">Search</div>
+                        </a>
+                    </li>
+
+                    <!-- Students -->
+                    <li class="menu-item active">
+                        <a href="students.php" class="menu-link">
+                            <i class="menu-icon bi bi-people"></i>
+                            <div data-i18n="Students">Students</div>
+                        </a>
+                    </li>
+
+                    <!-- Sit-in -->
+                    <li class="menu-item">
+                        <a href="sit_in.php" class="menu-link">
+                            <i class="menu-icon bi bi-clipboard-check"></i>
+                            <div data-i18n="Sit-in">Sit-in</div>
+                        </a>
+                    </li>
+
+                    <!-- View Records -->
+                    <li class="menu-item">
+                        <a href="sit_in_records.php" class="menu-link">
+                            <i class="menu-icon bi bi-clipboard-data"></i>
+                            <div data-i18n="Records">View Records</div>
+                        </a>
+                    </li>
+
+                    <li class="menu-header small text-uppercase">
+                        <span class="menu-header-text">Features</span>
+                    </li>
+
+                    <!-- Reservation -->
+                    <li class="menu-item">
+                        <a href="admin_reservation.php" class="menu-link">
+                            <i class="menu-icon bi bi-calendar-check"></i>
+                            <div data-i18n="Reservation">Reservation</div>
+                        </a>
+                    </li>
+
+                    <!-- Reports -->
+                    <li class="menu-item">
+                        <a href="reports.php" class="menu-link">
+                            <i class="menu-icon bi bi-file-earmark-bar-graph"></i>
+                            <div data-i18n="Reports">Reports</div>
+                        </a>
+                    </li>
+
+                    <!-- Feedback Reports -->
+                    <li class="menu-item">
+                        <a href="feedback.php" class="menu-link">
+                            <i class="menu-icon bi bi-chat-left-text"></i>
+                            <div data-i18n="Feedback">Feedback Reports</div>
+                        </a>
+                    </li>
+
+                    <!-- Resources -->
+                    <li class="menu-item">
+                        <a href="lab_resources.php" class="menu-link">
+                            <i class="menu-icon bi bi-box"></i>
+                            <div data-i18n="Resources">Resources</div>
+                        </a>
+                    </li>
+                </ul>
+            </aside>
+            <!-- / Menu -->
+
+            <!-- Layout container -->
+            <div class="layout-page">
+                <!-- Navbar -->
+                <nav class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme" id="layout-navbar">
+                    <div class="layout-menu-toggle navbar-nav align-items-xl-center me-3 me-xl-0 d-xl-none">
+                        <a class="nav-item nav-link px-0 me-xl-4" href="javascript:void(0)">
+                            <i class="bi bi-list bi-middle"></i>
+                        </a>
+                    </div>
+
+                    <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
+                        <!-- Search -->
+                        <div class="navbar-nav align-items-center">
+                            <div class="nav-item d-flex align-items-center">
+                                <i class="bi bi-search fs-4 lh-0"></i>
+                                <input type="text" class="form-control border-0 shadow-none" id="navbarSearch" placeholder="Search..." aria-label="Search...">
+                            </div>
+                        </div>
+                        <!-- /Search -->
+
+                        <ul class="navbar-nav flex-row align-items-center ms-auto">
+                            <!-- User -->
+                            <li class="nav-item navbar-dropdown dropdown-user dropdown">
+                                <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown">
+                                    <div class="avatar avatar-online">
+                                        <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($admin_username); ?>&background=696cff&color=fff" alt class="w-px-40 h-auto rounded-circle">
+                                    </div>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item" href="#">
+                                            <div class="d-flex">
+                                                <div class="flex-shrink-0 me-3">
+                                                    <div class="avatar avatar-online">
+                                                        <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($admin_username); ?>&background=696cff&color=fff" alt class="w-px-40 h-auto rounded-circle">
+                                                    </div>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <span class="fw-semibold d-block"><?php echo htmlspecialchars($admin_username); ?></span>
+                                                    <small class="text-muted">Administrator</small>
+                                                </div>
+                                            </div>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <div class="dropdown-divider"></div>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#">
+                                            <i class="bi bi-gear me-2"></i>
+                                            <span class="align-middle">Settings</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <div class="dropdown-divider"></div>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="javascript:void(0);" id="logoutBtn">
+                                            <i class="bi bi-box-arrow-right me-2"></i>
+                                            <span class="align-middle">Log Out</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <!--/ User -->
+                        </ul>
+                    </div>
+                </nav>
+                <!-- / Navbar -->
+
+                <!-- Content wrapper -->
+                <div class="content-wrapper">
+                    <!-- Content -->
+                    <div class="container-xxl flex-grow-1 container-p-y">
+                        <h4 class="fw-bold py-3 mb-4">
+                            <span class="text-muted fw-light">Student Management /</span> Student Information
+                        </h4>
+
+                        <?php if (isset($_SESSION['message'])): ?>
+                        <div class="alert <?php echo strpos($_SESSION['message'], 'Error') !== false ? 'alert-danger' : 'alert-success'; ?> alert-dismissible fade show">
+                            <?php 
+                            echo $_SESSION['message'];
+                            unset($_SESSION['message']); // Clear the message after displaying
+                            ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        <?php endif; ?>
+
+                        <!-- Header with title and reset button -->
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                    <div>
+                                        <h5 class="card-title mb-0">Student Information</h5>
+                                        <p class="card-subtitle text-muted">Manage all student records</p>
+                                    </div>
+                                    <button id="resetButton" class="btn btn-primary d-flex align-items-center gap-1">
+                                        <i class="bi bi-arrow-repeat"></i>
+                                        Reset All Sessions
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Search, filter, and add new student -->
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <div class="row g-3 align-items-center">
+                                    <div class="col-md-6">
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                            <input type="text" id="searchInput" class="form-control" placeholder="Search students...">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 text-md-end">
+                                        <button type="button" id="addNewStudentBtn" class="btn btn-success d-inline-flex align-items-center gap-1">
+                                            <i class="bi bi-plus-lg"></i>
+                                            Add New Student
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Student Table Card -->
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="table-responsive text-nowrap">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>ID Number</th>
+                                                <th>Name</th>
+                                                <th>Year Level</th>
+                                                <th>Course</th>
+                                                <th>Sessions Left</th>
+                                                <th class="text-center">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="table-border-bottom-0">
+                                        <?php
+                                        if ($result->num_rows > 0) {
+                                            while ($row = $result->fetch_assoc()) {
+                                            ?>
+                                            <tr>
+                                                <td><i class="bi bi-person-badge text-primary me-2"></i><?php echo $row['id_no']; ?></td>
+                                                <td><?php echo $row['full_name']; ?></td>
+                                                <td><?php echo $row['year_level']; ?></td>
+                                                <td><?php echo $row['course']; ?></td>
+                                                <td>
+                                                    <span class="badge bg-label-primary rounded-pill"><?php echo $row['session_count']; ?></span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <div class="d-inline-flex gap-2">
+                                                        <button onclick="editStudent(<?php echo htmlspecialchars(json_encode([
+                                                            'id' => $row['id'],
+                                                            'id_no' => $row['id_no'],
+                                                            'full_name' => $row['full_name'],
+                                                            'year_level' => $row['year_level'],
+                                                            'course' => $row['course']
+                                                        ])); ?>)" class="btn btn-icon btn-sm btn-outline-primary" title="Edit">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </button>
+                                                        <button onclick="showDeleteConfirmation(<?php echo $row['id']; ?>)" 
+                                                                class="btn btn-icon btn-sm btn-outline-danger" 
+                                                                title="Delete">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                        <button onclick="resetStudentSession('<?php echo $row['id_no']; ?>')" 
+                                                                class="btn btn-icon btn-sm btn-outline-warning" 
+                                                                title="Reset Session">
+                                                            <i class="bi bi-arrow-repeat"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <?php
+                                            }
+                                        } else {
+                                            ?>
+                                            <tr>
+                                                <td colspan="6" class="text-center py-4 text-muted">No student records found</td>
+                                            </tr>
+                                            <?php
+                                        }
+                                        ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        <div class="card-body d-flex justify-content-between align-items-center mt-3 px-0">
+                            <p class="text-muted mb-0">Showing <strong><?php echo min($result->num_rows, 10); ?></strong> of <strong><?php echo $result->num_rows; ?></strong> entries</p>
+                            <nav aria-label="Page navigation">
+                                <ul class="pagination mb-0">
+                                    <li class="page-item prev disabled">
+                                        <a class="page-link" href="javascript:void(0);"><i class="bi bi-chevron-left"></i></a>
+                                    </li>
+                                    <li class="page-item active">
+                                        <a class="page-link" href="javascript:void(0);">1</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="javascript:void(0);">2</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="javascript:void(0);">3</a>
+                                    </li>
+                                    <li class="page-item next">
+                                        <a class="page-link" href="javascript:void(0);"><i class="bi bi-chevron-right"></i></a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                    <!-- / Content -->
+
+                    <!-- Footer -->
+                    <footer class="content-footer footer bg-footer-theme">
+                        <div class="container-xxl d-flex flex-wrap justify-content-between py-2 flex-md-row flex-column">
+                            <div class="mb-2 mb-md-0">
+                                ©
+                                <script>
+                                    document.write(new Date().getFullYear());
+                                </script>
+                                Sit-In System Admin Dashboard
+                            </div>
+                        </div>
+                    </footer>
+                    <!-- / Footer -->
+
+                    <div class="content-backdrop fade"></div>
+                </div>
+                <!-- / Content wrapper -->
+            </div>
+            <!-- / Layout page -->
         </div>
+
+        <!-- Overlay -->
+        <div class="layout-overlay layout-menu-toggle"></div>
     </div>
-    
-    <div class="navbar-center hidden lg:flex">
-        <ul class="menu menu-horizontal px-1 gap-2">
-            <li>
-                <a href="admin_dashboard.php" class="btn btn-ghost text-white hover:bg-white/10">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                    </svg>
-                    Home
-                </a>
-            </li>
-            <li>
-                <a href="search.php" class="btn btn-ghost text-white hover:bg-white/10">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    Search
-                </a>
-            </li>
-            <li>
-                <a href="students.php" class="btn btn-ghost text-white hover:bg-white/10">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                    Students
-                </a>
-            </li>
-            <li>
-                <a href="sit_in.php" class="btn btn-ghost text-white hover:bg-white/10">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                    Sit-in
-                </a>
-            </li>
-            <li>
-                <a href="sit_in_records.php" class="btn btn-ghost text-white hover:bg-white/10">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                    View Records
-                </a>
-            </li>
-            <li>
-                <a href="admin_reservation.php" class="btn btn-ghost text-white hover:bg-white/10">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    Reservation
-                </a>
-            </li>
-            <li>
-                <a href="reports.php" class="btn btn-ghost text-white hover:bg-white/10">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Reports
-                </a>
-            </li>
-            <li>
-                <a href="feedback.php" class="btn btn-ghost text-white hover:bg-white/10">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                    </svg>
-                    Feedback Reports
-                </a>
-            </li>
-        </ul>
-    </div>
-    
-    <div class="navbar-end">
-        <button id="logoutBtn" class="btn btn-error btn-outline gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-            Logout
-        </button>
-    </div>
-</div>
+    <!-- / Layout wrapper -->
 
-<!-- Add the notification popup here -->
-<div id="notification" class="hidden fixed top-4 right-4 z-50">
-    <div class="max-w-sm bg-white border rounded-lg shadow-lg overflow-hidden">
-        <div id="notificationContent" class="flex items-center p-4">
-            <!-- Success Icon -->
-            <div id="successIcon" class="hidden flex-shrink-0 w-6 h-6 text-green-500">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-            </div>
-            <!-- Error Icon -->
-            <div id="errorIcon" class="hidden flex-shrink-0 w-6 h-6 text-red-500">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </div>
-            <div class="ml-3">
-                <p id="notificationMessage" class="text-sm font-medium text-gray-900"></p>
-            </div>
-            <div class="ml-4 flex-shrink-0 flex">
-                <button onclick="hideNotification()" class="inline-flex text-gray-400 hover:text-gray-500">
-                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                    </svg>
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="container mx-auto px-4 py-8">
-    <?php if (isset($_SESSION['message'])): ?>
-        <div class="mb-4 p-4 rounded-lg <?php echo strpos($_SESSION['message'], 'Error') !== false ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'; ?>">
-            <?php 
-            echo $_SESSION['message'];
-            unset($_SESSION['message']); // Clear the message after displaying
-            ?>
-        </div>
-    <?php endif; ?>
-    
-<!-- Header with title and reset button -->
-<div class="flex justify-between items-center mb-6">
-<h1 class="text-3xl font-bold text-gray-800">Student Information</h1>
-<a href="#" class="bg-blue-500 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200 flex items-center" id="resetButton">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-    </svg>
-    Reset All Sessions
-</a>
-</div>
-
-<!-- Search, filter, and add new student -->
-<div class="flex flex-wrap justify-between items-center mb-6 gap-4">
-<div class="relative">
-<input type="text" id="searchInput" placeholder="Search students..." class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-</svg>
-</div>
-<a href="#" class="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg transition duration-200 flex items-center">
-<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-</svg>
-Add New Student
-</a>
-</div>
-
-<!-- Student Table -->
-<div class="overflow-x-auto bg-white rounded-xl shadow-md">
-<table class="w-full table-auto">
-<thead>
-<tr class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
-<th class="py-3 px-6 text-left">ID Number</th>
-<th class="py-3 px-6 text-left">Name</th>
-<th class="py-3 px-6 text-left">Year Level</th>
-<th class="py-3 px-6 text-left">Course</th>
-<th class="py-3 px-6 text-left">Sessions Left</th>
-<th class="py-3 px-6 text-center">Actions</th>
-</tr>
-</thead>
-<tbody class="text-gray-600 text-sm">
-<?php
-if ($result->num_rows > 0) {
-$count = 0;
-while ($row = $result->fetch_assoc()) {
-$bgColor = $count % 2 === 0 ? "bg-white" : "bg-gray-50";
-$count++;
-?>
-<tr class="<?php echo $bgColor; ?> border-b border-gray-200 hover:bg-gray-100 transition duration-150">
-<td class="py-3 px-6 text-left whitespace-nowrap">
-<?php echo $row['id_no']; ?>
-</td>
-<td class="py-3 px-6 text-left">
-<?php echo $row['full_name']; ?>
-</td>
-<td class="py-3 px-6 text-left">
-<?php echo $row['year_level']; ?>
-</td>
-<td class="py-3 px-6 text-left">
-<?php echo $row['course']; ?>
-</td>
-<td class="py-3 px-6 text-left">
-<?php echo $row['session_count']; ?>
-</td>
-<td class="py-3 px-6 text-center">
-<div class="flex item-center justify-center gap-2">
-<button onclick="editStudent(<?php echo htmlspecialchars(json_encode([
-    'id' => $row['id'],
-    'id_no' => $row['id_no'],
-    'full_name' => $row['full_name'],
-    'year_level' => $row['year_level'],
-    'course' => $row['course']
-])); ?>)" class="w-8 h-8 rounded-full bg-blue-100 hover:bg-blue-200 flex items-center justify-center transition duration-200" title="Edit">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-    </svg>
-</button>
-<button onclick="showDeleteConfirmation(<?php echo $row['id']; ?>)" 
-        class="w-8 h-8 rounded-full bg-red-100 hover:bg-red-200 flex items-center justify-center transition duration-200" 
-        title="Delete">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-    </svg>
-</button>
-<button onclick="resetStudentSession('<?php echo $row['id_no']; ?>')" 
-        class="w-8 h-8 rounded-full bg-yellow-100 hover:bg-yellow-200 flex items-center justify-center transition duration-200" 
-        title="Reset Session">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-    </svg>
-</button>
-</div>
-</td>
-</tr>
-<?php
-}
-} else {
-?>
-<tr>
-<td colspan="6" class="py-8 text-center text-gray-500">No student records found</td>
-</tr>
-<?php
-}
-?>
-</tbody>
-</table>
-</div>
-
-<!-- Pagination -->
-<div class="flex justify-between items-center mt-6">
-<p class="text-sm text-gray-600">Showing <strong><?php echo min($result->num_rows, 10); ?></strong> of <strong><?php echo $result->num_rows; ?></strong> entries</p>
-<div class="flex space-x-1">
-<button class="px-3 py-1 rounded border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-50">Previous</button>
-<button class="px-3 py-1 rounded border border-blue-500 bg-blue-500 text-white">1</button>
-<button class="px-3 py-1 rounded border border-gray-300 text-gray-600 hover:bg-gray-100">2</button>
-<button class="px-3 py-1 rounded border border-gray-300 text-gray-600 hover:bg-gray-100">3</button>
-<button class="px-3 py-1 rounded border border-gray-300 text-gray-600 hover:bg-gray-100">Next</button>
-</div>
-</div>
-</div>
-
-<!-- Reset Sessions Modal -->
-<div id="resetModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3 text-center">
-            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100">
-                <svg class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                </svg>
-            </div>
-            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Reset All Sessions</h3>
-            <div class="mt-2 px-7 py-3">
-                <p class="text-sm text-gray-500">
-                    Are you sure you want to reset ALL session counts to 30? This action cannot be undone.
-                </p>
-            </div>
-            <div class="items-center px-4 py-3">
-                <button id="confirmReset" class="px-4 py-2 bg-yellow-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-300">
-                    Reset All Sessions
-                </button>
-                <button id="cancelReset" class="mt-3 px-4 py-2 bg-gray-100 text-gray-700 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300">
-                    Cancel
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Success Message Modal -->
-<div id="successModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3 text-center">
-            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
-                <svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                </svg>
-            </div>
-            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Reset Successful!</h3>
-            <div class="mt-2 px-7 py-3">
-                <p class="text-sm text-gray-500">
-                    All session counts have been successfully reset to 30.
-                </p>
-            </div>
-            <div class="items-center px-4 py-3">
-                <button id="closeSuccessModal" class="px-4 py-2 bg-green-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300">
-                    Close
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Success Modal -->
-<div id="successModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white animate-fade-in-down">
-        <div class="mt-3 text-center">
-            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
-                <svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                </svg>
-            </div>
-            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Success!</h3>
-            <div class="mt-2 px-7 py-3">
-                <p class="text-sm text-gray-500">
-                    All session counts have been reset to 30 successfully.
-                </p>
-            </div>
-            <div class="items-center px-4 py-3">
-                <button id="closeSuccessModal" class="px-4 py-2 bg-green-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300 transition duration-200">
-                    Got it!
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Add Student Modal -->
-<div id="addStudentModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-    <div class="relative top-10 mx-auto p-5 border w-[450px] shadow-lg rounded-lg bg-white">
-        <!-- Modal Header -->
-        <div class="mb-5">
-            <h2 class="text-xl font-bold text-gray-800 text-center">Add New Student</h2>
-        </div>
-
-        <!-- Form -->
-        <form id="addStudentForm" class="space-y-4">
-            <!-- Basic Information -->
-            <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">ID Number*</label>
-                    <input type="text" name="id_no" required placeholder="Enter ID number"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+    <!-- Reset Sessions Modal -->
+    <div class="modal fade" id="resetModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Reset All Sessions</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Email*</label>
-                    <input type="email" name="email" required placeholder="Enter email"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-12 mb-3 text-center">
+                            <div class="avatar avatar-md mx-auto mb-3">
+                                <span class="avatar-initial rounded-circle bg-label-warning">
+                                    <i class="bi bi-exclamation-triangle-fill"></i>
+                                </span>
+                            </div>
+                            <p>Are you sure you want to reset ALL session counts to 30? This action cannot be undone.</p>
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Last Name*</label>
-                    <input type="text" name="last_name" required placeholder="Enter last name"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" id="confirmReset" class="btn btn-warning">Reset All Sessions</button>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">First Name*</label>
-                    <input type="text" name="first_name" required placeholder="Enter first name"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Middle Name</label>
-                    <input type="text" name="middle_name" placeholder="Enter middle name"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Course*</label>
-                    <select name="course" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option value="" disabled selected>Course</option>
-                                <option value="BSIT">BSIT (Information Technology)</option>
-                                <option value="BSCS">BSCS (Computer Science)</option>
-                                <option value="BSIS">BSIS (Information Systems)</option>
-                                <option value="BSCE">BSCE (Civil Engineering)</option>
-                                <option value="BSEE">BSEE (Electrical Engineering)</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Username*</label>
-                    <input type="text" name="username" required placeholder="Enter username"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Year Level*</label>
-                    <select name="year_level" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="">Select Year</option>
-                        <option value="1st Year">1st Year</option>
-                        <option value="2nd Year">2nd Year</option>
-                        <option value="3rd Year">3rd Year</option>
-                        <option value="4th Year">4th Year</option>
-                    </select>
-                </div>
-                <div class="col-span-2">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Password*</label>
-                    <input type="password" name="password" required placeholder="Enter password"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-                <div class="col-span-2">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                    <input type="text" name="address" placeholder="Enter complete address"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="flex justify-end space-x-3 pt-4">
-                <button type="button" id="cancelAddStudent"
-                    class="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200">
-                    Cancel
-                </button>
-                <button type="submit"
-                    class="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600">
-                    Add Student
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- Add Student Success Modal -->
-<div id="addSuccessModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white animate-fade-in-down">
-        <div class="mt-3 text-center">
-            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
-                <svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                </svg>
-            </div>
-            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Student Added Successfully!</h3>
-            <div class="mt-2 px-7 py-3">
-                <p class="text-sm text-gray-500">
-                    The new student has been successfully added to the system.
-                </p>
-            </div>
-            <div class="items-center px-4 py-3">
-                <button id="closeAddSuccessModal" class="px-4 py-2 bg-green-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300 transition duration-200">
-                    Got it!
-                </button>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Edit Student Modal -->
-<div id="editStudentModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-    <div class="relative top-10 mx-auto p-5 border w-[450px] shadow-lg rounded-lg bg-white">
-        <div class="mb-5">
-            <h2 class="text-xl font-bold text-gray-800 text-center">Edit Student</h2>
-        </div>
-
-        <form id="editStudentForm" class="space-y-4">
-            <input type="hidden" id="edit_student_id" name="student_id">
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">ID Number*</label>
-                    <input type="text" id="edit_id_no" name="id_no" required
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+    <!-- Add Student Modal -->
+    <div class="modal fade" id="addStudentModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Student</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Last Name*</label>
-                    <input type="text" id="edit_last_name" name="last_name" required
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <div class="modal-body">
+                    <form id="addStudentForm">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">ID Number*</label>
+                                <input type="text" name="id_no" class="form-control" required placeholder="Enter ID number">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Email*</label>
+                                <input type="email" name="email" class="form-control" required placeholder="Enter email">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Last Name*</label>
+                                <input type="text" name="last_name" class="form-control" required placeholder="Enter last name">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">First Name*</label>
+                                <input type="text" name="first_name" class="form-control" required placeholder="Enter first name">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Middle Name</label>
+                                <input type="text" name="middle_name" class="form-control" placeholder="Enter middle name">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Course*</label>
+                                <select name="course" class="form-select" required>
+                                    <option value="" disabled selected>Course</option>
+                                    <option value="BSIT">BSIT (Information Technology)</option>
+                                    <option value="BSCS">BSCS (Computer Science)</option>
+                                    <option value="BSIS">BSIS (Information Systems)</option>
+                                    <option value="BSCE">BSCE (Civil Engineering)</option>
+                                    <option value="BSEE">BSEE (Electrical Engineering)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Username*</label>
+                                <input type="text" name="username" class="form-control" required placeholder="Enter username">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Year Level*</label>
+                                <select name="year_level" class="form-select" required>
+                                    <option value="">Select Year</option>
+                                    <option value="1st Year">1st Year</option>
+                                    <option value="2nd Year">2nd Year</option>
+                                    <option value="3rd Year">3rd Year</option>
+                                    <option value="4th Year">4th Year</option>
+                                </select>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Password*</label>
+                                <input type="password" name="password" class="form-control" required placeholder="Enter password">
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Address</label>
+                                <input type="text" name="address" class="form-control" placeholder="Enter complete address">
+                            </div>
+                        </div>
+                    </form>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">First Name*</label>
-                    <input type="text" id="edit_first_name" name="first_name" required
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Middle Name</label>
-                    <input type="text" id="edit_middle_name" name="middle_name"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Year Level*</label>
-                    <select id="edit_year_level" name="year_level" required
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="1st Year">1st Year</option>
-                        <option value="2nd Year">2nd Year</option>
-                        <option value="3rd Year">3rd Year</option>
-                        <option value="4th Year">4th Year</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Course*</label>
-                    <select id="edit_course" name="course" required
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="" disabled selected>Course</option>
-                                <option value="BSIT">BSIT (Information Technology)</option>
-                                <option value="BSCS">BSCS (Computer Science)</option>
-                                <option value="BSIS">BSIS (Information Systems)</option>
-                                <option value="BSCE">BSCE (Civil Engineering)</option>
-                                <option value="BSEE">BSEE (Electrical Engineering)</option>
-                    </select>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" id="submitAddStudent" class="btn btn-primary">Add Student</button>
                 </div>
             </div>
-
-            <div class="flex justify-end space-x-3 pt-4">
-                <button type="button" id="cancelEditStudent"
-                    class="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200">
-                    Cancel
-                </button>
-                <button type="submit"
-                    class="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600">
-                    Save Changes
-                </button>
-            </div>
-        </form>
+        </div>
     </div>
-</div>
 
-<!-- Edit Success Modal -->
-<div id="editSuccessModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white animate-fade-in-down">
-        <div class="mt-3 text-center">
-            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
-                <svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                </svg>
-            </div>
-            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Student Updated Successfully!</h3>
-            <div class="mt-2 px-7 py-3">
-                <p class="text-sm text-gray-500">
-                    The student information has been successfully updated.
-                </p>
-            </div>
-            <div class="items-center px-4 py-3">
-                <button id="closeEditSuccessModal" class="px-4 py-2 bg-green-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300 transition duration-200">
-                    Got it!
-                </button>
+    <!-- Edit Student Modal -->
+    <div class="modal fade" id="editStudentModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Student</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editStudentForm">
+                        <input type="hidden" id="edit_student_id" name="student_id">
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label class="form-label">ID Number*</label>
+                                <input type="text" id="edit_id_no" name="id_no" class="form-control" required>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Last Name*</label>
+                                <input type="text" id="edit_last_name" name="last_name" class="form-control" required>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">First Name*</label>
+                                <input type="text" id="edit_first_name" name="first_name" class="form-control" required>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Middle Name</label>
+                                <input type="text" id="edit_middle_name" name="middle_name" class="form-control">
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Year Level*</label>
+                                <select id="edit_year_level" name="year_level" class="form-select" required>
+                                    <option value="1st Year">1st Year</option>
+                                    <option value="2nd Year">2nd Year</option>
+                                    <option value="3rd Year">3rd Year</option>
+                                    <option value="4th Year">4th Year</option>
+                                </select>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Course*</label>
+                                <select id="edit_course" name="course" class="form-select" required>
+                                    <option value="" disabled selected>Course</option>
+                                    <option value="BSIT">BSIT (Information Technology)</option>
+                                    <option value="BSCS">BSCS (Computer Science)</option>
+                                    <option value="BSIS">BSIS (Information Systems)</option>
+                                    <option value="BSCE">BSCE (Civil Engineering)</option>
+                                    <option value="BSEE">BSEE (Electrical Engineering)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" id="submitEditStudent" class="btn btn-primary">Save Changes</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Delete Confirmation Modal -->
-<div id="deleteModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3 text-center">
-            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-                <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                </svg>
-            </div>
-            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Delete Student</h3>
-            <div class="mt-2 px-7 py-3">
-                <p class="text-sm text-gray-500">
-                    Are you sure you want to delete this student? This action cannot be undone.
-                </p>
-            </div>
-            <div class="items-center px-4 py-3">
-                <input type="hidden" id="deleteStudentId">
-                <button id="confirmDelete" class="px-4 py-2 bg-red-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-300 mb-2">
-                    Delete Student
-                </button>
-                <button id="cancelDelete" class="px-4 py-2 bg-gray-100 text-gray-700 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300">
-                    Cancel
-                </button>
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Delete Student</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-12 mb-3 text-center">
+                            <div class="avatar avatar-md mx-auto mb-3">
+                                <span class="avatar-initial rounded-circle bg-label-danger">
+                                    <i class="bi bi-exclamation-triangle-fill"></i>
+                                </span>
+                            </div>
+                            <p>Are you sure you want to delete this student? This action cannot be undone.</p>
+                            <input type="hidden" id="deleteStudentId">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" id="confirmDelete" class="btn btn-danger">Delete Student</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Delete Success Modal -->
-<div id="deleteSuccessModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white animate-fade-in-down">
-        <div class="mt-3 text-center">
-            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
-                <svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                </svg>
-            </div>
-            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Student Deleted Successfully!</h3>
-            <div class="mt-2 px-7 py-3">
-                <p class="text-sm text-gray-500">
-                    The student has been removed from the system.
-                </p>
+    <!-- Reset Single Session Modal -->
+    <div class="modal fade" id="resetSingleModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Reset Student Sessions</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-12 mb-3 text-center">
+                            <div class="avatar avatar-md mx-auto mb-3">
+                                <span class="avatar-initial rounded-circle bg-label-warning">
+                                    <i class="bi bi-arrow-repeat"></i>
+                                </span>
+                            </div>
+                            <p>Are you sure you want to reset this student's session count to 30?</p>
+                            <input type="hidden" id="resetStudentIdNo">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" id="confirmSingleReset" class="btn btn-warning">Reset Sessions</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Reset Single Session Confirmation Modal -->
-<div id="resetSingleModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3 text-center">
-            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-            </div>
-            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Reset Student Sessions</h3>
-            <div class="mt-2 px-7 py-3">
-                <p class="text-sm text-gray-500">
-                    Are you sure you want to reset this student's session count to 30?
-                </p>
-            </div>
-            <div class="items-center px-4 py-3">
-                <input type="hidden" id="resetStudentIdNo">
-                <button id="confirmSingleReset" class="px-4 py-2 bg-yellow-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-300 mb-2">
-                    Reset Sessions
-                </button>
-                <button id="cancelSingleReset" class="px-4 py-2 bg-gray-100 text-gray-700 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300">
-                    Cancel
-                </button>
+    <!-- Success Modal -->
+    <div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="successModalTitle">Success!</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-12 mb-3 text-center">
+                            <div class="avatar avatar-md mx-auto mb-3">
+                                <span class="avatar-initial rounded-circle bg-label-success">
+                                    <i class="bi bi-check-lg"></i>
+                                </span>
+                            </div>
+                            <p id="successModalMessage">Operation completed successfully.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal" id="successModalContinue">Continue</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Reset Single Session Success Modal -->
-<div id="resetSingleSuccessModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3 text-center">
-            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
-                <svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                </svg>
-            </div>
-            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Success!</h3>
-            <div class="mt-2 px-7 py-3">
-                <p class="text-sm text-gray-500">
-                    Session count has been successfully reset to 30.
-                </p>
-            </div>
-            <div class="items-center px-4 py-3">
-                <button id="closeResetSuccessModal" class="px-4 py-2 bg-green-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300">
-                    Continue
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Logout confirmation modal -->
-<div id="logoutModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
-        <div class="mt-3 text-center">
-            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
-                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                </svg>
-            </div>
-            <h3 class="text-lg leading-6 font-medium text-gray-900">Confirm Logout</h3>
-            <div class="mt-2 px-7 py-3">
-                <p class="text-sm text-gray-500">Are you sure you want to logout?</p>
-            </div>
-            <div class="flex justify-center gap-4 mt-3">
-                <button id="cancelLogout" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium rounded-md">
-                    Cancel
-                </button>
-                <button id="confirmLogout" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md">
-                    Logout
-                </button>
+    <!-- Logout Modal -->
+    <div class="modal fade" id="logoutModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Logout</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-12 mb-3 text-center">
+                            <div class="avatar avatar-md mx-auto mb-3">
+                                <span class="avatar-initial rounded-circle bg-label-danger">
+                                    <i class="bi bi-box-arrow-right"></i>
+                                </span>
+                            </div>
+                            <p>Are you sure you want to logout?</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <a href="logout.php" class="btn btn-danger">Logout</a>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<script>
-// Modal Elements
-const resetModal = document.getElementById('resetModal');
-const deleteModal = document.getElementById('deleteModal');
-const addStudentModal = document.getElementById('addStudentModal');
-const editStudentModal = document.getElementById('editStudentModal');
-const successModal = document.getElementById('successModal');
-const logoutModal = document.getElementById('logoutModal');
+    <!-- Core JS -->
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/jquery/jquery.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/popper/popper.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/js/bootstrap.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/js/menu.js"></script>
 
-// Reset Sessions Functionality
-const resetButton = document.getElementById('resetButton');
-const confirmReset = document.getElementById('confirmReset');
-const cancelReset = document.getElementById('cancelReset');
+    <!-- Main JS -->
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/js/main.js"></script>
 
-resetButton.addEventListener('click', () => {
-    resetModal.classList.remove('hidden');
-});
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Bootstrap modals
+            const resetModal = new bootstrap.Modal(document.getElementById('resetModal'));
+            const addStudentModal = new bootstrap.Modal(document.getElementById('addStudentModal'));
+            const editStudentModal = new bootstrap.Modal(document.getElementById('editStudentModal'));
+            const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+            const resetSingleModal = new bootstrap.Modal(document.getElementById('resetSingleModal'));
+            const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+            const logoutModal = new bootstrap.Modal(document.getElementById('logoutModal'));
 
-cancelReset.addEventListener('click', () => {
-    resetModal.classList.add('hidden');
-});
+            // Reset All Sessions button
+            document.getElementById('resetButton').addEventListener('click', function() {
+                resetModal.show();
+            });
 
-confirmReset.addEventListener('click', async () => {
-    try {
-        const response = await fetch('Students.php?reset_session=true', {
-            method: 'GET'
+            // Confirm reset button
+            document.getElementById('confirmReset').addEventListener('click', function() {
+                window.location.href = 'Students.php?reset_session=true';
+            });
+
+            // Add new student button
+            document.getElementById('addNewStudentBtn').addEventListener('click', function() {
+                addStudentModal.show();
+            });
+
+            // Submit add student form
+            document.getElementById('submitAddStudent').addEventListener('click', function() {
+                const form = document.getElementById('addStudentForm');
+                const formData = new FormData(form);
+                
+                fetch('add_student.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    addStudentModal.hide();
+                    
+                    if (data.success) {
+                        document.getElementById('successModalTitle').textContent = 'Student Added!';
+                        document.getElementById('successModalMessage').textContent = 'The new student has been successfully added to the system.';
+                        successModal.show();
+                        
+                        // Reload page after closing success modal
+                        document.getElementById('successModalContinue').addEventListener('click', function() {
+                            window.location.reload();
+                        }, { once: true });
+                    } else {
+                        alert(data.message || 'Error adding student');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error adding student');
+                });
+            });
+
+            // Handle edit student
+            window.editStudent = function(studentData) {
+                document.getElementById('edit_student_id').value = studentData.id;
+                document.getElementById('edit_id_no').value = studentData.id_no;
+                
+                // Split full name and handle name parts
+                const fullName = studentData.full_name;
+                const nameParts = fullName.trim().split(' ');
+                
+                // Handle name parts based on length
+                if (nameParts.length === 3) {
+                    document.getElementById('edit_first_name').value = nameParts[0];
+                    document.getElementById('edit_middle_name').value = nameParts[1];
+                    document.getElementById('edit_last_name').value = nameParts[2];
+                } else if (nameParts.length === 2) {
+                    document.getElementById('edit_first_name').value = nameParts[0];
+                    document.getElementById('edit_middle_name').value = '';
+                    document.getElementById('edit_last_name').value = nameParts[1];
+                } else {
+                    document.getElementById('edit_first_name').value = nameParts[0] || '';
+                    document.getElementById('edit_middle_name').value = '';
+                    document.getElementById('edit_last_name').value = nameParts[1] || '';
+                }
+                
+                document.getElementById('edit_year_level').value = studentData.year_level;
+                document.getElementById('edit_course').value = studentData.course;
+                
+                editStudentModal.show();
+            };
+
+            // Submit edit student form
+            document.getElementById('submitEditStudent').addEventListener('click', function() {
+                const form = document.getElementById('editStudentForm');
+                const formData = new FormData(form);
+                
+                fetch('update_student.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    editStudentModal.hide();
+                    
+                    if (data.success) {
+                        document.getElementById('successModalTitle').textContent = 'Student Updated!';
+                        document.getElementById('successModalMessage').textContent = 'The student information has been successfully updated.';
+                        successModal.show();
+                        
+                        // Reload page after closing success modal
+                        document.getElementById('successModalContinue').addEventListener('click', function() {
+                            window.location.reload();
+                        }, { once: true });
+                    } else {
+                        alert(data.message || 'Error updating student');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error updating student');
+                });
+            });
+
+            // Show delete confirmation
+            window.showDeleteConfirmation = function(id) {
+                document.getElementById('deleteStudentId').value = id;
+                deleteModal.show();
+            };
+
+            // Confirm delete button
+            document.getElementById('confirmDelete').addEventListener('click', function() {
+                const id = document.getElementById('deleteStudentId').value;
+                
+                fetch('delete_student.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `id=${id}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    deleteModal.hide();
+                    
+                    if (data.success) {
+                        document.getElementById('successModalTitle').textContent = 'Student Deleted!';
+                        document.getElementById('successModalMessage').textContent = 'The student has been successfully deleted from the system.';
+                        successModal.show();
+                        
+                        // Reload page after closing success modal
+                        document.getElementById('successModalContinue').addEventListener('click', function() {
+                            window.location.reload();
+                        }, { once: true });
+                    } else {
+                        alert(data.message || 'Error deleting student');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error deleting student');
+                });
+            });
+
+            // Reset single student session
+            window.resetStudentSession = function(idNo) {
+                document.getElementById('resetStudentIdNo').value = idNo;
+                resetSingleModal.show();
+            };
+
+            // Confirm single reset button
+            document.getElementById('confirmSingleReset').addEventListener('click', function() {
+                const idNo = document.getElementById('resetStudentIdNo').value;
+                
+                fetch('reset_single_session.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `id_no=${idNo}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    resetSingleModal.hide();
+                    
+                    if (data.success) {
+                        document.getElementById('successModalTitle').textContent = 'Session Reset!';
+                        document.getElementById('successModalMessage').textContent = 'The student\'s session count has been reset to 30 successfully.';
+                        successModal.show();
+                        
+                        // Reload page after closing success modal
+                        document.getElementById('successModalContinue').addEventListener('click', function() {
+                            window.location.reload();
+                        }, { once: true });
+                    } else {
+                        alert(data.message || 'Error resetting session count');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error resetting session count');
+                });
+            });
+
+            // Search functionality
+            document.getElementById('searchInput').addEventListener('keyup', function() {
+                let searchText = this.value.toLowerCase();
+                let rows = document.querySelectorAll('tbody tr');
+                
+                rows.forEach(row => {
+                    let text = row.textContent.toLowerCase();
+                    row.style.display = text.includes(searchText) ? '' : 'none';
+                });
+            });
+
+            // Navbar search redirection
+            document.getElementById('navbarSearch').addEventListener('keyup', function(e) {
+                if (e.key === 'Enter') {
+                    document.getElementById('searchInput').value = this.value;
+                    document.getElementById('searchInput').dispatchEvent(new Event('keyup'));
+                    document.getElementById('searchInput').focus();
+                }
+            });
+
+            // Logout button
+            document.getElementById('logoutBtn').addEventListener('click', function() {
+                logoutModal.show();
+            });
         });
-        
-        if (response.ok) {
-            resetModal.classList.add('hidden');
-            successModal.classList.remove('hidden');
-            
-            // Reload the page after a short delay
-            setTimeout(() => {
-                window.location.reload();
-            }, 1500);
-        } else {
-            alert('Error resetting sessions');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error resetting sessions');
-    }
-});
-
-// Add close handler for success modal
-const closeSuccessModal = document.getElementById('closeSuccessModal');
-if (closeSuccessModal) {
-    closeSuccessModal.addEventListener('click', () => {
-        successModal.classList.add('hidden');
-        window.location.reload();
-    });
-}
-
-// Make sure the resetButton click handler is properly set
-document.getElementById('resetButton').addEventListener('click', (e) => {
-    e.preventDefault();
-    resetModal.classList.remove('hidden');
-});
-
-// Add click outside handler for reset modal
-resetModal.addEventListener('click', (e) => {
-    if (e.target === resetModal) {
-        resetModal.classList.add('hidden');
-    }
-});
-
-// Delete Functionality
-function showDeleteConfirmation(id) {
-    document.getElementById('deleteStudentId').value = id;
-    deleteModal.classList.remove('hidden');
-}
-
-const confirmDelete = document.getElementById('confirmDelete');
-const cancelDelete = document.getElementById('cancelDelete');
-
-cancelDelete.addEventListener('click', () => {
-    deleteModal.classList.add('hidden');
-});
-
-// Add New Student Functionality
-const addStudentButton = document.querySelector('a[href="#"].bg-green-500');
-const cancelAddStudent = document.getElementById('cancelAddStudent');
-
-addStudentButton.addEventListener('click', (e) => {
-    e.preventDefault();
-    addStudentModal.classList.remove('hidden');
-});
-
-cancelAddStudent.addEventListener('click', () => {
-    addStudentModal.classList.add('hidden');
-    addStudentForm.reset();
-});
-
-// Edit Student Functionality
-function editStudent(studentData) {
-    try {
-        // Populate form fields
-        document.getElementById('edit_student_id').value = studentData.id;
-        document.getElementById('edit_id_no').value = studentData.id_no;
-        
-        // Split full name and handle name parts
-        const fullName = studentData.full_name;
-        const nameParts = fullName.trim().split(' ');
-        
-        // Handle name parts based on length
-        if (nameParts.length === 3) {
-            document.getElementById('edit_first_name').value = nameParts[0];
-            document.getElementById('edit_middle_name').value = nameParts[1];
-            document.getElementById('edit_last_name').value = nameParts[2];
-        } else if (nameParts.length === 2) {
-            document.getElementById('edit_first_name').value = nameParts[0];
-            document.getElementById('edit_middle_name').value = '';
-            document.getElementById('edit_last_name').value = nameParts[1];
-        } else {
-            document.getElementById('edit_first_name').value = nameParts[0] || '';
-            document.getElementById('edit_middle_name').value = '';
-            document.getElementById('edit_last_name').value = nameParts[1] || '';
-        }
-        
-        document.getElementById('edit_year_level').value = studentData.year_level;
-        document.getElementById('edit_course').value = studentData.course;
-
-        // Show the modal
-        editStudentModal.classList.remove('hidden');
-    } catch (error) {
-        console.error('Error populating edit form:', error);
-    }
-}
-
-// Add these event listeners
-document.getElementById('editStudentForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    
-    try {
-        const response = await fetch('update_student.php', {
-            method: 'POST',
-            body: formData
-        });
-        
-        const result = await response.json();
-        if (result.success) {
-            editStudentModal.classList.add('hidden');
-            document.getElementById('editSuccessModal').classList.remove('hidden');
-            
-            // Auto close success modal and reload page after 1.5 seconds
-            setTimeout(() => {
-                document.getElementById('editSuccessModal').classList.add('hidden');
-                window.location.reload();
-            }, 1500);
-        } else {
-            alert(result.message || 'Error updating student');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error updating student');
-    }
-});
-
-// Add success modal close handler
-document.getElementById('closeEditSuccessModal').addEventListener('click', () => {
-    document.getElementById('editSuccessModal').classList.add('hidden');
-    window.location.reload();
-});
-
-// Add cancel button handler
-document.getElementById('cancelEditStudent').addEventListener('click', () => {
-    editStudentModal.classList.add('hidden');
-    document.getElementById('editStudentForm').reset();
-});
-
-// Generic modal close on outside click
-[resetModal, deleteModal, addStudentModal, editStudentModal, successModal, logoutModal].forEach(modal => {
-    if (modal) {
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.classList.add('hidden');
-            }
-        });
-    }
-});
-
-// Form submissions
-const addStudentForm = document.getElementById('addStudentForm');
-const editStudentForm = document.getElementById('editStudentForm');
-
-// Add Student Form Submission
-addStudentForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const formData = new FormData(addStudentForm);
-    
-    try {
-        const response = await fetch('add_student.php', {
-            method: 'POST',
-            body: formData
-        });
-        
-        const result = await response.json();
-        if (result.success) {
-            addStudentModal.classList.add('hidden');
-            addStudentForm.reset();
-            window.location.reload();
-        } else {
-            alert(result.message || 'Error adding student');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error adding student');
-    }
-});
-
-// Delete Confirmation Handler
-confirmDelete.addEventListener('click', async () => {
-    const id = document.getElementById('deleteStudentId').value;
-    try {
-        const response = await fetch('delete_student.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: `id=${id}`
-        });
-        
-        const result = await response.json();
-        if (result.success) {
-            deleteModal.classList.add('hidden');
-            document.getElementById('deleteSuccessModal').classList.remove('hidden');
-            
-            // Auto close success modal and reload page after 1.5 seconds
-            setTimeout(() => {
-                document.getElementById('deleteSuccessModal').classList.add('hidden');
-                window.location.reload();
-            }, 1500);
-        } else {
-            alert(result.message || 'Error deleting student');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error deleting student');
-    }
-});
-
-// Search functionality
-const searchInput = document.getElementById('searchInput');
-searchInput.addEventListener('keyup', function() {
-    const input = this.value.toLowerCase();
-    const rows = document.querySelectorAll('tbody tr');
-
-    rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(input) ? "" : "none";
-    });
-});
-
-// Add this to your existing script section in Students.php
-function resetStudentSession(idNo) {
-    // Show confirmation modal
-    const resetModal = document.getElementById('resetSingleModal');
-    const resetSuccessModal = document.getElementById('resetSingleSuccessModal');
-    document.getElementById('resetStudentIdNo').value = idNo;
-    resetModal.classList.remove('hidden');
-
-    // Handle confirmation
-    document.getElementById('confirmSingleReset').addEventListener('click', function() {
-        fetch('reset_single_session.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: `id_no=${idNo}`
-        })
-        .then(response => response.json())
-        .then(data => {
-            resetModal.classList.add('hidden');
-            if (data.success) {
-                resetSuccessModal.classList.remove('hidden');
-            } else {
-                alert(data.message || 'Error resetting session count');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error resetting session count');
-        });
-    });
-
-    // Handle cancel
-    document.getElementById('cancelSingleReset').addEventListener('click', function() {
-        resetModal.classList.add('hidden');
-    });
-
-    // Handle success modal close
-    document.getElementById('closeResetSuccessModal').addEventListener('click', function() {
-        resetSuccessModal.classList.add('hidden');
-        window.location.reload(); // Reload to show updated count
-    });
-
-    // Close modals when clicking outside
-    [resetModal, resetSuccessModal].forEach(modal => {
-        modal.addEventListener('click', function(e) {
-            if (e.target === this) {
-                this.classList.add('hidden');
-            }
-        });
-    });
-}
-
-// Logout Functionality
-document.addEventListener('DOMContentLoaded', function() {
-    const logoutBtn = document.getElementById('logoutBtn');
-    const logoutModal = document.getElementById('logoutModal');
-    const cancelLogout = document.getElementById('cancelLogout');
-    const confirmLogout = document.getElementById('confirmLogout');
-
-    // Show modal when logout button is clicked
-    logoutBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        logoutModal.classList.remove('hidden');
-    });
-
-    // Hide modal when cancel is clicked
-    cancelLogout.addEventListener('click', function() {
-        logoutModal.classList.add('hidden');
-    });
-
-    // Perform logout when confirm is clicked
-    confirmLogout.addEventListener('click', function() {
-        window.location.href = 'logout.php';
-    });
-
-    // Close modal when clicking outside
-    logoutModal.addEventListener('click', function(e) {
-        if (e.target === this) {
-            this.classList.add('hidden');
-        }
-    });
-});
-</script>
+    </script>
 </body>
 </html>

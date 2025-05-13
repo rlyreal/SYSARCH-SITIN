@@ -4,230 +4,370 @@
 ?>
 
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en" class="light-style customizer-hide" dir="ltr" data-theme="theme-default">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
     <title>CCS Sitin Monitoring System</title>
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.7.2/dist/full.min.css" rel="stylesheet" type="text/css" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/img/favicon/favicon.ico" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700&display=swap" rel="stylesheet" />
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" />
+    
+    <!-- Core CSS -->
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/css/core.css" class="template-customizer-core-css" />
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/css/theme-default.css" class="template-customizer-theme-css" />
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/css/demo.css" />
+
+    <!-- Vendors CSS -->
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />
+
+    <!-- Page CSS -->
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/css/pages/page-auth.css" />
+    
+    <!-- Alerts -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- Helper JS -->
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/js/helpers.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/js/config.js"></script>
+
     <style>
-        .button-container {
+        .app-brand-logo {
             display: flex;
+            justify-content: center;
             gap: 1rem;
-            justify-content: flex-end;
-            margin-top: 1rem;
+        }
+        .app-brand-logo img {
+            height: 80px;
+            width: auto;
+        }
+        .authentication-inner {
+            max-width: 450px;
+        }
+        .authentication-inner.register {
+            max-width: 700px;
+        }
+        .auth-footer-btn {
+            gap: 1rem;
         }
     </style>
 </head>
 
-<body class="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-    <!-- Register Form -->
-    <div class="container max-w-md mx-auto hidden" id="signup">
-        <div class="card bg-base-100 shadow-xl">
-            <div class="card-body">
-                <h2 class="card-title text-2xl font-bold text-center mb-6">Register Account</h2>
-                <form id="registerForm" class="space-y-4">
-                    <!-- ID Field -->
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
-                            <i class="far fa-id-card"></i>
-                        </span>
-                        <input type="text" name="id" id="id_no" placeholder="IDNO" 
-                               class="input input-bordered w-full pl-10" required 
-                               minlength="8" maxlength="8" pattern="\d{8}">
-                    </div>
-
-                    <!-- Names Section -->
-                    <div class="grid grid-cols-1 gap-4">
-                        <div class="relative">
-                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
-                                <i class="fas fa-user"></i>
-                            </span>
-                            <input type="text" name="lName" id="last_name" placeholder="Last Name" 
-                                   class="input input-bordered w-full pl-10" required>
+<body>
+    <!-- Content -->
+    <div class="container-xxl">
+        <div class="authentication-wrapper authentication-basic container-p-y">
+            <!-- Login -->
+            <div class="authentication-inner" id="signIn">
+                <!-- Card -->
+                <div class="card">
+                    <div class="card-body">
+                        <!-- Logo -->
+                        <div class="app-brand justify-content-center mb-4 mt-2">
+                            <div class="app-brand-logo">
+                                <img src="University-of-Cebu-Logo.jpg" alt="UC Logo">
+                                <img src="ccs.png" alt="CCS Logo">
+                            </div>
                         </div>
-                        <div class="relative">
-                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
-                                <i class="fas fa-user"></i>
-                            </span>
-                            <input type="text" name="fname" id="first_name" placeholder="First Name" 
-                                   class="input input-bordered w-full pl-10" required>
-                        </div>
-                        <div class="relative">
-                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
-                                <i class="fas fa-user"></i>
-                            </span>
-                            <input type="text" name="mname" id="middle_name" placeholder="Middle Name" 
-                                   class="input input-bordered w-full pl-10" required>
-                        </div>
-                    </div>
+                        <!-- /Logo -->
+                        <h4 class="mb-2 text-center fw-bold">CCS Sitin Monitoring System</h4>
+                        <p class="mb-4 text-center">Please sign-in to your account</p>
 
-                    <!-- Course and Year Level -->
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="relative">
-                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
-                                <i class="fas fa-graduation-cap"></i>
-                            </span>
-                            <select name="course" class="select select-bordered w-full pl-10" required>
-                                <option value="" disabled selected>Course</option>
-                                <option value="BSIT">BSIT (Information Technology)</option>
-                                <option value="BSCS">BSCS (Computer Science)</option>
-                                <option value="BSIS">BSIS (Information Systems)</option>
-                                <option value="BSCE">BSCE (Civil Engineering)</option>
-                                <option value="BSEE">BSEE (Electrical Engineering)</option>
-                            </select>
-                        </div>
-                        <div class="relative">
-                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
-                                <i class="fas fa-layer-group"></i>
-                            </span>
-                            <select name="yearlevel" class="select select-bordered w-full pl-10" required>
-                                <option value="" disabled selected>Year Level</option>
-                                <option value="1st Year">1st Year</option>
-                                <option value="2nd Year">2nd Year</option>
-                                <option value="3rd Year">3rd Year</option>
-                                <option value="4th Year">4th Year</option>
-                            </select>
-                        </div>
-                    </div>
+                        <form id="loginForm" class="mb-3">
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Username</label>
+                                <div class="input-group input-group-merge">
+                                    <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="username"
+                                        name="username"
+                                        placeholder="Enter your username"
+                                        autofocus
+                                        required
+                                    />
+                                </div>
+                            </div>
 
-                    <!-- Email Field -->
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
-                            <i class="fas fa-envelope"></i>
-                        </span>
-                        <input type="email" name="email" id="email" placeholder="Email" 
-                               class="input input-bordered w-full pl-10" required>
-                    </div>
+                            <div class="mb-3 form-password-toggle">
+                                <div class="d-flex justify-content-between">
+                                    <label class="form-label" for="password">Password</label>
+                                </div>
+                                <div class="input-group input-group-merge">
+                                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                                    <input
+                                        type="password"
+                                        class="form-control"
+                                        id="password"
+                                        name="password"
+                                        placeholder="&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;"
+                                        aria-describedby="password"
+                                        required
+                                    />
+                                    <span class="input-group-text cursor-pointer toggle-password"><i class="bi bi-eye-slash"></i></span>
+                                </div>
+                            </div>
 
-                    <!-- Address Field -->
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
-                            <i class="fas fa-map-marker-alt"></i>
-                        </span>
-                        <input type="text" name="address" id="address" placeholder="Address" 
-                               class="input input-bordered w-full pl-10" required>
-                    </div>
+                            <div class="mb-3">
+                                <button class="btn btn-primary d-grid w-100" type="submit">Sign in</button>
+                            </div>
+                        </form>
 
-                    <!-- Username Field -->
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
-                            <i class="fas fa-user"></i>
-                        </span>
-                        <input type="text" name="username" placeholder="Username" 
-                               class="input input-bordered w-full pl-10" required>
+                        <p class="text-center">
+                            <span>New student?</span>
+                            <a href="javascript:void(0);" id="signUpButton">
+                                <span>Create an account</span>
+                            </a>
+                        </p>
                     </div>
-
-                    <!-- Password Field -->
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
-                            <i class="fas fa-lock"></i>
-                        </span>
-                        <input type="password" name="password" placeholder="Password" 
-                               class="input input-bordered w-full pl-10" required>
-                    </div>
-
-                    <div class="flex justify-end gap-4 mt-6">
-                        <button type="submit" id="registerSubmitBtn" 
-                                class="btn bg-[#2c343c] hover:bg-[#363e46] text-white border-none">
-                            Register
-                        </button>
-                        <button type="button" id="signInButton" 
-                                class="btn bg-gray-200 hover:bg-gray-300 text-gray-800 border-none">
-                            Sign In
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Login Form -->
-    <div class="container max-w-md mx-auto" id="signIn">
-        <div class="card bg-white shadow-2xl rounded-xl">
-            <div class="card-body p-8">
-                <!-- Logo Section -->
-                <div class="flex justify-center items-center gap-6 mb-8">
-                    <img src="University-of-Cebu-Logo.jpg" alt="UC Logo" class="h-24 w-auto">
-                    <img src="ccs.png" alt="CCS Logo" class="h-24 w-auto">
                 </div>
-                
-                <!-- Title -->
-                <h2 class="text-3xl font-bold text-center text-gray-800 mb-8">
-                    CCS Sitin Monitoring System
-                </h2>
-                
-                <!-- Login Form -->
-                <form id="loginForm" class="space-y-6">
-                    <!-- Username Input -->
-                    <div class="space-y-2">
-                        <label for="username" class="text-sm font-medium text-gray-700">Username</label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-                                <i class="fas fa-user text-gray-400"></i>
-                            </div>
-                            <input 
-                                type="text" 
-                                name="username" 
-                                id="username"
-                                class="w-full pl-11 pr-4 py-3 text-gray-900 rounded-lg border border-gray-300 
-                                       focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all
-                                       placeholder:text-gray-400"
-                                placeholder="Enter your username"
-                                required
-                            >
-                        </div>
-                    </div>
-
-                    <!-- Password Input -->
-                    <div class="space-y-2">
-                        <label for="password" class="text-sm font-medium text-gray-700">Password</label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-                                <i class="fas fa-lock text-gray-400"></i>
-                            </div>
-                            <input 
-                                type="password" 
-                                name="password" 
-                                id="password"
-                                class="w-full pl-11 pr-4 py-3 text-gray-900 rounded-lg border border-gray-300 
-                                       focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all
-                                       placeholder:text-gray-400"
-                                placeholder="Enter your password"
-                                required
-                            >
-                        </div>
-                    </div>
-
-                    <!-- Buttons -->
-                    <div class="flex justify-end gap-4 pt-4">
-                        <button 
-                            type="submit"
-                            class="px-6 py-3 bg-[#2c343c] text-white rounded-lg hover:bg-[#363e46] 
-                                   focus:ring-4 focus:ring-gray-300 transition-all duration-200"
-                        >
-                            Sign In
-                        </button>
-                        <button 
-                            type="button"
-                            id="signUpButton"
-                            class="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 
-                                   focus:ring-4 focus:ring-gray-100 transition-all duration-200"
-                        >
-                            Register
-                        </button>
-                    </div>
-                </form>
+                <!-- /Card -->
             </div>
+            <!-- /Login -->
+
+            <!-- Register -->
+            <div class="authentication-inner register" id="signup" style="display: none;">
+                <!-- Card -->
+                <div class="card">
+                    <div class="card-body">
+                        <!-- Logo -->
+                        <div class="app-brand justify-content-center mb-4 mt-2">
+                            <div class="app-brand-logo">
+                                <img src="University-of-Cebu-Logo.jpg" alt="UC Logo">
+                                <img src="ccs.png" alt="CCS Logo">
+                            </div>
+                        </div>
+                        <!-- /Logo -->
+                        <h4 class="mb-2 text-center">Register your Account</h4>
+                        <p class="mb-4 text-center">Complete the registration form below</p>
+
+                        <form id="registerForm" class="mb-3">
+                            <div class="row">
+                                <!-- ID Number -->
+                                <div class="col-12 mb-3">
+                                    <label for="id_no" class="form-label">ID Number</label>
+                                    <div class="input-group input-group-merge">
+                                        <span class="input-group-text"><i class="bi bi-person-badge"></i></span>
+                                        <input
+                                            type="text"
+                                            class="form-control"
+                                            id="id_no"
+                                            name="id"
+                                            placeholder="Enter your 8-digit ID number"
+                                            required
+                                            minlength="8"
+                                            maxlength="8"
+                                            pattern="\d{8}"
+                                        />
+                                    </div>
+                                </div>
+                                
+                                <!-- Name Fields -->
+                                <div class="col-md-4 mb-3">
+                                    <label for="last_name" class="form-label">Last Name</label>
+                                    <div class="input-group input-group-merge">
+                                        <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                        <input
+                                            type="text"
+                                            class="form-control"
+                                            id="last_name"
+                                            name="lName"
+                                            placeholder="Last name"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <label for="first_name" class="form-label">First Name</label>
+                                    <div class="input-group input-group-merge">
+                                        <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                        <input
+                                            type="text"
+                                            class="form-control"
+                                            id="first_name"
+                                            name="fname"
+                                            placeholder="First name"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <label for="middle_name" class="form-label">Middle Name</label>
+                                    <div class="input-group input-group-merge">
+                                        <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                        <input
+                                            type="text"
+                                            class="form-control"
+                                            id="middle_name"
+                                            name="mname"
+                                            placeholder="Middle name"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                                
+                                <!-- Course and Year Level -->
+                                <div class="col-md-6 mb-3">
+                                    <label for="course" class="form-label">Course</label>
+                                    <div class="input-group input-group-merge">
+                                        <span class="input-group-text"><i class="bi bi-mortarboard"></i></span>
+                                        <select name="course" id="course" class="form-select" required>
+                                            <option value="" disabled selected>Select your course</option>
+                                            <option value="BSIT">BSIT (Information Technology)</option>
+                                            <option value="BSCS">BSCS (Computer Science)</option>
+                                            <option value="BSIS">BSIS (Information Systems)</option>
+                                            <option value="BSCE">BSCE (Civil Engineering)</option>
+                                            <option value="BSEE">BSEE (Electrical Engineering)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="yearlevel" class="form-label">Year Level</label>
+                                    <div class="input-group input-group-merge">
+                                        <span class="input-group-text"><i class="bi bi-layers"></i></span>
+                                        <select name="yearlevel" id="yearlevel" class="form-select" required>
+                                            <option value="" disabled selected>Select your year level</option>
+                                            <option value="1st Year">1st Year</option>
+                                            <option value="2nd Year">2nd Year</option>
+                                            <option value="3rd Year">3rd Year</option>
+                                            <option value="4th Year">4th Year</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <!-- Email and Address -->
+                                <div class="col-md-6 mb-3">
+                                    <label for="email" class="form-label">Email</label>
+                                    <div class="input-group input-group-merge">
+                                        <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                                        <input
+                                            type="email"
+                                            class="form-control"
+                                            id="email"
+                                            name="email"
+                                            placeholder="Enter your email"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="address" class="form-label">Address</label>
+                                    <div class="input-group input-group-merge">
+                                        <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
+                                        <input
+                                            type="text"
+                                            class="form-control"
+                                            id="address"
+                                            name="address"
+                                            placeholder="Enter your address"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                                
+                                <!-- Username and Password -->
+                                <div class="col-md-6 mb-3">
+                                    <label for="register_username" class="form-label">Username</label>
+                                    <div class="input-group input-group-merge">
+                                        <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                        <input
+                                            type="text"
+                                            class="form-control"
+                                            id="register_username"
+                                            name="username"
+                                            placeholder="Choose a username"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="register_password" class="form-label">Password</label>
+                                    <div class="input-group input-group-merge">
+                                        <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                                        <input
+                                            type="password"
+                                            class="form-control"
+                                            id="register_password"
+                                            name="password"
+                                            placeholder="Create a password"
+                                            required
+                                        />
+                                        <span class="input-group-text cursor-pointer register-toggle-password"><i class="bi bi-eye-slash"></i></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-end mt-4">
+                                <button type="submit" id="registerSubmitBtn" class="btn btn-primary me-2">Register</button>
+                                <button type="button" id="signInButton" class="btn btn-secondary">Sign In</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <!-- /Card -->
+            </div>
+            <!-- /Register -->
         </div>
     </div>
+    <!-- / Content -->
+
+    <!-- Core JS -->
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/jquery/jquery.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/popper/popper.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/js/bootstrap.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/js/menu.js"></script>
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
+            // Toggle password visibility
+            document.querySelector('.toggle-password').addEventListener('click', function() {
+                const passwordInput = document.getElementById('password');
+                const icon = this.querySelector('i');
+                
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    icon.classList.remove('bi-eye-slash');
+                    icon.classList.add('bi-eye');
+                } else {
+                    passwordInput.type = 'password';
+                    icon.classList.remove('bi-eye');
+                    icon.classList.add('bi-eye-slash');
+                }
+            });
+            
+            document.querySelector('.register-toggle-password').addEventListener('click', function() {
+                const passwordInput = document.getElementById('register_password');
+                const icon = this.querySelector('i');
+                
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    icon.classList.remove('bi-eye-slash');
+                    icon.classList.add('bi-eye');
+                } else {
+                    passwordInput.type = 'password';
+                    icon.classList.remove('bi-eye');
+                    icon.classList.add('bi-eye-slash');
+                }
+            });
+            
             // ID number validation
             document.getElementById("id_no").addEventListener("input", function (event) {
                 this.value = this.value.replace(/\D/g, ''); 
@@ -247,13 +387,13 @@
             const signUpForm = document.getElementById("signup");
 
             signUpButton?.addEventListener("click", function () {
-                signInForm.classList.add("hidden");
-                signUpForm.classList.remove("hidden");
+                signInForm.style.display = "none";
+                signUpForm.style.display = "block";
             });
 
             signInButton?.addEventListener("click", function () {
-                signInForm.classList.remove("hidden");
-                signUpForm.classList.add("hidden");
+                signInForm.style.display = "block";
+                signUpForm.style.display = "none";
             });
 
             // Register form submission
@@ -269,64 +409,31 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === "success") {
-                        // Create and insert popup
-                        const popup = document.createElement('div');
-                        popup.innerHTML = `
-                            <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
-                                <!-- Backdrop -->
-                                <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"></div>
-                                
-                                <!-- Popup Content -->
-                                <div class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-sm sm:p-6 opacity-0 translate-y-4 scale-95">
-                                    <div>
-                                        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-                                            <svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                                            </svg>
-                                        </div>
-                                        <div class="mt-3 text-center sm:mt-5">
-                                            <h3 class="text-xl font-semibold leading-6 text-gray-900 mb-2">
-                                                Registration Successful!
-                                            </h3>
-                                            <div class="mt-2">
-                                                <p class="text-sm text-gray-500">
-                                                    Your account has been created successfully. You can now log in.
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                        document.body.appendChild(popup);
-
-                        // Animate popup entrance
-                        requestAnimationFrame(() => {
-                            const content = popup.querySelector('.bg-white');
-                            content.classList.remove('opacity-0', 'translate-y-4', 'scale-95');
-                            content.classList.add('opacity-100', 'translate-y-0', 'scale-100', 'transition-all', 'duration-300');
+                        // Use SweetAlert for success
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Registration Successful!',
+                            text: 'Your account has been created successfully. You can now log in.',
+                            customClass: {
+                                confirmButton: 'btn btn-primary'
+                            },
+                            buttonsStyling: false,
+                            timer: 2000,
+                            timerProgressBar: true
+                        }).then(() => {
+                            registerForm.reset();
+                            signUpForm.style.display = "none";
+                            signInForm.style.display = "block";
                         });
-
-                        // Remove popup after delay
-                        setTimeout(() => {
-                            popup.querySelector('.bg-white').classList.add('opacity-0', 'translate-y-4', 'scale-95');
-                            setTimeout(() => {
-                                popup.remove();
-                                registerForm.reset();
-                                signUpForm.classList.add("hidden");
-                                signInForm.classList.remove("hidden");
-                            }, 300);
-                        }, 2000);
                     } else {
                         Swal.fire({
                             icon: 'error',
                             title: 'Registration Failed',
                             text: data.message,
                             customClass: {
-                                popup: 'bg-white rounded-lg shadow-xl',
-                                title: 'text-xl font-bold text-gray-900',
-                                text: 'text-gray-600',
-                            }
+                                confirmButton: 'btn btn-primary'
+                            },
+                            buttonsStyling: false
                         });
                     }
                 })
@@ -337,10 +444,9 @@
                         title: 'Error',
                         text: 'An error occurred during registration.',
                         customClass: {
-                            popup: 'bg-white rounded-lg shadow-xl',
-                            title: 'text-xl font-bold text-gray-900',
-                            text: 'text-gray-600',
-                        }
+                            confirmButton: 'btn btn-primary'
+                        },
+                        buttonsStyling: false
                     });
                 });
             });
@@ -356,122 +462,56 @@
                 })
                 .then(response => response.json())
                 .then(data => {
-                    // Replace the success popup in the login form submission with this:
                     if (data.status === "success") {
-                        const popup = document.createElement('div');
-                        popup.innerHTML = `
-                            <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
-                                <!-- Backdrop -->
-                                <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"></div>
-                                
-                                <!-- Popup Content -->
-                                <div class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-sm sm:p-6 opacity-0 translate-y-4 scale-95">
-                                    <div>
-                                        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full ${data.role === 'admin' ? 'bg-blue-100' : 'bg-green-100'}">
-                                            <!-- Loading Animation -->
-                                            <div class="animate-spin rounded-full h-8 w-8 border-b-2 ${data.role === 'admin' ? 'border-blue-600' : 'border-green-600'}"></div>
-                                        </div>
-                                        <div class="mt-3 text-center sm:mt-5">
-                                            <h3 class="text-xl font-semibold leading-6 text-gray-900 mb-2">
-                                                ${data.role === 'admin' ? 'Welcome, Administrator!' : 'Hello, Student!'}
-                                            </h3>
-                                            <div class="mt-2">
-                                                <p class="text-sm text-gray-500">
-                                                    Loading your dashboard...
-                                                </p>
-                                            </div>
-                                            <!-- Progress bar -->
-                                            <div class="mt-4">
-                                                <div class="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
-                                                    <div class="h-full ${data.role === 'admin' ? 'bg-blue-500' : 'bg-green-500'} rounded-full animate-load-progress"></div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-
-                        // Add the progress bar animation style
-                        const style = document.createElement('style');
-                        style.textContent = `
-                            @keyframes load-progress {
-                                0% { width: 0; }
-                                100% { width: 100%; }
+                        // Show loading animation with SweetAlert
+                        Swal.fire({
+                            title: data.role === 'admin' ? 'Welcome, Administrator!' : 'Hello, Student!',
+                            text: 'Loading your dashboard...',
+                            imageUrl: 'https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/img/illustrations/girl-doing-yoga-light.png',
+                            imageWidth: 200,
+                            imageHeight: 200,
+                            imageAlt: 'Loading',
+                            showConfirmButton: false,
+                            allowOutsideClick: false,
+                            timer: 1500,
+                            timerProgressBar: true,
+                            didOpen: () => {
+                                Swal.showLoading();
                             }
-                            .animate-load-progress {
-                                animation: load-progress 1.5s linear;
+                        }).then(() => {
+                            // Redirect after animation completes
+                            if (data.role === "admin") {
+                                window.location.href = "admin_dashboard.php";
+                            } else if (data.role === "user") {
+                                window.location.href = "dashboard.php";
                             }
-                        `;
-                        document.head.appendChild(style);
-
-                        document.body.appendChild(popup);
-
-                        // Animate popup entrance
-                        requestAnimationFrame(() => {
-                            const content = popup.querySelector('.bg-white');
-                            content.classList.remove('opacity-0', 'translate-y-4', 'scale-95');
-                            content.classList.add('opacity-100', 'translate-y-0', 'scale-100', 'transition-all', 'duration-300');
                         });
-
-                        // Redirect after animation completes
-                        setTimeout(() => {
-                            popup.querySelector('.bg-white').classList.add('opacity-0', 'translate-y-4', 'scale-95');
-                            setTimeout(() => {
-                                popup.remove();
-                                if (data.role === "admin") {
-                                    window.location.href = "admin_dashboard.php";
-                                } else if (data.role === "user") {
-                                    window.location.href = "dashboard.php";
-                                }
-                            }, 300);
-                        }, 1500);
                     } else {
-                        // Show error popup
-                        const errorPopup = document.createElement('div');
-                        errorPopup.innerHTML = `
-                            <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
-                                <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"></div>
-                                <div class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-sm sm:p-6 opacity-0 translate-y-4 scale-95">
-                                    <div>
-                                        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-                                            <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
-                                        </div>
-                                        <div class="mt-3 text-center sm:mt-5">
-                                            <h3 class="text-xl font-semibold leading-6 text-gray-900 mb-2">
-                                                Login Failed
-                                            </h3>
-                                            <div class="mt-2">
-                                                <p class="text-sm text-gray-500">
-                                                    ${data.message}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                        document.body.appendChild(errorPopup);
-
-                        requestAnimationFrame(() => {
-                            const content = errorPopup.querySelector('.bg-white');
-                            content.classList.remove('opacity-0', 'translate-y-4', 'scale-95');
-                            content.classList.add('opacity-100', 'translate-y-0', 'scale-100', 'transition-all', 'duration-300');
+                        // Show error with SweetAlert
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Login Failed',
+                            text: data.message,
+                            customClass: {
+                                confirmButton: 'btn btn-primary'
+                            },
+                            buttonsStyling: false
+                        }).then(() => {
+                            clearLoginInputs();
                         });
-
-                        setTimeout(() => {
-                            errorPopup.querySelector('.bg-white').classList.add('opacity-0', 'translate-y-4', 'scale-95');
-                            setTimeout(() => {
-                                errorPopup.remove();
-                                clearLoginInputs();
-                            }, 300);
-                        }, 2000);
                     }
                 })
                 .catch(error => {
                     console.error("Error:", error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'An error occurred while processing your request.',
+                        customClass: {
+                            confirmButton: 'btn btn-primary'
+                        },
+                        buttonsStyling: false
+                    });
                 });
             });
 

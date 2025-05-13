@@ -2,13 +2,13 @@
 session_start();
 include 'db.php';
 
-// Handle delete request
-if (isset($_GET['delete_id'])) {
-    $delete_id = $_GET['delete_id'];
-    $conn->query("DELETE FROM feedback WHERE id = '$delete_id'");
-    header("Location: feedback.php");
+// Redirect if not logged in as admin
+if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+    header("Location: index.php");
     exit();
 }
+
+$admin_username = $_SESSION['username'] ?? 'Admin User';
 
 // Get unique purposes for the filter dropdown
 $purposesQuery = "SELECT DISTINCT purpose FROM sit_in WHERE time_out IS NOT NULL ORDER BY purpose ASC";
@@ -20,8 +20,19 @@ if ($purposesResult->num_rows > 0) {
     }
 }
 
+// Get labs for filter dropdown
+$labsQuery = "SELECT DISTINCT laboratory FROM sit_in WHERE time_out IS NOT NULL ORDER BY laboratory ASC";
+$labsResult = $conn->query($labsQuery);
+$labs = [];
+if ($labsResult->num_rows > 0) {
+    while($labRow = $labsResult->fetch_assoc()) {
+        $labs[] = $labRow['laboratory'];
+    }
+}
+
 // Update the SQL query to fetch only completed sit-ins
-$sql = "SELECT s.created_at, s.idno, s.fullname, s.purpose, s.time_in, s.time_out 
+$sql = "SELECT s.created_at, s.idno, s.fullname, s.purpose, s.laboratory, s.time_in, s.time_out, 
+        TIMESTAMPDIFF(MINUTE, s.time_in, s.time_out) as duration
         FROM sit_in s 
         WHERE s.time_out IS NOT NULL 
         ORDER BY s.created_at DESC";
@@ -29,761 +40,1048 @@ $result = $conn->query($sql);
 ?>
 
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en" class="light-style layout-menu-fixed" dir="ltr" data-theme="theme-default" data-assets-path="../assets/">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CCS Sit-In Monitoring - Reports</title>
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.7.2/dist/full.min.css" rel="stylesheet" type="text/css" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            themes: ["light"],
-            plugins: [require("daisyui")],
-        }
-    </script>
+    <title>Reports | Admin</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/img/favicon/favicon.ico" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700&display=swap" rel="stylesheet" />
+    
+    <!-- Icons. Required if you use Bootstrap Icons-->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" />
+    
+    <!-- Sneat Template Core CSS -->
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/css/core.css" class="template-customizer-core-css" />
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/css/theme-default.css" class="template-customizer-theme-css" />
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/css/demo.css" />
+    
+    <!-- Vendors CSS -->
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />
+    <link rel="stylesheet" href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/apex-charts/apex-charts.css" />
+
+    <!-- Page CSS -->
     <style>
-        @keyframes glow {
-            0% { text-shadow: 0 0 5px #ffd700; }
-            50% { text-shadow: 0 0 20px #ffd700, 0 0 30px #ffd700; }
-            100% { text-shadow: 0 0 5px #ffd700; }
-        }
-        
-        @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-3px); }
-            100% { transform: translateY(0px); }
-        }
-        
-        .star-rating {
-            color: #ffd700;
-            animation: glow 2s ease-in-out infinite, float 3s ease-in-out infinite;
-        }
-        
-        @keyframes glowGreen {
-            0% { text-shadow: 0 0 5px #4ade80; }
-            50% { text-shadow: 0 0 20px #4ade80, 0 0 30px #4ade80; }
-            100% { text-shadow: 0 0 5px #4ade80; }
-        }
-        
-        .type-glow {
+        .type-highlight {
             color: #22c55e;
-            animation: glowGreen 2s ease-in-out infinite;
             font-weight: 600;
         }
     </style>
+
+    <!-- Export Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
     <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    
+    <!-- Helpers -->
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/js/helpers.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/js/config.js"></script>
 </head>
-<body class="bg-gray-100">
 
-<!-- Admin Navbar -->
-<div class="navbar bg-[#2c343c] shadow-lg">
-    <div class="navbar-start">
-        <div class="flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
-            <span class="text-xl font-bold text-white ml-2">Admin</span>
+<body>
+    <!-- Layout wrapper -->
+    <div class="layout-wrapper layout-content-navbar">
+        <div class="layout-container">
+            <!-- Menu -->
+            <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
+                <div class="app-brand demo">
+                    <a href="admin_dashboard.php" class="app-brand-link">
+                        <span class="app-brand-logo demo">
+                            <svg width="25" viewBox="0 0 25 42" xmlns="http://www.w3.org/2000/svg">
+                                <defs><linearGradient id="a" x1="50%" x2="50%" y1="0%" y2="100%">
+                                <stop offset="0%" stop-color="#5A8DEE"/><stop offset="100%" stop-color="#699AF9"/></linearGradient></defs>
+                                <path fill="url(#a)" d="M12.5 0 25 14H0z"/><path fill="#FDAC41" d="M0 14 12.5 28 25 14H0z"/>
+                                <path fill="#E89A3C" d="M0 28 12.5 42 25 28H0z"/><path fill="#FDAC41" d="M12.5 14 25 28 12.5 42 0 28z"/>
+                            </svg>
+                        </span>
+                        <span class="app-brand-text demo menu-text fw-bolder ms-2">Sit-In Admin</span>
+                    </a>
+
+                    <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-block d-xl-none">
+                        <i class="bi bi-x bi-middle"></i>
+                    </a>
+                </div>
+
+                <div class="menu-inner-shadow"></div>
+
+                <ul class="menu-inner py-1">
+                    <!-- Dashboard -->
+                    <li class="menu-item">
+                        <a href="admin_dashboard.php" class="menu-link">
+                            <i class="menu-icon bi bi-house-door"></i>
+                            <div data-i18n="Dashboard">Dashboard</div>
+                        </a>
+                    </li>
+
+                    <li class="menu-header small text-uppercase">
+                        <span class="menu-header-text">Management</span>
+                    </li>
+
+                    <!-- Search -->
+                    <li class="menu-item">
+                        <a href="search.php" class="menu-link">
+                            <i class="menu-icon bi bi-search"></i>
+                            <div data-i18n="Search">Search</div>
+                        </a>
+                    </li>
+
+                    <!-- Students -->
+                    <li class="menu-item">
+                        <a href="students.php" class="menu-link">
+                            <i class="menu-icon bi bi-people"></i>
+                            <div data-i18n="Students">Students</div>
+                        </a>
+                    </li>
+
+                    <!-- Sit-in -->
+                    <li class="menu-item">
+                        <a href="sit_in.php" class="menu-link">
+                            <i class="menu-icon bi bi-clipboard-check"></i>
+                            <div data-i18n="Sit-in">Sit-in</div>
+                        </a>
+                    </li>
+
+                    <!-- View Records -->
+                    <li class="menu-item">
+                        <a href="sit_in_records.php" class="menu-link">
+                            <i class="menu-icon bi bi-clipboard-data"></i>
+                            <div data-i18n="Records">View Records</div>
+                        </a>
+                    </li>
+
+                    <li class="menu-header small text-uppercase">
+                        <span class="menu-header-text">Features</span>
+                    </li>
+
+                    <!-- Reservation -->
+                    <li class="menu-item">
+                        <a href="admin_reservation.php" class="menu-link">
+                            <i class="menu-icon bi bi-calendar-check"></i>
+                            <div data-i18n="Reservation">Reservation</div>
+                        </a>
+                    </li>
+
+                    <!-- Reports -->
+                    <li class="menu-item active">
+                        <a href="reports.php" class="menu-link">
+                            <i class="menu-icon bi bi-file-earmark-bar-graph"></i>
+                            <div data-i18n="Reports">Reports</div>
+                        </a>
+                    </li>
+
+                    <!-- Feedback Reports -->
+                    <li class="menu-item">
+                        <a href="feedback.php" class="menu-link">
+                            <i class="menu-icon bi bi-chat-left-text"></i>
+                            <div data-i18n="Feedback">Feedback Reports</div>
+                        </a>
+                    </li>
+
+                    <!-- Resources -->
+                    <li class="menu-item">
+                        <a href="lab_resources.php" class="menu-link">
+                            <i class="menu-icon bi bi-box"></i>
+                            <div data-i18n="Resources">Resources</div>
+                        </a>
+                    </li>
+                </ul>
+            </aside>
+            <!-- / Menu -->
+
+            <!-- Layout container -->
+            <div class="layout-page">
+                <!-- Navbar -->
+                <nav class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme" id="layout-navbar">
+                    <div class="layout-menu-toggle navbar-nav align-items-xl-center me-3 me-xl-0 d-xl-none">
+                        <a class="nav-item nav-link px-0 me-xl-4" href="javascript:void(0)">
+                            <i class="bi bi-list bi-middle"></i>
+                        </a>
+                    </div>
+
+                    <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
+                        <!-- Search -->
+                        <div class="navbar-nav align-items-center">
+                            <div class="nav-item d-flex align-items-center">
+                                <i class="bi bi-search fs-4 lh-0"></i>
+                                <input type="text" id="navbarSearch" class="form-control border-0 shadow-none" placeholder="Search..." aria-label="Search...">
+                            </div>
+                        </div>
+                        <!-- /Search -->
+
+                        <ul class="navbar-nav flex-row align-items-center ms-auto">
+                            <!-- User -->
+                            <li class="nav-item navbar-dropdown dropdown-user dropdown">
+                                <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown">
+                                    <div class="avatar avatar-online">
+                                        <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($admin_username); ?>&background=696cff&color=fff" alt class="w-px-40 h-auto rounded-circle">
+                                    </div>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item" href="#">
+                                            <div class="d-flex">
+                                                <div class="flex-shrink-0 me-3">
+                                                    <div class="avatar avatar-online">
+                                                        <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($admin_username); ?>&background=696cff&color=fff" alt class="w-px-40 h-auto rounded-circle">
+                                                    </div>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <span class="fw-semibold d-block"><?php echo htmlspecialchars($admin_username); ?></span>
+                                                    <small class="text-muted">Administrator</small>
+                                                </div>
+                                            </div>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <div class="dropdown-divider"></div>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#">
+                                            <i class="bi bi-gear me-2"></i>
+                                            <span class="align-middle">Settings</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <div class="dropdown-divider"></div>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="javascript:void(0);" id="logoutBtn">
+                                            <i class="bi bi-box-arrow-right me-2"></i>
+                                            <span class="align-middle">Log Out</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <!--/ User -->
+                        </ul>
+                    </div>
+                </nav>
+                <!-- / Navbar -->
+
+                <!-- Content wrapper -->
+                <div class="content-wrapper">
+                    <!-- Content -->
+                    <div class="container-xxl flex-grow-1 container-p-y">
+                        <h4 class="fw-bold py-3 mb-4">
+                            <span class="text-muted fw-light">Student Management /</span> Reports
+                        </h4>
+
+                        <!-- Filter Card -->
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <!-- Date Range -->
+                                    <div class="col-md-6 col-lg-3">
+                                        <label class="form-label">From Date</label>
+                                        <input type="date" id="fromDateFilter" class="form-control">
+                                    </div>
+                                    <div class="col-md-6 col-lg-3">
+                                        <label class="form-label">To Date</label>
+                                        <input type="date" id="toDateFilter" class="form-control">
+                                    </div>
+                                    
+                                    <!-- Purpose Filter -->
+                                    <div class="col-md-6 col-lg-3">
+                                        <label class="form-label">Purpose</label>
+                                        <select id="purposeFilter" class="form-select">
+                                            <option value="">All Purposes</option>
+                                            <?php foreach($purposes as $purpose): ?>
+                                            <option value="<?php echo htmlspecialchars($purpose); ?>"><?php echo htmlspecialchars($purpose); ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- Laboratory Filter -->
+                                    <div class="col-md-6 col-lg-3">
+                                        <label class="form-label">Laboratory</label>
+                                        <select id="labFilter" class="form-select">
+                                            <option value="">All Laboratories</option>
+                                            <?php foreach($labs as $lab): ?>
+                                            <option value="<?php echo htmlspecialchars($lab); ?>"><?php echo htmlspecialchars($lab); ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- Search -->
+                                    <div class="col-md-9">
+                                        <label class="form-label">Search</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                            <input type="text" id="searchInput" class="form-control" placeholder="Search by name, ID number...">
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Reset button -->
+                                    <div class="col-md-3 d-flex align-items-end">
+                                        <button id="resetFilters" class="btn btn-secondary w-100">
+                                            <i class="bi bi-arrow-counterclockwise me-1"></i> Reset Filters
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Export Options and Summary Card -->
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-md-6">
+                                        <h5 class="card-title mb-md-0 mb-3">Export Options</h5>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="d-flex gap-2 justify-content-md-end">
+                                            <button onclick="exportToExcel()" class="btn btn-primary">
+                                                <i class="bi bi-file-earmark-excel me-1"></i> Excel
+                                            </button>
+                                            <button onclick="exportToPDF()" class="btn btn-danger">
+                                                <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+                                            </button>
+                                            <button onclick="exportToCSV()" class="btn btn-success">
+                                                <i class="bi bi-file-earmark-text me-1"></i> CSV
+                                            </button>
+                                            <button onclick="printTable()" class="btn btn-dark">
+                                                <i class="bi bi-printer me-1"></i> Print
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Reports Table Card -->
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="card-title mb-0">Sit-In Records</h5>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="dropdown">
+                                        <button class="btn p-0" type="button" id="cardOpt3" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                            <i class="bi bi-three-dots-vertical"></i>
+                                        </button>
+                                        <div class="dropdown-menu dropdown-menu-end" aria-labelledby="cardOpt3">
+                                            <a class="dropdown-item" href="javascript:void(0);" id="showAllRecords">Show All Records</a>
+                                            <a class="dropdown-item" href="javascript:void(0);" id="showTodayRecords">Show Today's Records</a>
+                                            <a class="dropdown-item" href="javascript:void(0);" id="showThisWeekRecords">Show This Week's Records</a>
+                                            <a class="dropdown-item" href="javascript:void(0);" id="showThisMonthRecords">Show This Month's Records</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="table-responsive text-nowrap">
+                                <table class="table table-striped table-hover" id="reportsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>ID Number</th>
+                                            <th>Name</th>
+                                            <th>Purpose</th>
+                                            <th>Laboratory</th>
+                                            <th>Time In</th>
+                                            <th>Time Out</th>
+                                            <th>Duration</th>
+                                            <th>Type</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="table-border-bottom-0">
+                                        <?php
+                                        if ($result->num_rows > 0) {
+                                            while ($row = $result->fetch_assoc()) {
+                                                $date = date('M d, Y', strtotime($row['created_at']));
+                                                $timeIn = date('h:i A', strtotime($row['time_in']));
+                                                $timeOut = $row['time_out'] ? date('h:i A', strtotime($row['time_out'])) : 'Ongoing';
+                                                
+                                                // Calculate duration in hours and minutes
+                                                $duration = $row['duration'];
+                                                $hours = floor($duration / 60);
+                                                $minutes = $duration % 60;
+                                                $durationFormatted = ($hours > 0 ? $hours . 'hr ' : '') . $minutes . 'min';
+                                        ?>
+                                        <tr>
+                                            <td><strong><?php echo $date; ?></strong></td>
+                                            <td><?php echo $row['idno']; ?></td>
+                                            <td><?php echo $row['fullname']; ?></td>
+                                            <td><?php echo $row['purpose']; ?></td>
+                                            <td><?php echo $row['laboratory']; ?></td>
+                                            <td><?php echo $timeIn; ?></td>
+                                            <td><?php echo $timeOut; ?></td>
+                                            <td><?php echo $durationFormatted; ?></td>
+                                            <td><span class="badge bg-label-success type-highlight">SIT-IN</span></td>
+                                        </tr>
+                                        <?php
+                                            }
+                                        } else {
+                                        ?>
+                                        <tr>
+                                            <td colspan="9" class="text-center">No records found</td>
+                                        </tr>
+                                        <?php
+                                        }
+                                        ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="card-footer">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span id="totalRecords" class="text-muted">Showing <?php echo $result->num_rows; ?> records</span>
+                                    </div>
+                                    <nav aria-label="Page navigation">
+                                        <ul class="pagination pagination-sm mb-0">
+                                            <li class="page-item prev">
+                                                <a class="page-link" href="javascript:void(0);"><i class="bi bi-chevron-left"></i></a>
+                                            </li>
+                                            <li class="page-item active">
+                                                <a class="page-link" href="javascript:void(0);">1</a>
+                                            </li>
+                                            <li class="page-item">
+                                                <a class="page-link" href="javascript:void(0);">2</a>
+                                            </li>
+                                            <li class="page-item">
+                                                <a class="page-link" href="javascript:void(0);">3</a>
+                                            </li>
+                                            <li class="page-item next">
+                                                <a class="page-link" href="javascript:void(0);"><i class="bi bi-chevron-right"></i></a>
+                                            </li>
+                                        </ul>
+                                    </nav>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- / Reports Table Card -->
+                    </div>
+                    <!-- / Content -->
+
+                    <!-- Footer -->
+                    <footer class="content-footer footer bg-footer-theme">
+                        <div class="container-xxl d-flex flex-wrap justify-content-between py-2 flex-md-row flex-column">
+                            <div class="mb-2 mb-md-0">
+                                ©
+                                <script>
+                                    document.write(new Date().getFullYear());
+                                </script>
+                                Sit-In System Admin Dashboard
+                            </div>
+                        </div>
+                    </footer>
+                    <!-- / Footer -->
+
+                    <div class="content-backdrop fade"></div>
+                </div>
+                <!-- / Content wrapper -->
+            </div>
+            <!-- / Layout page -->
         </div>
-    </div>
-    
-    <div class="navbar-center hidden lg:flex">
-        <ul class="menu menu-horizontal px-1 gap-2">
-            <li>
-                <a href="admin_dashboard.php" class="btn btn-ghost text-white hover:bg-white/10">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                    </svg>
-                    Home
-                </a>
-            </li>
-            <li>
-                <a href="search.php" class="btn btn-ghost text-white hover:bg-white/10">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    Search
-                </a>
-            </li>
-            <li>
-                <a href="students.php" class="btn btn-ghost text-white hover:bg-white/10">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                    Students
-                </a>
-            </li>
-            <li>
-                <a href="sit_in.php" class="btn btn-ghost text-white hover:bg-white/10">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                    Sit-in
-                </a>
-            </li>
-            <li>
-                <a href="sit_in_records.php" class="btn btn-ghost text-white hover:bg-white/10">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                    View Records
-                </a>
-            </li>
-            <li>
-                <a href="reservation.php" class="btn btn-ghost text-white hover:bg-white/10">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    Reservation
-                </a>
-            </li>
-            <li>
-                <a href="reports.php" class="btn btn-ghost text-white hover:bg-white/10">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Reports
-                </a>
-            </li>
-            <li>
-                <a href="feedback.php" class="btn btn-ghost text-white hover:bg-white/10">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                    </svg>
-                    Feedback Reports
-                </a>
-            </li>
-        </ul>
-    </div>
-    
-    <div class="navbar-end">
-        <button id="logoutBtn" class="btn btn-error btn-outline gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-            Logout
-        </button>
-    </div>
-</div>
 
-<!-- Rest of your existing content -->
-<div class="container mx-auto px-4 py-8">
-    <!-- Header Section -->
-    <div class="bg-white rounded-lg shadow-lg mb-8 p-6">
-        <h2 class="text-3xl font-bold text-center text-blue-600">REPORTS</h2>
+        <!-- Overlay -->
+        <div class="layout-overlay layout-menu-toggle"></div>
     </div>
+    <!-- / Layout wrapper -->
 
-    <!-- Search and Filter Section -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <!-- Search Input -->
-        <div class="relative">
-            <input type="text" 
-                   id="searchInput" 
-                   placeholder="Search reports..." 
-                   class="w-full px-4 py-2 pl-10 pr-4 text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                </svg>
+    <!-- Logout Modal -->
+    <div class="modal fade" id="logoutModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Logout</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-12 mb-3 text-center">
+                            <div class="avatar avatar-md mx-auto mb-3">
+                                <span class="avatar-initial rounded-circle bg-label-danger">
+                                    <i class="bi bi-box-arrow-right"></i>
+                                </span>
+                            </div>
+                            <p>Are you sure you want to logout?</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <a href="logout.php" class="btn btn-danger">Logout</a>
+                </div>
             </div>
         </div>
-
-        <!-- Purpose Filter Dropdown -->
-        <div class="relative">
-            <select id="purposeFilter" class="w-full px-4 py-2 pl-10 pr-4 text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none">
-                <option value="">All Purposes</option>
-                <?php foreach($purposes as $purpose): ?>
-                <option value="<?php echo htmlspecialchars($purpose); ?>"><?php echo htmlspecialchars($purpose); ?></option>
-                <?php endforeach; ?>
-            </select>
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/>
-                </svg>
-            </div>
-            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                </svg>
-            </div>
-        </div>
     </div>
 
-    <!-- Export Buttons Section -->
-    <div class="mb-6 flex justify-end space-x-4">
-        <!-- CSV Export -->
-        <button onclick="exportToCSV()" class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors duration-200">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            CSV
-        </button>
+    <!-- Core JS -->
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/jquery/jquery.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/popper/popper.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/js/bootstrap.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js"></script>
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/js/menu.js"></script>
 
-        <!-- Excel Export -->
-        <button onclick="exportToExcel()" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            Excel
-        </button>
+    <!-- Main JS -->
+    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/js/main.js"></script>
 
-        <!-- PDF Export -->
-        <button onclick="exportToPDF()" class="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-200">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-            </svg>
-            PDF
-        </button>
-
-        <!-- Print -->
-        <button onclick="printTable()" class="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors duration-200">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-            </svg>
-            Print
-        </button>
-    </div>
-
-    <!-- Table Section -->
-    <div class="bg-white rounded-lg shadow-lg overflow-hidden">
-    <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-[#2c343c] text-white">
-            <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Date</th>
-                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">ID Number</th>
-                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Name</th>
-                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Purpose</th>
-                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Time In</th>
-                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Time Out</th>
-                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Type</th>
-            </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200" id="feedbackTable">
-            <?php
-            if ($result->num_rows > 0) {
-                while ($row = $result->fetch_assoc()) {
-                    $date = date('M d, Y', strtotime($row['created_at']));
-                    $timeIn = date('h:i A', strtotime($row['time_in']));
-                    $timeOut = $row['time_out'] ? date('h:i A', strtotime($row['time_out'])) : 'Ongoing';
-                    ?>
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium"><?php echo $date; ?></td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?php echo $row['idno']; ?></td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?php echo $row['fullname']; ?></td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?php echo $row['purpose']; ?></td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?php echo $timeIn; ?></td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?php echo $timeOut; ?></td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            <span class="type-glow">SIT-IN</span>
-                        </td>
-                    </tr>
-                    <?php
-                }
-            } else {
-                echo '<tr><td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">No records available</td></tr>';
-            }
-            ?>
-        </tbody>
-    </table>
-</div> <!-- End of table div -->
-
-<script>
-// Update the search function to also consider the purpose filter
-function applyFilters() {
-    const searchText = document.getElementById("searchInput").value.toLowerCase();
-    const purposeFilter = document.getElementById("purposeFilter").value;
-    const rows = document.querySelectorAll("#feedbackTable tr");
-        
-    rows.forEach(row => {
-        const cells = row.getElementsByTagName('td');
-        if (cells.length > 0) {
-            const idNumber = cells[1].textContent.toLowerCase();
-            const name = cells[2].textContent.toLowerCase();
-            const purpose = cells[3].textContent.trim(); // Don't lowercase for exact comparison
-            const date = cells[0].textContent.toLowerCase();
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Bootstrap tooltips
+            const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+            const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
             
-            const matchesSearch = idNumber.includes(searchText) || 
-                                  name.includes(searchText) || 
-                                  purpose.toLowerCase().includes(searchText) || 
-                                  date.includes(searchText);
+            // Initialize Bootstrap modals
+            const logoutModal = new bootstrap.Modal(document.getElementById('logoutModal'));
             
-            // Exact purpose matching
-            const matchesPurpose = !purposeFilter || purpose === purposeFilter;
+            // Event listeners for filters
+            const searchInput = document.getElementById('searchInput');
+            const purposeFilter = document.getElementById('purposeFilter');
+            const labFilter = document.getElementById('labFilter');
+            const fromDateFilter = document.getElementById('fromDateFilter');
+            const toDateFilter = document.getElementById('toDateFilter');
+            const resetFiltersBtn = document.getElementById('resetFilters');
             
-            if (matchesSearch && matchesPurpose) {
-                row.style.display = "";
-            } else {
-                row.style.display = "none";
-            }
-        }
-    });
-}
-
-// Event listeners for filters
-document.getElementById("searchInput").addEventListener("keyup", applyFilters);
-document.getElementById("purposeFilter").addEventListener("change", applyFilters);
-
-function exportToCSV() {
-    // Create header rows with proper formatting
-    const purposeFilter = document.getElementById("purposeFilter").value;
-    const purposeText = purposeFilter ? `Purpose: ${purposeFilter}` : "All Purposes";
-    
-    const headers = [
-        '"UNIVERSITY OF CEBU"',
-        '"COLLEGE OF COMPUTER STUDIES"',
-        '"Sit-In Monitoring System"',
-        `"Generated on: ${new Date().toLocaleString()}"`,
-        `"Filter: ${purposeText}"`,
-        '', // Empty line for spacing
-        '"Date","ID Number","Name","Purpose","Time In","Time Out","Type"' // Quoted headers
-    ];
-    
-    const csv = [...headers];
-    
-    // Get data from visible rows only
-    document.querySelectorAll('#feedbackTable tr').forEach(row => {
-        if (row.style.display !== 'none') {
-            const cols = row.getElementsByTagName('td');
-            
-            if (cols.length > 0) {
-                // Get values and handle special characters
-                const date = cols[0].textContent.trim();
-                const idNumber = cols[1].textContent.trim();
-                const name = cols[2].textContent.trim();
-                const purpose = cols[3].textContent.trim();
-                const timeIn = cols[4].textContent.trim();
-                const timeOut = cols[5].textContent.trim();
+            // Filter function
+            function applyFilters() {
+                const searchValue = searchInput.value.toLowerCase();
+                const purposeValue = purposeFilter.value;
+                const labValue = labFilter.value;
+                const fromDate = fromDateFilter.value ? new Date(fromDateFilter.value) : null;
+                const toDate = toDateFilter.value ? new Date(toDateFilter.value) : null;
                 
-                // Format each row with proper quoting and spacing
-                const rowData = [
-                    `"${date}"`,
-                    `"${idNumber}"`,
-                    `"${name}"`,
-                    `"${purpose}"`,
-                    `"${timeIn}"`,
-                    `"${timeOut}"`,
-                    '"SIT-IN"'
-                ];
+                let visibleCount = 0;
                 
-                csv.push(rowData.join(','));
-            }
-        }
-    });
-
-    // Create and trigger download with UTF-8 BOM for Excel compatibility
-    const BOM = '\uFEFF';
-    const csvContent = BOM + csv.join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    
-    const fileName = purposeFilter ? 
-        `UC_SitIn_${purposeFilter}_${new Date().toLocaleDateString()}.csv` :
-        `UC_SitIn_Records_${new Date().toLocaleDateString()}.csv`;
-    
-    link.setAttribute('download', fileName);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
-
-function exportToExcel() {
-    // Initialize new workbook
-    const wb = XLSX.utils.book_new();
-    
-    // Get purpose filter value
-    const purposeFilter = document.getElementById("purposeFilter").value;
-    const purposeText = purposeFilter ? `Purpose: ${purposeFilter}` : "All Purposes";
-    
-    // Create header data
-    const headerData = [
-        ['UNIVERSITY OF CEBU'],
-        ['COLLEGE OF COMPUTER STUDIES'],
-        ['Sit-In Monitoring System'],
-        [`Generated on: ${new Date().toLocaleString()}`],
-        [`Filter: ${purposeText}`],
-        [''], // Empty row for spacing
-        ['Date', 'ID Number', 'Name', 'Purpose', 'Time In', 'Time Out', 'Type']
-    ];
-    
-    // Get visible table data using DOM traversal
-    const tableRows = [];
-    document.querySelectorAll('#feedbackTable tr').forEach(row => {
-        if (row.style.display !== 'none') {
-            const rowData = Array.from(row.querySelectorAll('td')).map(cell => cell.textContent.trim());
-            if (rowData.length > 0) {
-                tableRows.push(rowData);
-            }
-        }
-    });
-
-    // Combine headers and data
-    const wsData = [...headerData, ...tableRows];
-    
-    // Create worksheet and set properties
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-    ws['!cols'] = [
-        { wch: 22 }, // Date
-        { wch: 22 }, // ID Number
-        { wch: 35 }, // Name
-        { wch: 35 }, // Purpose
-        { wch: 20 }, // Time In
-        { wch: 20 }, // Time Out
-        { wch: 20 }  // Type
-    ];
-
-    // Set filename based on purpose filter
-    const fileName = purposeFilter ? 
-        `UC_SitIn_${purposeFilter}.xlsx` : 
-        "UC_SitIn_Records.xlsx";
-    
-    // Add worksheet to workbook and save
-    XLSX.utils.book_append_sheet(wb, ws, "Reports");
-    XLSX.writeFile(wb, fileName);
-}
-
-function exportToPDF() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF('p', 'mm', 'a4');
-    
-    // Get purpose filter value
-    const purposeFilter = document.getElementById("purposeFilter").value;
-    const purposeText = purposeFilter ? `Purpose: ${purposeFilter}` : "All Purposes";
-    
-    // Create a clone of the table for manipulation
-    const originalTable = document.querySelector('table');
-    const tableClone = originalTable.cloneNode(true);
-    
-    // Get all visible rows from the original table
-    const visibleRows = [];
-    document.querySelectorAll('#feedbackTable tr').forEach((row, index) => {
-        if (row.style.display !== 'none') {
-            visibleRows.push(index);
-        }
-    });
-    
-    // Remove all rows from the clone that aren't in our visible set
-    const cloneRows = tableClone.querySelectorAll('tbody tr');
-    Array.from(cloneRows).forEach((row, index) => {
-        if (!visibleRows.includes(index)) {
-            row.remove();
-        }
-    });
-    
-    // Style the header row
-    const headerRow = tableClone.querySelector('thead tr');
-    if (headerRow) {
-        headerRow.style.backgroundColor = '#2c343c';
-        headerRow.style.color = 'white';
-    }
-    
-    // Update image paths to point to project root
-    const ucLogo = new Image();
-    ucLogo.src = 'University-of-Cebu-Logo.jpg';
-    
-    const ccsLogo = new Image();
-    ccsLogo.src = 'ccs.png';
-    
-    Promise.all([
-        new Promise((resolve) => {
-            ucLogo.onload = resolve;
-            ucLogo.onerror = () => {
-                console.error('Error loading UC logo');
-                resolve();
-            };
-        }),
-        new Promise((resolve) => {
-            ccsLogo.onload = resolve;
-            ccsLogo.onerror = () => {
-                console.error('Error loading CCS logo');
-                resolve();
-            };
-        })
-    ]).then(() => {
-        try {
-            const pageWidth = doc.internal.pageSize.getWidth();
-            
-            // Add logos
-            doc.addImage(ucLogo, 'JPEG', pageWidth/2 - 30, 10, 20, 20);
-            doc.addImage(ccsLogo, 'PNG', pageWidth/2 + 10, 10, 20, 20);
-            
-            let yPos = 40;
-            
-            // Add headers
-            doc.setFontSize(16);
-            doc.setFont('helvetica', 'bold');
-            doc.text('UNIVERSITY OF CEBU', pageWidth/2, yPos, { align: 'center' });
-            
-            yPos += 8;
-            doc.setFontSize(14);
-            doc.text('COLLEGE OF COMPUTER STUDIES', pageWidth/2, yPos, { align: 'center' });
-            
-            yPos += 8;
-            doc.setFontSize(12);
-            doc.text('Sit-In Monitoring System', pageWidth/2, yPos, { align: 'center' });
-            
-            yPos += 8;
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'normal');
-            doc.text(`Generated on: ${new Date().toLocaleString()}`, pageWidth/2, yPos, { align: 'center' });
-            
-            yPos += 6;
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'bold');
-            doc.text(`Filter: ${purposeText}`, pageWidth/2, yPos, { align: 'center' });
-            
-            // Add table with headers using the cloned and styled table
-            doc.autoTable({
-                html: tableClone,
-                startY: yPos + 10,
-                theme: 'grid',
-                styles: {
-                    fontSize: 8,
-                    cellPadding: 2
-                },
-                headStyles: {
-                    fillColor: [44, 52, 60],
-                    textColor: [255, 255, 255],
-                    fontSize: 9,
-                    fontStyle: 'bold'
-                },
-                columnStyles: {
-                    0: { cellWidth: 25 }, // Date
-                    1: { cellWidth: 25 }, // ID Number
-                    2: { cellWidth: 35 }, // Name
-                    3: { cellWidth: 35 }, // Purpose
-                    4: { cellWidth: 20 }, // Time In
-                    5: { cellWidth: 20 }, // Time Out
-                    6: { // Type column
-                        cellWidth: 20,
-                        textColor: [34, 197, 94],
-                        fontStyle: 'bold'
+                // Get all rows except header
+                const rows = document.querySelectorAll('#reportsTable tbody tr');
+                
+                rows.forEach(row => {
+                    if (row.querySelector('td[colspan]')) {
+                        // This is a "no records" row, skip filtering
+                        return;
                     }
-                },
-                margin: { top: 10 },
-                didDrawPage: function(data) {
-                    // Add page number at the bottom
-                    doc.setFontSize(8);
-                    doc.text(`Page ${doc.internal.getNumberOfPages()}`, data.settings.margin.left, doc.internal.pageSize.height - 10);
+                    
+                    const cells = row.getElementsByTagName('td');
+                    
+                    // Get data from cells
+                    const date = cells[0].textContent.trim();
+                    const idNumber = cells[1].textContent.toLowerCase();
+                    const name = cells[2].textContent.toLowerCase();
+                    const purpose = cells[3].textContent.trim();
+                    const lab = cells[4].textContent.trim();
+                    
+                    // Date filter
+                    let dateMatch = true;
+                    if (fromDate || toDate) {
+                        const rowDate = new Date(date);
+                        if (fromDate && rowDate < fromDate) dateMatch = false;
+                        if (toDate) {
+                            // Set toDate to end of the day
+                            const endOfDay = new Date(toDate);
+                            endOfDay.setHours(23, 59, 59, 999);
+                            if (rowDate > endOfDay) dateMatch = false;
+                        }
+                    }
+                    
+                    // Search text match
+                    const textMatch = !searchValue || 
+                                    idNumber.includes(searchValue) || 
+                                    name.includes(searchValue) || 
+                                    date.toLowerCase().includes(searchValue) ||
+                                    purpose.toLowerCase().includes(searchValue);
+                    
+                    // Purpose match
+                    const purposeMatch = !purposeValue || purpose === purposeValue;
+                    
+                    // Lab match
+                    const labMatch = !labValue || lab === labValue;
+                    
+                    // Determine visibility
+                    const isVisible = dateMatch && textMatch && purposeMatch && labMatch;
+                    
+                    // Set display
+                    row.style.display = isVisible ? '' : 'none';
+                    
+                    // Count visible rows
+                    if (isVisible) visibleCount++;
+                });
+                
+                // Update record counter
+                document.getElementById('totalRecords').textContent = `Showing ${visibleCount} records`;
+                
+                // Handle no results
+                if (visibleCount === 0 && rows.length > 0) {
+                    // Check if "no results" row already exists
+                    if (!document.querySelector('#reportsTable tbody tr td[colspan="9"]')) {
+                        const tbody = document.querySelector('#reportsTable tbody');
+                        const noResultsRow = document.createElement('tr');
+                        noResultsRow.innerHTML = `<td colspan="9" class="text-center">No records found matching your filters</td>`;
+                        tbody.appendChild(noResultsRow);
+                    }
+                } else {
+                    // Remove any existing "no results" messages if we have results
+                    const noResultsRow = document.querySelector('#reportsTable tbody tr td[colspan="9"]');
+                    if (noResultsRow && visibleCount > 0) {
+                        noResultsRow.parentElement.remove();
+                    }
+                }
+            }
+            
+            // Event listeners for all filter inputs
+            searchInput.addEventListener('input', applyFilters);
+            purposeFilter.addEventListener('change', applyFilters);
+            labFilter.addEventListener('change', applyFilters);
+            fromDateFilter.addEventListener('change', applyFilters);
+            toDateFilter.addEventListener('change', applyFilters);
+            
+            // Reset filters button
+            resetFiltersBtn.addEventListener('click', function() {
+                searchInput.value = '';
+                purposeFilter.value = '';
+                labFilter.value = '';
+                fromDateFilter.value = '';
+                toDateFilter.value = '';
+                applyFilters();
+            });
+            
+            // Navbar search link to main search
+            document.getElementById('navbarSearch').addEventListener('keyup', function(e) {
+                if (e.key === 'Enter') {
+                    searchInput.value = this.value;
+                    applyFilters();
+                    searchInput.focus();
                 }
             });
-
-            // Set filename based on purpose filter
-            const fileName = purposeFilter ? 
-                `UC_SitIn_${purposeFilter.replace(/[^a-z0-9]/gi, '_')}.pdf` : 
-                'UC_SitIn_Records.pdf';
-
-            // Save the PDF
-            doc.save(fileName);
-        } catch (error) {
-            console.error('Error generating PDF:', error);
-            alert('Error generating PDF. Please check the console for details.');
-        }
-    });
-}
-
-function printTable() {
-    // Create a printable area
-    const printContent = document.createElement('div');
-    
-    // Get purpose filter value
-    const purposeFilter = document.getElementById("purposeFilter").value;
-    const purposeText = purposeFilter ? `Purpose: ${purposeFilter}` : "All Purposes";
-    
-    printContent.innerHTML = `
-        <style>
-            @media print {
-                .header { 
-                    text-align: center;
+            
+            // Predefined filter options
+            document.getElementById('showAllRecords').addEventListener('click', function() {
+                resetFiltersBtn.click();
+            });
+            
+            document.getElementById('showTodayRecords').addEventListener('click', function() {
+                const today = new Date().toISOString().split('T')[0];
+                fromDateFilter.value = today;
+                toDateFilter.value = today;
+                applyFilters();
+            });
+            
+            document.getElementById('showThisWeekRecords').addEventListener('click', function() {
+                const today = new Date();
+                const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+                
+                // Calculate start of week (Sunday)
+                const startOfWeek = new Date(today);
+                startOfWeek.setDate(today.getDate() - dayOfWeek);
+                
+                // Calculate end of week (Saturday)
+                const endOfWeek = new Date(today);
+                endOfWeek.setDate(today.getDate() + (6 - dayOfWeek));
+                
+                fromDateFilter.value = startOfWeek.toISOString().split('T')[0];
+                toDateFilter.value = endOfWeek.toISOString().split('T')[0];
+                applyFilters();
+            });
+            
+            document.getElementById('showThisMonthRecords').addEventListener('click', function() {
+                const today = new Date();
+                const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+                const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                
+                fromDateFilter.value = startOfMonth.toISOString().split('T')[0];
+                toDateFilter.value = endOfMonth.toISOString().split('T')[0];
+                applyFilters();
+            });
+            
+            // Logout button handler
+            document.getElementById('logoutBtn').addEventListener('click', function() {
+                logoutModal.show();
+            });
+            
+            // Export functions
+            window.exportToExcel = function() {
+                // Initialize workbook
+                const wb = XLSX.utils.book_new();
+                
+                // Get filter values for the header
+                const purposeValue = purposeFilter.value || 'All Purposes';
+                const labValue = labFilter.value || 'All Laboratories';
+                const fromDate = fromDateFilter.value || 'Any Date';
+                const toDate = toDateFilter.value || 'Any Date';
+                
+                // Create header data
+                const headerData = [
+                    ['UNIVERSITY OF CEBU'],
+                    ['COLLEGE OF COMPUTER STUDIES'],
+                    ['Sit-In Monitoring System Report'],
+                    [`Generated on: ${new Date().toLocaleString()}`],
+                    [`Purpose: ${purposeValue} | Laboratory: ${labValue} | Date Range: ${fromDate} to ${toDate}`],
+                    [''],
+                    ['Date', 'ID Number', 'Name', 'Purpose', 'Laboratory', 'Time In', 'Time Out', 'Duration', 'Type']
+                ];
+                
+                // Get visible table data
+                const tableRows = [];
+                const rows = document.querySelectorAll('#reportsTable tbody tr');
+                
+                rows.forEach(row => {
+                    // Skip "no results" or hidden rows
+                    if (row.style.display === 'none' || row.querySelector('td[colspan]')) {
+                        return;
+                    }
+                    
+                    const cells = row.querySelectorAll('td');
+                    const rowData = Array.from(cells).map(cell => {
+                        // For 'Type' column, get just the text without styling
+                        if (cell.querySelector('.type-highlight')) {
+                            return cell.querySelector('.type-highlight').textContent.trim();
+                        }
+                        return cell.textContent.trim();
+                    });
+                    
+                    tableRows.push(rowData);
+                });
+                
+                // Combine headers and data
+                const wsData = [...headerData, ...tableRows];
+                
+                // Create worksheet
+                const ws = XLSX.utils.aoa_to_sheet(wsData);
+                
+                // Set column widths
+                ws['!cols'] = [
+                    { wch: 15 }, // Date
+                    { wch: 15 }, // ID Number
+                    { wch: 25 }, // Name
+                    { wch: 20 }, // Purpose
+                    { wch: 15 }, // Laboratory
+                    { wch: 12 }, // Time In
+                    { wch: 12 }, // Time Out
+                    { wch: 12 }, // Duration
+                    { wch: 10 }  // Type
+                ];
+                
+                // Add worksheet to workbook
+                XLSX.utils.book_append_sheet(wb, ws, "Sit-In Records");
+                
+                // Create filename with date
+                const now = new Date();
+                const dateStr = now.toISOString().split('T')[0];
+                const fileName = `UC_SitIn_Records_${dateStr}.xlsx`;
+                
+                // Write file and trigger download
+                XLSX.writeFile(wb, fileName);
+            };
+            
+            window.exportToPDF = function() {
+                // Use jsPDF with autotable plugin
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('l', 'mm', 'a4'); // landscape
+                
+                // Get filter values for header
+                const purposeValue = purposeFilter.value || 'All Purposes';
+                const labValue = labFilter.value || 'All Laboratories';
+                const fromDate = fromDateFilter.value || 'Any Date';
+                const toDate = toDateFilter.value || 'Any Date';
+                
+                // Add title and subtitle
+                doc.setFontSize(18);
+                doc.setTextColor(44, 52, 60);
+                doc.text('UNIVERSITY OF CEBU', doc.internal.pageSize.width / 2, 15, { align: 'center' });
+                
+                doc.setFontSize(14);
+                doc.text('COLLEGE OF COMPUTER STUDIES', doc.internal.pageSize.width / 2, 22, { align: 'center' });
+                
+                doc.setFontSize(12);
+                doc.text('Sit-In Monitoring System Report', doc.internal.pageSize.width / 2, 29, { align: 'center' });
+                
+                doc.setFontSize(10);
+                const dateTimeStr = `Generated on: ${new Date().toLocaleString()}`;
+                doc.text(dateTimeStr, doc.internal.pageSize.width / 2, 35, { align: 'center' });
+                
+                doc.setFontSize(9);
+                const filterStr = `Purpose: ${purposeValue} | Laboratory: ${labValue} | Date Range: ${fromDate} to ${toDate}`;
+                doc.text(filterStr, doc.internal.pageSize.width / 2, 40, { align: 'center' });
+                
+                // Extract table rows data
+                const tableRows = [];
+                const rows = document.querySelectorAll('#reportsTable tbody tr');
+                
+                rows.forEach(row => {
+                    // Skip "no results" or hidden rows
+                    if (row.style.display === 'none' || row.querySelector('td[colspan]')) {
+                        return;
+                    }
+                    
+                    const cells = row.querySelectorAll('td');
+                    const rowData = Array.from(cells).map(cell => {
+                        // For 'Type' column, get just the text
+                        if (cell.querySelector('.type-highlight')) {
+                            return cell.querySelector('.type-highlight').textContent.trim();
+                        }
+                        return cell.textContent.trim();
+                    });
+                    
+                    tableRows.push(rowData);
+                });
+                
+                // Create the table using autoTable plugin
+                doc.autoTable({
+                    startY: 45,
+                    head: [['Date', 'ID Number', 'Name', 'Purpose', 'Laboratory', 'Time In', 'Time Out', 'Duration', 'Type']],
+                    body: tableRows,
+                    theme: 'grid',
+                    headStyles: {
+                        fillColor: [44, 52, 60],
+                        textColor: [255, 255, 255],
+                        fontSize: 8,
+                        fontStyle: 'bold'
+                    },
+                    bodyStyles: {
+                        fontSize: 8
+                    },
+                    columnStyles: {
+                        8: { // Type column
+                            fontStyle: 'bold',
+                            textColor: [34, 197, 94]
+                        }
+                    },
+                    margin: { top: 45 },
+                    didDrawPage: function (data) {
+                        // Add page number
+                        const pageCount = doc.internal.getNumberOfPages();
+                        const str = "Page " + doc.internal.getCurrentPageInfo().pageNumber + " of " + pageCount;
+                        doc.setFontSize(8);
+                        doc.text(str, doc.internal.pageSize.width - 20, doc.internal.pageSize.height - 10);
+                    }
+                });
+                
+                // Create filename with date
+                const now = new Date();
+                const dateStr = now.toISOString().split('T')[0];
+                const fileName = `UC_SitIn_Records_${dateStr}.pdf`;
+                
+                // Save PDF
+                doc.save(fileName);
+            };
+            
+            window.exportToCSV = function() {
+                // Create header rows
+                const purposeValue = purposeFilter.value || 'All Purposes';
+                const labValue = labFilter.value || 'All Laboratories';
+                const fromDate = fromDateFilter.value || 'Any Date';
+                const toDate = toDateFilter.value || 'Any Date';
+                
+                const headers = [
+                    '"UNIVERSITY OF CEBU"',
+                    '"COLLEGE OF COMPUTER STUDIES"',
+                    '"Sit-In Monitoring System Report"',
+                    `"Generated on: ${new Date().toLocaleString()}"`,
+                    `"Purpose: ${purposeValue} | Laboratory: ${labValue} | Date Range: ${fromDate} to ${toDate}"`,
+                    '',
+                    '"Date","ID Number","Name","Purpose","Laboratory","Time In","Time Out","Duration","Type"'
+                ];
+                
+                const csv = [...headers];
+                
+                // Extract table rows
+                const rows = document.querySelectorAll('#reportsTable tbody tr');
+                
+                rows.forEach(row => {
+                    // Skip "no results" or hidden rows
+                    if (row.style.display === 'none' || row.querySelector('td[colspan]')) {
+                        return;
+                    }
+                    
+                    const cells = row.querySelectorAll('td');
+                    const rowValues = Array.from(cells).map(cell => {
+                        // For 'Type' column, get just the text
+                        if (cell.querySelector('.type-highlight')) {
+                            return `"${cell.querySelector('.type-highlight').textContent.trim()}"`;
+                        }
+                        // Quote text to handle commas and special characters
+                        return `"${cell.textContent.trim()}"`;
+                    });
+                    
+                    csv.push(rowValues.join(','));
+                });
+                
+                // Create a Blob and download
+                const BOM = '\uFEFF'; // For Excel CSV compatibility
+                const csvContent = BOM + csv.join('\n');
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                
+                // Create a download link and trigger it
+                const downloadLink = document.createElement('a');
+                const now = new Date();
+                const dateStr = now.toISOString().split('T')[0];
+                const fileName = `UC_SitIn_Records_${dateStr}.csv`;
+                
+                downloadLink.href = url;
+                downloadLink.download = fileName;
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+                URL.revokeObjectURL(url);
+            };
+            
+            window.printTable = function() {
+                // Create a printable area with table styling
+                const printWindow = window.open('', '_blank', 'width=800,height=600');
+                
+                // Get filter values
+                const purposeValue = purposeFilter.value || 'All Purposes';
+                const labValue = labFilter.value || 'All Laboratories';
+                const fromDate = fromDateFilter.value || 'Any Date';
+                const toDate = toDateFilter.value || 'Any Date';
+                
+                printWindow.document.write(`
+                    <html>
+                    <head>
+                        <title>Sit-In Reports</title>
+                        <style>
+                            body {
+                                font-family: Arial, sans-serif;
+                                margin: 20mm;
+                            }
+                            .header {
+                                text-align: center;
+                                margin-bottom: 20px;
+                            }
+                            .header h1 {
+                                margin: 0;
+                                font-size: 18px;
+                            }
+                            .header h2 {
+                                margin: 5px 0;
+                                font-size: 16px;
+                            }
+                            .header h3 {
+                                margin: 5px 0;
+                                font-size: 14px;
+                            }
+                            .header p {
+                                margin: 5px 0;
+                                font-size: 12px;
+                            }
+                            table {
+                                width: 100%;
+                                border-collapse: collapse;
+                                margin-top: 20px;
+                            }
+                            th {
+                                background-color: #2c343c;
+                                color: white;
+                                text-align: left;
+                                padding: 8px;
+                                font-size: 12px;
+                            }
+                            td {
+                                border: 1px solid #ddd;
+                                padding: 8px;
+                                font-size: 11px;
+                            }
+                            tr:nth-child(even) {
+                                background-color: #f9f9f9;
+                            }
+                            .type-highlight {
+                                color: #22c55e;
+                                font-weight: bold;
+                            }
+                            .filter-info {
+                                margin-top: 10px;
+                                font-size: 11px;
+                                font-style: italic;
+                            }
+                            @media print {
+                                .pagebreak { page-break-before: always; }
+                                tfoot { display: table-footer-group; }
+                                thead { display: table-header-group; }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="header">
+                            <h1>UNIVERSITY OF CEBU</h1>
+                            <h2>COLLEGE OF COMPUTER STUDIES</h2>
+                            <h3>Sit-In Monitoring System Report</h3>
+                            <p>Generated on: ${new Date().toLocaleString()}</p>
+                            <p class="filter-info">Purpose: ${purposeValue} | Laboratory: ${labValue} | Date Range: ${fromDate} to ${toDate}</p>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>ID Number</th>
+                                    <th>Name</th>
+                                    <th>Purpose</th>
+                                    <th>Laboratory</th>
+                                    <th>Time In</th>
+                                    <th>Time Out</th>
+                                    <th>Duration</th>
+                                    <th>Type</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `);
+                
+                // Get visible table rows
+                const rows = document.querySelectorAll('#reportsTable tbody tr');
+                let hasData = false;
+                
+                rows.forEach(row => {
+                    // Skip "no results" or hidden rows
+                    if (row.style.display === 'none' || row.querySelector('td[colspan]')) {
+                        return;
+                    }
+                    
+                    hasData = true;
+                    const cells = row.querySelectorAll('td');
+                    printWindow.document.write('<tr>');
+                    
+                    cells.forEach((cell, index) => {
+                        if (index === 8) { // Type column with styling
+                            printWindow.document.write(`<td><span class="type-highlight">${cell.textContent.trim()}</span></td>`);
+                        } else {
+                            printWindow.document.write(`<td>${cell.textContent.trim()}</td>`);
+                        }
+                    });
+                    
+                    printWindow.document.write('</tr>');
+                });
+                
+                // If no data was added
+                if (!hasData) {
+                    printWindow.document.write('<tr><td colspan="9" style="text-align: center;">No records found matching your filters</td></tr>');
                 }
-                .logo-container {
-                    text-align: center;
-                    margin-bottom: 10px;
-                }
-                .logo {
-                    height: 50px;
-                    margin: 0 10px;
-                }
-                table { 
-                    width: 100%; 
-                    border-collapse: collapse; 
-                    margin-top: 15px;
-                }
-                thead { 
-                    display: table-header-group; 
-                }
-                th { 
-                    background-color: #2c343c !important; 
-                    color: white !important;
-                    font-weight: bold;
-                    padding: 8px;
-                    text-transform: uppercase;
-                    font-size: 9px;
-                    text-align: left;
-                }
-                th, td { 
-                    border: 1px solid #ddd; 
-                    padding: 6px; 
-                }
-                td {
-                    font-size: 8px;
-                    color: #4b5563;
-                }
-                tr:nth-child(even) { 
-                    background-color: #f9fafb; 
-                }
-                .type-glow { 
-                    color: #22c55e !important; 
-                    font-weight: bold; 
-                }
-                .filter-info {
-                    text-align: center;
-                    font-size: 10px;
-                    font-weight: bold;
-                    margin: 5px 0;
-                }
-                @page { 
-                    size: portrait;
-                    margin: 15mm;
-                }
-                body {
-                    font-family: helvetica, sans-serif;
-                }
-                .page-number {
-                    position: fixed;
-                    bottom: 10mm;
-                    right: 10mm;
-                    font-size: 8px;
-                    color: #808080;
-                }
-            }
-        </style>
-        <div class="logo-container">
-            <img src="University-of-Cebu-Logo.jpg" class="logo" style="height: 50px;">
-            <img src="ccs.png" class="logo" style="height: 50px;">
-        </div>
-        <div class="header">
-            <h1 style="margin: 0; font-size: 14px; color: #2c343c; font-weight: bold;">UNIVERSITY OF CEBU</h1>
-            <h2 style="margin: 5px 0; font-size: 12px; color: #2c343c; font-weight: bold;">COLLEGE OF COMPUTER STUDIES</h2>
-            <h3 style="margin: 5px 0; font-size: 11px; color: #2c343c;">Sit-In Monitoring System</h3>
-            <p style="margin: 5px 0; font-size: 9px; color: #4b5563;">Generated on: ${new Date().toLocaleString()}</p>
-            <p class="filter-info" style="color: #2c343c;">Filter: ${purposeText}</p>
-        </div>
-    `;
-
-    // Clone the original table
-    const originalTable = document.querySelector('table');
-    const tableClone = originalTable.cloneNode(true);
-    
-    // Get all visible rows
-    const visibleRows = [];
-    document.querySelectorAll('#feedbackTable tr').forEach((row, index) => {
-        if (row.style.display !== 'none') {
-            visibleRows.push(index);
-        }
-    });
-    
-    // Remove all rows from the clone that aren't in our visible set
-    const cloneRows = tableClone.querySelectorAll('tbody tr');
-    Array.from(cloneRows).forEach((row, index) => {
-        if (!visibleRows.includes(index)) {
-            row.remove();
-        }
-    });
-
-    // Ensure the header has the correct styling
-    const headerRow = tableClone.querySelector('thead tr');
-    if (headerRow) {
-        headerRow.style.backgroundColor = '#2c343c';
-        headerRow.style.color = 'white';
-    }
-
-    printContent.appendChild(tableClone);
-
-    // Add page number div
-    printContent.innerHTML += '<div class="page-number"></div>';
-
-    // Create a new window for printing
-    const printWindow = window.open('', '', 'height=600,width=800');
-    printWindow.document.write('<html><head><title>Print</title>');
-    printWindow.document.write('</head><body>');
-    printWindow.document.write(printContent.innerHTML);
-    printWindow.document.close();
-
-    // Wait for images and styles to load
-    setTimeout(() => {
-        printWindow.focus();
-        printWindow.print();
-        printWindow.close();
-    }, 500);
-}
-
-// Initialize filters when page loads
-document.addEventListener('DOMContentLoaded', function() {
-    // Apply filters on page load in case URL parameters set a filter
-    applyFilters();
-    
-    const logoutBtn = document.getElementById('logoutBtn');
-    const logoutModal = document.getElementById('logoutModal');
-    const cancelLogout = document.getElementById('cancelLogout');
-    const confirmLogout = document.getElementById('confirmLogout');
-
-    // Show modal when logout button is clicked
-    logoutBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        logoutModal.classList.remove('hidden');
-    });
-
-    // Hide modal when cancel is clicked
-    cancelLogout.addEventListener('click', function() {
-        logoutModal.classList.add('hidden');
-    });
-
-    // Perform logout when confirm is clicked
-    confirmLogout.addEventListener('click', function() {
-        window.location.href = 'logout.php';
-    });
-
-    // Close modal when clicking outside
-    logoutModal.addEventListener('click', function(e) {
-        if (e.target === this) {
-            this.classList.add('hidden');
-        }
-    });
-});
-</script>
-
-<!-- Logout confirmation modal -->
-<div id="logoutModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
-        <div class="mt-3 text-center">
-            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
-                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                </svg>
-            </div>
-            <h3 class="text-lg leading-6 font-medium text-gray-900">Confirm Logout</h3>
-            <div class="mt-2 px-7 py-3">
-                <p class="text-sm text-gray-500">Are you sure you want to logout?</p>
-            </div>
-            <div class="flex justify-center gap-4 mt-3">
-                <button id="cancelLogout" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium rounded-md">
-                    Cancel
-                </button>
-                <button id="confirmLogout" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md">
-                    Logout
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
+                
+                // Complete the HTML document
+                printWindow.document.write(`
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="9" style="text-align: right; border: none; font-size: 10px;">
+                                        Page <span class="pageNumber"></span>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                        <script>
+                            // Add page numbers when printing
+                            window.onload = function() {
+                                window.print();
+                                setTimeout(function() {
+                                    window.close();
+                                }, 500);
+                            };
+                        </script>
+                    </body>
+                    </html>
+                `);
+                
+                printWindow.document.close();
+            };
+        });
+    </script>
 </body>
 </html>
 
 <?php
 $conn->close();
 ?>
+``` 
