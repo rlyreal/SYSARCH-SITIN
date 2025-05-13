@@ -813,7 +813,7 @@ $stmt->close();
                         // Format the PC selection grid
                         let gridHtml = `<div class="pc-grid">`;
                         for (let i = 1; i <= 30; i++) {
-                            const isInUse = activePcs.includes(i.toString());
+                            const isInUse = activePcs.includes(i.toString()) || activePcs.includes(i);
                             const statusClass = isInUse ? 'unavailable' : 'available';
                             const statusText = isInUse ? 'UNAVAILABLE' : 'AVAILABLE';
                             

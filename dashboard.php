@@ -254,6 +254,14 @@ function human_time_diff($timestamp) {
                         </a>
                     </li>
 
+                    <!-- Schedule -->
+                    <li class="menu-item">
+                        <a href="user_sched.php" class="menu-link">
+                            <i class="menu-icon bi bi-calendar3"></i>
+                            <div data-i18n="Schedule">Schedule</div>
+                        </a>
+                    </li>
+
                     <!-- Resources -->
                     <li class="menu-item">
                         <a href="user_resources.php" class="menu-link">
@@ -639,6 +647,24 @@ function human_time_diff($timestamp) {
                             </div>
                             
                             <div class="col-md-6 col-lg-3">
+                                <div class="card card-hover mb-4 cursor-pointer" onclick="window.location.href='user_sched.php'">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-start">
+                                            <div class="avatar flex-shrink-0 me-3">
+                                                <span class="avatar-initial rounded bg-label-info">
+                                                    <i class="bi bi-calendar3"></i>
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <h5 class="card-title mb-1">Lab Schedule</h5>
+                                                <p class="card-text small text-muted">View laboratory class schedules</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 col-lg-3">
                                 <div class="card card-hover mb-4 cursor-pointer" onclick="window.location.href='history.php'">
                                     <div class="card-body">
                                         <div class="d-flex align-items-start">
@@ -661,31 +687,13 @@ function human_time_diff($timestamp) {
                                     <div class="card-body">
                                         <div class="d-flex align-items-start">
                                             <div class="avatar flex-shrink-0 me-3">
-                                                <span class="avatar-initial rounded bg-label-info">
+                                                <span class="avatar-initial rounded bg-label-warning">
                                                     <i class="bi bi-box"></i>
                                                 </span>
                                             </div>
                                             <div>
                                                 <h5 class="card-title mb-1">Lab Resources</h5>
                                                 <p class="card-text small text-muted">Access learning materials</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="col-md-6 col-lg-3">
-                                <div class="card card-hover mb-4 cursor-pointer" onclick="window.location.href='editprofile.php'">
-                                    <div class="card-body">
-                                        <div class="d-flex align-items-start">
-                                            <div class="avatar flex-shrink-0 me-3">
-                                                <span class="avatar-initial rounded bg-label-warning">
-                                                    <i class="bi bi-person-gear"></i>
-                                                </span>
-                                            </div>
-                                            <div>
-                                                <h5 class="card-title mb-1">Edit Profile</h5>
-                                                <p class="card-text small text-muted">Update your information</p>
                                             </div>
                                         </div>
                                     </div>
@@ -750,126 +758,79 @@ function human_time_diff($timestamp) {
     <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js"></script>
     <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/js/menu.js"></script>
 
-    <!-- Main JS -->
-    <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/js/main.js"></script>
-
     <script>
-        // Initialize tooltips
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
+// Load announcements from get_announcements.php
+function loadAnnouncements() {
+  fetch('get_announcements.php')
+    .then(response => response.json())
+    .then(data => {
+      const container = document.getElementById('announcementContainer');
+      container.innerHTML = ''; // Clear loading spinner
+      
+      if (data && data.length > 0) {
+        data.forEach(announcement => {
+          const announcementDiv = document.createElement('div');
+          announcementDiv.classList.add('p-3', 'border-bottom');
+          
+          // Format date
+          const date = new Date(announcement.date);
+          const formattedDate = date.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+          
+          announcementDiv.innerHTML = `
+            <div class="d-flex align-items-start mb-2">
+              <div class="avatar flex-shrink-0 me-3">
+                <span class="avatar-initial rounded bg-label-primary">
+                  <i class="bi bi-megaphone"></i>
+                </span>
+              </div>
+              <div>
+                <h6 class="mb-0">${announcement.admin_name}</h6>
+                <small class="text-muted">${formattedDate}</small>
+              </div>
+            </div>
+            <p class="mb-0">${announcement.message}</p>
+          `;
+          container.appendChild(announcementDiv);
         });
-        
-        // Logout modal initialization
-        document.getElementById('logoutBtn').addEventListener('click', function() {
-            var logoutModal = new bootstrap.Modal(document.getElementById('logoutModal'));
-            logoutModal.show();
-        });
-        
-        // Update the loadAnnouncements function
-        function loadAnnouncements() {
-            fetch('get_announcements.php')
-                .then(response => response.json())
-                .then(data => {
-                    const container = document.getElementById('announcementContainer');
-                    container.innerHTML = ''; // Clear previous content
-                    if (data.status === 'success' && data.announcements.length > 0) {
-                        const list = document.createElement('ul');
-                        list.className = 'list-group list-group-flush';
-                        
-                        data.announcements.forEach(announcement => {
-                            const item = document.createElement('li');
-                            item.className = 'list-group-item px-4';
-                            
-                            const date = new Date(announcement.date);
-                            const formattedDate = date.toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric'
-                            });
-                            
-                            // Format time
-                            let hours = date.getHours();
-                            const minutes = date.getMinutes();
-                            const ampm = hours >= 12 ? 'PM' : 'AM';
-                            hours = hours % 12;
-                            hours = hours ? hours : 12; // the hour '0' should be '12'
-                            const formattedTime = hours + ':' + (minutes < 10 ? '0' + minutes : minutes) + ' ' + ampm;
-                            
-                            item.innerHTML = `
-                                <div class="d-flex align-items-start">
-                                    <div class="avatar flex-shrink-0 me-3">
-                                        <span class="avatar-initial rounded bg-label-primary">
-                                            <i class="bi bi-bell"></i>
-                                        </span>
-                                    </div>
-                                    <div class="flex-grow-1">
-                                        <h6 class="mb-1">${announcement.admin_name}</h6>
-                                        <p class="mb-1">${announcement.message}</p>
-                                        <div class="d-flex align-items-center">
-                                            <small class="text-muted me-auto">
-                                                <i class="bi bi-calendar2-event me-1"></i> ${formattedDate}
-                                            </small>
-                                            <small class="text-muted">
-                                                <i class="bi bi-clock me-1"></i> ${formattedTime}
-                                            </small>
-                                        </div>
-                                    </div>
-                                </div>
-                            `;
-                            list.appendChild(item);
-                        });
-                        
-                        container.appendChild(list);
-                    } else {
-                        container.innerHTML = `
-                            <div class="d-flex justify-content-center align-items-center flex-column h-100 p-4">
-                                <div class="mb-3">
-                                    <i class="bi bi-bell-slash text-muted" style="font-size: 2rem;"></i>
-                                </div>
-                                <h6 class="mb-2 text-muted">No Announcements</h6>
-                                <p class="text-center text-muted small">There are no announcements at this time. Check back later for updates.</p>
-                            </div>
-                        `;
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading announcements:', error);
-                    document.getElementById('announcementContainer').innerHTML = `
-                        <div class="d-flex justify-content-center align-items-center flex-column h-100 p-4">
-                            <div class="mb-3">
-                                <i class="bi bi-exclamation-triangle text-danger" style="font-size: 2rem;"></i>
-                            </div>
-                            <h6 class="mb-2">Failed to Load</h6>
-                            <p class="text-center text-muted small">There was a problem loading announcements. Please try again later.</p>
-                        </div>
-                    `;
-                });
-        }
+      } else {
+        container.innerHTML = '<div class="text-center p-4"><p class="text-muted mb-0">No announcements available</p></div>';
+      }
+    })
+    .catch(error => {
+      console.error('Error loading announcements:', error);
+      document.getElementById('announcementContainer').innerHTML = 
+        '<div class="text-center p-4"><p class="text-danger mb-0">Failed to load announcements</p></div>';
+    });
+}
 
-        // Initial load and refresh every 10 seconds
-        loadAnnouncements();
-        setInterval(loadAnnouncements, 10000);
-        
-        function removeNotificationBadge() {
-            const badge = document.querySelector('.badge-notifications');
-            if (badge) {
-                badge.remove();
-                
-                // Send request to mark notifications as read
-                fetch('mark_notifications_read.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                });
-            }
-        }
-        
-        // Add cursor pointer to cards with card-hover class
-        document.querySelectorAll('.card-hover').forEach(card => {
-            card.style.cursor = 'pointer';
-        });
-    </script>
+// Remove notification badge when dropdown is opened
+function removeNotificationBadge() {
+  const badge = document.querySelector('.notification-badge');
+  if (badge) {
+    badge.style.display = 'none';
+  }
+}
+
+// Document ready handler
+document.addEventListener('DOMContentLoaded', function() {
+  // Load announcements
+  loadAnnouncements();
+  
+  // Logout button functionality
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', function() {
+      const logoutModal = new bootstrap.Modal(document.getElementById('logoutModal'));
+      logoutModal.show();
+    });
+  }
+});
+</script>
 </body>
 </html>
+

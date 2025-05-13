@@ -224,6 +224,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </a>
           </li>
 
+          <!-- Schedule -->
+          <li class="menu-item">
+            <a href="admin_sched.php" class="menu-link">
+              <i class="menu-icon bi bi-calendar3"></i>
+              <div data-i18n="Schedule">Schedule</div>
+            </a>
+          </li>
+
           <!-- Reports -->
           <li class="menu-item">
             <a href="reports.php" class="menu-link">
@@ -542,6 +550,145 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <div class="layout-overlay layout-menu-toggle"></div>
   </div>
   <!-- / Layout wrapper -->
+
+  <!-- Add Schedule Modal -->
+  <div class="modal fade" id="addScheduleModal" tabindex="-1" aria-labelledby="addScheduleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="addScheduleModalLabel">Add New Schedule</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form action="" method="POST" id="scheduleForm">
+                    <input type="hidden" name="action" value="add_schedule">
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="laboratory" class="form-label">Laboratory</label>
+                            <select class="form-select" id="laboratory" name="laboratory" required>
+                                <?php
+                                // Update options to match ENUM values in the database
+                                $labs = ['Lab 517', 'Lab 524', 'Lab 526', 'Lab 528'];
+                                foreach ($labs as $lab) {
+                                    $selected = ($lab == 'Lab ' . $selected_lab) ? 'selected' : '';
+                                    echo '<option value="'.$lab.'" '.$selected.'>'.$lab.'</option>';
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="day" class="form-label">Day</label>
+                            <select class="form-select" id="day" name="day" required>
+                                <?php
+                                // Update options to match ENUM values in the database
+                                $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday'];
+                                foreach ($days as $day) {
+                                    $selected = ($day == $selected_day) ? 'selected' : '';
+                                    echo '<option value="'.$day.'" '.$selected.'>'.$day.'</option>';
+                                }
+                                ?>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="time_start" class="form-label">Start Time</label>
+                            <input type="time" class="form-control" id="time_start" name="time_start" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="time_end" class="form-label">End Time</label>
+                            <input type="time" class="form-control" id="time_end" name="time_end" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="subject" class="form-label">Subject</label>
+                        <input type="text" class="form-control" id="subject" name="subject" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="professor" class="form-label">Professor</label>
+                        <input type="text" class="form-control" id="professor" name="professor" required>
+                    </div>
+                    
+                    <div class="text-end">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Schedule</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+  </div>
+
+  <!-- Edit Schedule Modal -->
+  <div class="modal fade" id="editScheduleModal" tabindex="-1" aria-labelledby="editScheduleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="editScheduleModalLabel">Edit Schedule</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form action="" method="POST" id="editScheduleForm">
+                    <input type="hidden" name="action" value="update_schedule">
+                    <input type="hidden" name="schedule_id" id="edit_schedule_id">
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="edit_laboratory" class="form-label">Laboratory</label>
+                            <select class="form-select" id="edit_laboratory" name="laboratory" required>
+                                <?php
+                                foreach ($labs as $lab) {
+                                    echo '<option value="'.$lab.'">'.$lab.'</option>';
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="edit_day" class="form-label">Day</label>
+                            <select class="form-select" id="edit_day" name="day" required>
+                                <?php
+                                foreach ($days as $day) {
+                                    echo '<option value="'.$day.'">'.$day.'</option>';
+                                }
+                                ?>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="edit_time_start" class="form-label">Start Time</label>
+                            <input type="time" class="form-control" id="edit_time_start" name="time_start" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="edit_time_end" class="form-label">End Time</label>
+                            <input type="time" class="form-control" id="edit_time_end" name="time_end" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit_subject" class="form-label">Subject</label>
+                        <input type="text" class="form-control" id="edit_subject" name="subject" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit_professor" class="form-label">Professor</label>
+                        <input type="text" class="form-control" id="edit_professor" name="professor" required>
+                    </div>
+                    
+                    <div class="text-end">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Update Schedule</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+  </div>
 
   <!-- Logout Modal -->
   <div class="modal fade" id="logoutModal" tabindex="-1" aria-hidden="true">
