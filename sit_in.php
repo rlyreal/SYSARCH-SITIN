@@ -22,6 +22,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_points') {
         u.course,
         u.year_level,
         u.points,
+        (SELECT COUNT(*) FROM points_history WHERE user_id = u.id) as total_points,
         COALESCE(
             (SELECT si.session_count 
              FROM sit_in si 
@@ -44,6 +45,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_points') {
                 'course' => htmlspecialchars($row['course']),
                 'year_level' => htmlspecialchars($row['year_level']),
                 'points' => htmlspecialchars($row['points']),
+                'total_points' => htmlspecialchars($row['total_points'] ?? 0),
                 'current_sessions' => htmlspecialchars($row['current_sessions'])
             );
         }
@@ -176,6 +178,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_point'])) {
             
             $message = "Point added successfully! Current points: " . $new_points;
         }
+
+        // After successfully adding a point
+        $history_stmt = $conn->prepare("INSERT INTO points_history (user_id, points) VALUES ((SELECT id FROM users WHERE id_no = ?), 1)");
+        $history_stmt->bind_param("s", $idno);
+        $history_stmt->execute();
+        $history_stmt->close();
         
         $conn->commit();
         echo json_encode([
@@ -480,18 +488,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_point'])) {
                                             <th>Name</th>
                                             <th>Course</th>
                                             <th>Year Level</th>
-                                            <th>Points</th>
+                                            <th>Points <small class="text-muted">(Current)</small></th>
+                                            <th>Total Points <small class="text-muted">(Lifetime)</small></th>
                                             <th>Current Sessions</th>
                                         </tr>
                                     </thead>
                                     <tbody class="table-border-bottom-0">
                                         <?php
+                                        // Modify your SQL query to include total points calculation
                                         $sql = "SELECT 
                                             u.id_no as idno,
                                             CONCAT(u.last_name, ', ', u.first_name, ' ', COALESCE(u.middle_name, '')) as full_name,
                                             u.course,
                                             u.year_level,
                                             u.points,
+                                            (SELECT COUNT(*) FROM points_history WHERE user_id = u.id) as total_points,
                                             COALESCE(
                                                 (SELECT si.session_count 
                                                 FROM sit_in si 
@@ -506,9 +517,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_point'])) {
                                         $result = $conn->query($sql);
                                         
                                         if (!$result) {
-                                            echo '<tr><td colspan="6" class="text-center text-danger">SQL Error: ' . $conn->error . '</td></tr>';
+                                            echo '<tr><td colspan="7" class="text-center text-danger">SQL Error: ' . $conn->error . '</td></tr>';
                                         } elseif ($result->num_rows == 0) {
-                                            echo '<tr><td colspan="6" class="text-center text-muted">No active students found</td></tr>';
+                                            echo '<tr><td colspan="7" class="text-center text-muted">No active students found</td></tr>';
                                         } else {
                                             while ($row = $result->fetch_assoc()) {
                                                 echo '<tr>';
@@ -517,6 +528,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_point'])) {
                                                 echo '<td>' . htmlspecialchars($row['course']) . '</td>';
                                                 echo '<td>' . htmlspecialchars($row['year_level']) . '</td>';
                                                 echo '<td><span class="badge bg-label-info">' . htmlspecialchars($row['points']) . '</span></td>';
+                                                echo '<td><span class="badge bg-label-success">' . htmlspecialchars($row['total_points'] ?? 0) . '</span></td>';
                                                 echo '<td><span class="badge bg-label-primary">' . htmlspecialchars($row['current_sessions']) . '</span></td>';
                                                 echo '</tr>';
                                             }
@@ -738,6 +750,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_point'])) {
                             <td>${student.course}</td>
                             <td>${student.year_level}</td>
                             <td><span class="badge bg-label-info">${student.points}</span></td>
+                            <td><span class="badge bg-label-success">${student.total_points || 0}</span></td>
                             <td><span class="badge bg-label-primary">${student.current_sessions}</span></td>
                         </tr>
                     `).join('');

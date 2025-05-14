@@ -1,6 +1,7 @@
 <?php
 session_start();
 include 'db.php';
+date_default_timezone_set('Asia/Manila'); // Set to your appropriate timezone
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: index.php');
@@ -119,6 +120,21 @@ function human_time_diff($timestamp) {
     } else {
         return date('M j, Y', $timestamp);
     }
+}
+
+// Add this debugging code inside your loop to check what's happening
+foreach($user_notifications as $notification) {
+    // Debug: Check the raw timestamp format
+    $raw_timestamp = $notification['CREATED_AT'];
+    $unix_timestamp = strtotime($notification['CREATED_AT']);
+    $current_time = time();
+    $time_diff = $current_time - $unix_timestamp;
+    
+    // Convert using your function
+    $timeAgo = human_time_diff($unix_timestamp);
+    
+    // Rest of your notification code...
+    // Use $timeAgo as before
 }
 
 // Add to your dashboard.php file
