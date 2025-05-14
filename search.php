@@ -80,6 +80,7 @@ if (isset($_POST['sit_in_submit']) && !empty($_POST['idno'])) {
     if ($last_record) {
         // Use the existing session count
         $session_count = $last_record['session_count'];
+        $source = "direct"; // Set source to direct for search.php
 
         // Update the existing record instead of creating a new one
         $stmt = $conn->prepare("UPDATE sit_in SET 
@@ -88,10 +89,11 @@ if (isset($_POST['sit_in_submit']) && !empty($_POST['idno'])) {
             time_in = NOW(),
             time_out = NULL,
             status = ?,
+            source = ?,
             date = CURRENT_DATE()
             WHERE id = ?");
         
-        $stmt->bind_param("sssi", $purpose, $laboratory, $status, $last_record['id']);
+        $stmt->bind_param("ssssi", $purpose, $laboratory, $status, $source, $last_record['id']);
 
         if ($stmt->execute()) {
             $message = '<div class="hidden" id="sitInSuccess" data-sessions="' . $session_count . '">success</div>';
@@ -102,9 +104,12 @@ if (isset($_POST['sit_in_submit']) && !empty($_POST['idno'])) {
     } else {
         // First time sit-in, create new record with default 30 sessions
         $session_count = 30;
-        $stmt = $conn->prepare("INSERT INTO sit_in (idno, fullname, purpose, laboratory, status, session_count, time_in, date) 
-                               VALUES (?, ?, ?, ?, ?, ?, NOW(), CURRENT_DATE())");
-        $stmt->bind_param("sssssi", $idno, $_POST['fullname'], $purpose, $laboratory, $status, $session_count);
+        $source = "direct"; // Set source to direct for search.php
+        $reservation_id = NULL; // Explicitly set reservation_id to NULL
+
+        $stmt = $conn->prepare("INSERT INTO sit_in (idno, fullname, purpose, laboratory, status, session_count, source, reservation_id, time_in, date) 
+                               VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), CURRENT_DATE())");
+        $stmt->bind_param("ssssiisi", $idno, $_POST['fullname'], $purpose, $laboratory, $status, $session_count, $source, $reservation_id);
 
         if ($stmt->execute()) {
             $message = '<div class="hidden" id="sitInSuccess" data-sessions="' . $session_count . '">success</div>';
