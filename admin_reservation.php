@@ -62,14 +62,16 @@ if (isset($_POST['action']) && isset($_POST['reservation_id'])) {
                 }
 
                 // Insert into sit_in table
-                $stmt = $conn->prepare("INSERT INTO sit_in (idno, fullname, purpose, laboratory, pc_number, time_in, session_count, created_at) VALUES (?, ?, ?, ?, ?, NOW(), ?, NOW())");
-                $stmt->bind_param("sssssi", 
+                $stmt = $conn->prepare("INSERT INTO sit_in (idno, fullname, purpose, laboratory, pc_number, time_in, status, session_count, source, reservation_id, created_at) 
+                                       VALUES (?, ?, ?, ?, ?, NOW(), 'active', ?, 'reservation', ?, NOW())");
+                $stmt->bind_param("sssssii", 
                     $reservation['idno'],
                     $reservation['full_name'],
                     $reservation['purpose'],
                     $reservation['laboratory'],
                     $reservation['pc_number'],
-                    $current_sessions
+                    $current_sessions,
+                    $reservation_id  // Link to the reservation ID
                 );
                 
                 if (!$stmt->execute()) {

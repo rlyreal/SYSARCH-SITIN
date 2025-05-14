@@ -423,56 +423,138 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_point'])) {
                         <!-- Current Sit-in Sessions Card -->
                         <div class="card">
                             <h5 class="card-header">Current Sit-in Sessions</h5>
-                            <div class="table-responsive text-nowrap">
-                                <table class="table table-hover">
-                                    <thead>
-                                        <tr>
-                                            <th>ID Number</th>
-                                            <th>Name</th>
-                                            <th>Purpose</th>
-                                            <th>Sit Lab</th>
-                                            <th>Session</th>
-                                            <th>Status</th>
-                                            <th class="text-center">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="table-border-bottom-0">
-                                        <?php
-                                        $sql = "SELECT id, idno, fullname, purpose, laboratory, session_count 
-                                                FROM sit_in 
-                                                WHERE time_out IS NULL 
-                                                ORDER BY created_at DESC, id DESC";
-                                        
-                                        $result = $conn->query($sql);
-                                        
-                                        if (!$result) {
-                                            echo '<tr><td colspan="7" class="text-center text-danger">SQL Error: ' . $conn->error . '</td></tr>';
-                                        } elseif ($result->num_rows == 0) {
-                                            echo '<tr><td colspan="7" class="text-center text-muted">No active sit-in sessions found</td></tr>';
-                                        } else {
-                                            while ($row = $result->fetch_assoc()) {
-                                                echo '<tr id="row-' . $row['id'] . '">';
-                                                echo '<td><i class="bi bi-person-badge me-2"></i>' . htmlspecialchars($row['idno']) . '</td>';
-                                                echo '<td>' . htmlspecialchars($row['fullname']) . '</td>';
-                                                echo '<td>' . htmlspecialchars($row['purpose']) . '</td>';
-                                                echo '<td>' . htmlspecialchars($row['laboratory']) . '</td>';
-                                                echo '<td><span class="badge bg-label-primary">' . htmlspecialchars($row['session_count']) . '</span></td>';
-                                                echo '<td><span class="badge bg-label-success">Active</span></td>';
-                                                echo '<td class="text-center">';
-                                                // Add button
-                                                echo '<button class="add-point-btn btn btn-icon btn-sm btn-outline-primary me-2" data-idno="' . htmlspecialchars($row['idno']) . '">';
-                                                echo '<i class="bi bi-plus"></i>';
-                                                echo '</button>';
-                                                // Time Out button
-                                                echo '<button class="logout-btn btn btn-sm btn-warning" data-id="' . $row['id'] . '">';
-                                                echo '<i class="bi bi-box-arrow-right me-1"></i>Time Out</button>';
-                                                echo '</td>';
-                                                echo '</tr>';
-                                            }
-                                        }
-                                        ?>
-                                    </tbody>
-                                </table>
+                            
+                            <!-- Tabs -->
+                            <ul class="nav nav-tabs" id="sitInTabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="direct-tab" data-bs-toggle="tab" data-bs-target="#direct-sessions" 
+                                        type="button" role="tab" aria-controls="direct-sessions" aria-selected="true">
+                                        <i class="bi bi-search me-1"></i> Direct Sit-ins
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="reservation-tab" data-bs-toggle="tab" data-bs-target="#reservation-sessions" 
+                                        type="button" role="tab" aria-controls="reservation-sessions" aria-selected="false">
+                                        <i class="bi bi-calendar-check me-1"></i> Reservation Sit-ins
+                                    </button>
+                                </li>
+                            </ul>
+                            
+                            <!-- Tab Content -->
+                            <div class="tab-content" id="sitInTabContent">
+                                <!-- Direct Sit-ins Tab -->
+                                <div class="tab-pane fade show active" id="direct-sessions" role="tabpanel" aria-labelledby="direct-tab">
+                                    <div class="table-responsive text-nowrap">
+                                        <table class="table table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>ID Number</th>
+                                                    <th>Name</th>
+                                                    <th>Purpose</th>
+                                                    <th>Sit Lab</th>
+                                                    <th>Session</th>
+                                                    <th>Status</th>
+                                                    <th class="text-center">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="table-border-bottom-0">
+                                                <?php
+                                                $sql = "SELECT id, idno, fullname, purpose, laboratory, session_count 
+                                                        FROM sit_in 
+                                                        WHERE time_out IS NULL AND source = 'direct' 
+                                                        ORDER BY created_at DESC, id DESC";
+                                                
+                                                $result = $conn->query($sql);
+                                                
+                                                if (!$result) {
+                                                    echo '<tr><td colspan="7" class="text-center text-danger">SQL Error: ' . $conn->error . '</td></tr>';
+                                                } elseif ($result->num_rows == 0) {
+                                                    echo '<tr><td colspan="7" class="text-center text-muted">No active direct sit-in sessions found</td></tr>';
+                                                } else {
+                                                    while ($row = $result->fetch_assoc()) {
+                                                        echo '<tr id="row-' . $row['id'] . '">';
+                                                        echo '<td><i class="bi bi-person-badge me-2"></i>' . htmlspecialchars($row['idno']) . '</td>';
+                                                        echo '<td>' . htmlspecialchars($row['fullname']) . '</td>';
+                                                        echo '<td>' . htmlspecialchars($row['purpose']) . '</td>';
+                                                        echo '<td>' . htmlspecialchars($row['laboratory']) . '</td>';
+                                                        echo '<td><span class="badge bg-label-primary">' . htmlspecialchars($row['session_count']) . '</span></td>';
+                                                        echo '<td><span class="badge bg-label-success">Active</span></td>';
+                                                        echo '<td class="text-center">';
+                                                        // Add button
+                                                        echo '<button class="add-point-btn btn btn-icon btn-sm btn-outline-primary me-2" data-idno="' . htmlspecialchars($row['idno']) . '">';
+                                                        echo '<i class="bi bi-plus"></i>';
+                                                        echo '</button>';
+                                                        // Time Out button
+                                                        echo '<button class="logout-btn btn btn-sm btn-warning" data-id="' . $row['id'] . '">';
+                                                        echo '<i class="bi bi-box-arrow-right me-1"></i>Time Out</button>';
+                                                        echo '</td>';
+                                                        echo '</tr>';
+                                                    }
+                                                }
+                                                ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                
+                                <!-- Reservation Sit-ins Tab -->
+                                <div class="tab-pane fade" id="reservation-sessions" role="tabpanel" aria-labelledby="reservation-tab">
+                                    <div class="table-responsive text-nowrap">
+                                        <table class="table table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>ID Number</th>
+                                                    <th>Name</th>
+                                                    <th>Purpose</th>
+                                                    <th>Sit Lab</th>
+                                                    <th>PC No.</th>
+                                                    <th>Session</th>
+                                                    <th>Status</th>
+                                                    <th class="text-center">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="table-border-bottom-0">
+                                                <?php
+                                                $sql = "SELECT s.id, s.idno, s.fullname, s.purpose, s.laboratory, s.session_count, 
+                                                               r.pc_number 
+                                                        FROM sit_in s
+                                                        LEFT JOIN reservations r ON s.reservation_id = r.id
+                                                        WHERE s.time_out IS NULL AND s.source = 'reservation' 
+                                                        ORDER BY s.created_at DESC, s.id DESC";
+                                                
+                                                $result = $conn->query($sql);
+                                                
+                                                if (!$result) {
+                                                    echo '<tr><td colspan="8" class="text-center text-danger">SQL Error: ' . $conn->error . '</td></tr>';
+                                                } elseif ($result->num_rows == 0) {
+                                                    echo '<tr><td colspan="8" class="text-center text-muted">No active reservation sit-in sessions found</td></tr>';
+                                                } else {
+                                                    while ($row = $result->fetch_assoc()) {
+                                                        echo '<tr id="row-' . $row['id'] . '">';
+                                                        echo '<td><i class="bi bi-person-badge me-2"></i>' . htmlspecialchars($row['idno']) . '</td>';
+                                                        echo '<td>' . htmlspecialchars($row['fullname']) . '</td>';
+                                                        echo '<td>' . htmlspecialchars($row['purpose']) . '</td>';
+                                                        echo '<td>' . htmlspecialchars($row['laboratory']) . '</td>';
+                                                        echo '<td>' . htmlspecialchars($row['pc_number'] ?? 'N/A') . '</td>';
+                                                        echo '<td><span class="badge bg-label-primary">' . htmlspecialchars($row['session_count']) . '</span></td>';
+                                                        echo '<td><span class="badge bg-label-success">Active</span></td>';
+                                                        echo '<td class="text-center">';
+                                                        // Add button
+                                                        echo '<button class="add-point-btn btn btn-icon btn-sm btn-outline-primary me-2" data-idno="' . htmlspecialchars($row['idno']) . '">';
+                                                        echo '<i class="bi bi-plus"></i>';
+                                                        echo '</button>';
+                                                        // Time Out button
+                                                        echo '<button class="logout-btn btn btn-sm btn-warning" data-id="' . $row['id'] . '">';
+                                                        echo '<i class="bi bi-box-arrow-right me-1"></i>Time Out</button>';
+                                                        echo '</td>';
+                                                        echo '</tr>';
+                                                    }
+                                                }
+                                                ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <!-- / Current Sit-in Sessions Card -->

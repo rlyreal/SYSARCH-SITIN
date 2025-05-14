@@ -62,26 +62,25 @@ while($row = $purposeResult->fetch_assoc()) {
     $purposeCounts[] = $row['count'];
 }
 
-// Update the leaderboard query to get only top 3
+// Update the leaderboard query to get top 5 based on points
 $leaderboardQuery = "
-    WITH RankedStudents AS (
-        SELECT 
-            u.id,
-            u.first_name,
-            u.last_name,
-            u.course,
-            COUNT(s.id) as session_count,
-            DENSE_RANK() OVER (ORDER BY COUNT(s.id) DESC) as rank
-        FROM users u
-        LEFT JOIN sit_in s ON u.id_no = s.idno
-        WHERE s.time_out IS NOT NULL
-        GROUP BY u.id, u.first_name, u.last_name, u.course
-    )
-    SELECT *
-    FROM RankedStudents
-    WHERE rank <= 3
-    ORDER BY session_count DESC, last_name ASC
-    LIMIT 3
+    SELECT 
+        u.id,
+        u.first_name,
+        u.last_name,
+        u.course,
+        COUNT(ph.id) as total_points
+    FROM 
+        users u
+    LEFT JOIN 
+        points_history ph ON u.id = ph.user_id
+    WHERE 
+        ph.id IS NOT NULL
+    GROUP BY 
+        u.id, u.first_name, u.last_name, u.course
+    ORDER BY 
+        total_points DESC, u.last_name ASC
+    LIMIT 5
 ";
 
 $leaderboardResult = $conn->query($leaderboardQuery);
@@ -370,7 +369,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <div class="card mb-4">
               <div class="card-header d-flex align-items-center justify-content-between">
                 <h5 class="mb-0"><i class="bi bi-trophy me-2"></i>Student Leaderboard</h5>
-                <small class="text-muted float-end">Top students based on sit-in sessions</small>
+                <small class="text-muted float-end">Top students based on lifetime points</small>
               </div>
               <div class="card-body">
                 <div class="row g-4">
@@ -390,15 +389,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                           'bg' => 'bg-label-danger',
                           'icon' => 'bi-trophy text-danger',
                           'title' => 'Bronze Medal'
+                      ],
+                      4 => [
+                          'bg' => 'bg-label-info',
+                          'icon' => 'bi-award text-info',
+                          'title' => '4th Place'
+                      ],
+                      5 => [
+                          'bg' => 'bg-label-primary',
+                          'icon' => 'bi-award text-primary',
+                          'title' => '5th Place'
                       ]
                   ];
 
-                  for($i = 0; $i < 3 && $i < count($leaderboardData); $i++) {
+                  for($i = 0; $i < 5 && $i < count($leaderboardData); $i++) {
                       $rank = $i + 1;
                       $student = $leaderboardData[$i];
                       $style = $medals[$rank];
                   ?>
-                    <div class="col-md-4">
+                    <div class="col-md-<?php echo ($i < 3) ? '4' : '6'; ?>">
                       <div class="card h-100">
                         <div class="card-body text-center">
                           <div class="avatar avatar-md mx-auto mb-3">
@@ -410,7 +419,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                           <p class="card-text text-muted"><?php echo $student['course']; ?></p>
                           <div class="d-flex justify-content-center align-items-center mt-3">
                             <div class="badge bg-primary rounded-pill">
-                              <?php echo $student['session_count']; ?> Sessions
+                              <?php echo $student['total_points']; ?> Points
                             </div>
                           </div>
                         </div>

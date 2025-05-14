@@ -108,6 +108,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt->close();
 }
 
+// When approving a reservation and creating a sit-in record
+$stmt = $conn->prepare("INSERT INTO sit_in (idno, fullname, purpose, laboratory, status, session_count, source, reservation_id, time_in, date) 
+                       VALUES (?, ?, ?, ?, 'active', ?, 'reservation', ?, NOW(), CURRENT_DATE())");
+$stmt->bind_param("ssssii", $student_id, $student_name, $purpose, $laboratory, $current_sessions, $reservation_id);
+
 // Fetch session count
 $stmt = $conn->prepare("SELECT 
     CASE 
