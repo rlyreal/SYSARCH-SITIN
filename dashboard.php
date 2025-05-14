@@ -28,6 +28,33 @@ $stmt->bind_result($session_count);
 $stmt->fetch();
 $stmt->close();
 
+// Add this to dashboard.php to fetch notifications
+function fetchUserNotifications($conn, $user_id) {
+    $query = "SELECT n.NOTIF_ID, n.RESERVATION_ID, n.ANNOUNCEMENT_ID, n.MESSAGE, n.IS_READ, n.CREATED_AT,
+              r.laboratory, r.status, a.admin_name, a.message as announcement_message
+              FROM notifications n
+              LEFT JOIN reservations r ON n.RESERVATION_ID = r.id
+              LEFT JOIN announcements a ON n.ANNOUNCEMENT_ID = a.id
+              WHERE n.USER_ID = ?
+              ORDER BY n.CREATED_AT DESC
+              LIMIT 10";
+              
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $notifications = [];
+    while ($row = $result->fetch_assoc()) {
+        $notifications[] = $row;
+    }
+    
+    return $notifications;
+}
+
+// Then call this function to get the user's notifications
+$user_notifications = fetchUserNotifications($conn, $user_id);
+
 // Update the notifications query to include both announcements and reservations
 $notificationsQuery = "
     (SELECT 
@@ -68,6 +95,7 @@ $notificationResult = $stmt->get_result();
 
 $user_profile = (!empty($profile_picture) && file_exists($profile_picture)) ? $profile_picture : "profile.jpg";
 
+// Replace your existing human_time_diff function with this improved version
 function human_time_diff($timestamp) {
     $time_diff = time() - $timestamp;
     
@@ -82,11 +110,66 @@ function human_time_diff($timestamp) {
     } elseif ($time_diff < 604800) {
         $days = floor($time_diff / 86400);
         return $days . ' day' . ($days > 1 ? 's' : '') . ' ago';
+    } elseif ($time_diff < 2592000) { // 30 days
+        $weeks = floor($time_diff / 604800);
+        return $weeks . ' week' . ($weeks > 1 ? 's' : '') . ' ago';
+    } elseif ($time_diff < 31536000) { // 1 year
+        $months = floor($time_diff / 2592000);
+        return $months . ' month' . ($months > 1 ? 's' : '') . ' ago';
     } else {
         return date('M j, Y', $timestamp);
     }
 }
+
+// Add to your dashboard.php file
 ?>
+
+<script>
+// JavaScript functions
+function markNotificationsAsRead() {
+    fetch('mark_notifications_read.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Hide the notification badge
+            document.querySelector('.notification-badge').style.display = 'none';
+        }
+    })
+    .catch(error => {
+        console.error('Error marking notifications as read:', error);
+    });
+}
+
+function markAllAsRead() {
+    fetch('mark_all_notifications_read.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Hide the notification badge
+            document.querySelector('.notification-badge').style.display = 'none';
+            
+            // Remove new indicators
+            document.querySelectorAll('.dropdown-notifications-item').forEach(item => {
+                item.classList.remove('bg-light');
+                item.querySelector('.dropdown-notifications-actions')?.remove();
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error marking all notifications as read:', error);
+    });
+}
+</script>
 
 <!DOCTYPE html>
 <html lang="en" class="light-style layout-menu-fixed" dir="ltr" data-theme="theme-default">
@@ -294,19 +377,21 @@ function human_time_diff($timestamp) {
                         <!-- /Search -->
 
                         <ul class="navbar-nav flex-row align-items-center ms-auto">
-                            <!-- Notification -->
+                            <!-- Notification Dropdown -->
                             <li class="nav-item dropdown-notifications navbar-dropdown dropdown me-3 me-xl-1">
-                                <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" onclick="removeNotificationBadge()">
+                                <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" onclick="markNotificationsAsRead()">
                                     <i class="bi bi-bell bi-middle"></i>
-                                    <?php if($notificationResult->num_rows > 0): ?>
-                                    <span class="badge bg-danger rounded-pill badge-notifications notification-badge">1</span>
+                                    <?php if(count(array_filter($user_notifications, function($n) { return $n['IS_READ'] == 0; })) > 0): ?>
+                                        <span class="badge bg-danger rounded-pill badge-notifications notification-badge">
+                                            <?php echo count(array_filter($user_notifications, function($n) { return $n['IS_READ'] == 0; })); ?>
+                                        </span>
                                     <?php endif; ?>
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end py-0">
                                     <li class="dropdown-menu-header border-bottom">
                                         <div class="dropdown-header d-flex align-items-center py-3">
                                             <h5 class="text-body mb-0 me-auto">Notifications</h5>
-                                            <a href="javascript:void(0)" class="dropdown-notifications-all text-body" data-bs-toggle="tooltip" data-bs-placement="top" title="Mark all as read">
+                                            <a href="javascript:void(0)" class="dropdown-notifications-all text-body" data-bs-toggle="tooltip" data-bs-placement="top" title="Mark all as read" onclick="markAllAsRead()">
                                                 <i class="bi bi-check2-all"></i>
                                             </a>
                                         </div>
@@ -314,26 +399,37 @@ function human_time_diff($timestamp) {
                                     <li class="dropdown-notifications-list scrollable-container">
                                         <ul class="list-group list-group-flush">
                                             <?php 
-                                            if($notificationResult->num_rows > 0) {
-                                                while($row = $notificationResult->fetch_assoc()) {
-                                                    $timestamp = strtotime($row['timestamp']);
+                                            if(count($user_notifications) > 0) {
+                                                foreach($user_notifications as $notification) {
+                                                    $timestamp = strtotime($notification['CREATED_AT']);
                                                     $timeAgo = human_time_diff($timestamp);
                                                     
-                                                    // Set notification color based on type and status
+                                                    // Set notification color based on type
                                                     $bgColor = 'bg-light-primary';
                                                     $icon = 'bi-bell';
                                                     
-                                                    if($row['type'] === 'reservation') {
-                                                        if($row['status'] === 'approved') {
-                                                            $bgColor = 'bg-light-success';
-                                                            $icon = 'bi-check-circle';
-                                                        } else if($row['status'] === 'disapproved') {
-                                                            $bgColor = 'bg-light-danger';
-                                                            $icon = 'bi-x-circle';
+                                                    if($notification['RESERVATION_ID']) {
+                                                        if(isset($notification['status'])) {
+                                                            if($notification['status'] === 'approved') {
+                                                                $bgColor = 'bg-light-success';
+                                                                $icon = 'bi-check-circle';
+                                                            } else if($notification['status'] === 'disapproved') {
+                                                                $bgColor = 'bg-light-danger';
+                                                                $icon = 'bi-x-circle';
+                                                            } else {
+                                                                $bgColor = 'bg-light-warning';
+                                                                $icon = 'bi-clock';
+                                                            }
                                                         }
+                                                    } else if($notification['ANNOUNCEMENT_ID']) {
+                                                        $bgColor = 'bg-light-info';
+                                                        $icon = 'bi-megaphone';
                                                     }
+                                                    
+                                                    // Add "new" class if unread
+                                                    $newClass = $notification['IS_READ'] == 0 ? 'bg-light' : '';
                                             ?>
-                                            <li class="list-group-item list-group-item-action dropdown-notifications-item">
+                                            <li class="list-group-item list-group-item-action dropdown-notifications-item <?php echo $newClass; ?>">
                                                 <div class="d-flex">
                                                     <div class="flex-shrink-0 me-3">
                                                         <div class="avatar">
@@ -343,10 +439,25 @@ function human_time_diff($timestamp) {
                                                         </div>
                                                     </div>
                                                     <div class="flex-grow-1">
-                                                        <h6 class="mb-1"><?php echo htmlspecialchars($row['admin_name']); ?></h6>
-                                                        <p class="mb-1"><?php echo htmlspecialchars($row['message']); ?></p>
+                                                        <h6 class="mb-1">
+                                                            <?php 
+                                                            if($notification['ANNOUNCEMENT_ID']) {
+                                                                echo htmlspecialchars($notification['admin_name']); 
+                                                            } else {
+                                                                echo "System Notification";
+                                                            }
+                                                            ?>
+                                                        </h6>
+                                                        <p class="mb-0"><?php echo htmlspecialchars($notification['MESSAGE']); ?></p>
                                                         <small class="text-muted"><?php echo $timeAgo; ?></small>
                                                     </div>
+                                                    <?php if($notification['IS_READ'] == 0): ?>
+                                                    <div class="flex-shrink-0 dropdown-notifications-actions">
+                                                        <a href="javascript:void(0)" class="dropdown-notifications-read">
+                                                            <span class="badge badge-dot bg-primary"></span>
+                                                        </a>
+                                                    </div>
+                                                    <?php endif; ?>
                                                 </div>
                                             </li>
                                             <?php 
@@ -354,7 +465,7 @@ function human_time_diff($timestamp) {
                                             } else {
                                             ?>
                                             <li class="list-group-item list-group-item-action dropdown-notifications-item p-4 text-center">
-                                                <p class="text-muted mb-0">No new notifications</p>
+                                                <p class="text-muted mb-0">No notifications</p>
                                             </li>
                                             <?php 
                                             }
@@ -362,13 +473,13 @@ function human_time_diff($timestamp) {
                                         </ul>
                                     </li>
                                     <li class="dropdown-menu-footer border-top">
-                                        <a href="javascript:void(0);" class="dropdown-item d-flex justify-content-center p-3">
+                                        <a href="all_notifications.php" class="dropdown-item d-flex justify-content-center p-3">
                                             View all notifications
                                         </a>
                                     </li>
                                 </ul>
                             </li>
-                            <!-- /Notification -->
+                            <!-- /Notification Dropdown -->
 
                             <!-- User -->
                             <li class="nav-item navbar-dropdown dropdown-user dropdown">

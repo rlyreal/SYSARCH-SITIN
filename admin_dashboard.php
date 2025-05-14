@@ -90,6 +90,17 @@ while($row = $leaderboardResult->fetch_assoc()) {
     $leaderboardData[] = $row;
 }
 
+// Fetch announcements for display on the page
+$announcements_query = $conn->query("SELECT id, admin_name, message, date FROM announcements ORDER BY date DESC LIMIT 5");
+$announcements = [];
+while ($row = $announcements_query->fetch_assoc()) {
+    // Format the date to be more readable
+    $timestamp = strtotime($row['date']);
+    $formatted_date = date('M j, Y g:i A', $timestamp);
+    $row['date'] = $formatted_date;
+    $announcements[] = $row;
+}
+
 // Handle announcement submission
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $announcement = trim($_POST['announcement']);
@@ -99,6 +110,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $query = $conn->prepare("INSERT INTO announcements (admin_name, message, date) VALUES (?, ?, NOW())");
         $query->bind_param("ss", $admin_name, $announcement);
         if ($query->execute()) {
+            $announcement_id = $conn->insert_id;
+            
+            // Create notifications for all users - don't filter by role since that column doesn't exist
+            $user_query = $conn->prepare("SELECT id FROM users");
+            $user_query->execute();
+            $user_result = $user_query->get_result();
+            
+            while ($user = $user_result->fetch_assoc()) {
+                $notif_message = "New announcement: " . substr($announcement, 0, 50) . (strlen($announcement) > 50 ? "..." : "");
+                
+                $notify_user = $conn->prepare("INSERT INTO notifications (USER_ID, ANNOUNCEMENT_ID, MESSAGE, IS_READ) VALUES (?, ?, ?, 0)");
+                $notify_user->bind_param("iis", $user['id'], $announcement_id, $notif_message);
+                $notify_user->execute();
+            }
+            
+            // Success message
+            $_SESSION['success_msg'] = "Announcement posted successfully!";
             echo "<script>alert('Announcement posted successfully!');</script>";
         } else {
             echo "<script>alert('Error posting announcement.');</script>";
@@ -499,7 +527,34 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     </form>
                     <h6 class="mb-3 fw-semibold">Recent Announcements</h6>
                     <div id="announcementContainer" class="overflow-auto" style="max-height: 295px;">
-                      <!-- Announcements will load here -->
+                        <?php if (count($announcements) > 0): ?>
+                            <?php foreach ($announcements as $announcement): ?>
+                                <div class="mb-3 p-3 border rounded">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div>
+                                            <span class="badge bg-label-primary mb-1"><?php echo htmlspecialchars($announcement['admin_name']); ?></span>
+                                            <small class="text-muted d-block"><?php echo $announcement['date']; ?></small>
+                                        </div>
+                                        <div class="dropdown">
+                                            <button class="btn p-0" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <i class="bi bi-three-dots-vertical"></i>
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li><a class="dropdown-item" href="#" onclick="editAnnouncement(<?php echo $announcement['id']; ?>)">
+                                                    <i class="bi bi-pencil me-2"></i>Edit
+                                                </a></li>
+                                                <li><a class="dropdown-item text-danger" href="#" onclick="deleteAnnouncement(<?php echo $announcement['id']; ?>)">
+                                                    <i class="bi bi-trash me-2"></i>Delete
+                                                </a></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <p class="mb-0"><?php echo nl2br(htmlspecialchars($announcement['message'])); ?></p>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <p class="text-muted">No announcements available.</p>
+                        <?php endif; ?>
                     </div>
                   </div>
                 </div>
@@ -946,12 +1001,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       statsChart.resize();
     });
     
-    // Load announcements on page load
-    document.addEventListener('DOMContentLoaded', function() {
-      loadAnnouncements();
-      // Refresh announcements every minute
-      setInterval(loadAnnouncements, 60000);
-    });
+    // Keep this part if you want periodic refreshes
+    setInterval(loadAnnouncements, 60000);
   </script>
 </body>
 </html>

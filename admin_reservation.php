@@ -28,6 +28,14 @@ if (isset($_POST['action']) && isset($_POST['reservation_id'])) {
             $reservation = $result->fetch_assoc();
             $stmt->close();
             
+            if (!$reservation) {
+                echo json_encode([
+                    "success" => false,
+                    "message" => "Reservation not found."
+                ]);
+                exit;
+            }
+            
             if ($reservation) {
                 // Check if user is currently sitting in
                 $stmt = $conn->prepare("SELECT id FROM sit_in WHERE idno = ? AND time_out IS NULL");
@@ -75,11 +83,42 @@ if (isset($_POST['action']) && isset($_POST['reservation_id'])) {
                 $stmt->bind_param("si", $status, $reservation_id);
                 
                 if ($stmt->execute()) {
-                    $conn->commit();
-                    echo json_encode([
-                        "success" => true,
-                        "message" => "Reservation approved successfully"
-                    ]);
+                    // Get user_id from the reservation
+                    $user_query = $conn->prepare("SELECT u.id, u.first_name, u.last_name 
+                                                FROM reservations r 
+                                                JOIN users u ON r.idno = u.id_no 
+                                                WHERE r.id = ?");
+                    $user_query->bind_param("i", $reservation_id);
+                    $user_query->execute();
+                    $user_result = $user_query->get_result();
+                    $user_data = $user_result->fetch_assoc();
+                    
+                    if ($user_data) {
+                        $user_id = $user_data['id'];
+                        $notif_message = "Your reservation for Laboratory {$reservation['laboratory']} has been approved";
+                        
+                        // Create notification for the user
+                        $notify_user = $conn->prepare("INSERT INTO notifications (USER_ID, RESERVATION_ID, MESSAGE, IS_READ) VALUES (?, ?, ?, 0)");
+                        $notify_user->bind_param("iis", $user_id, $reservation_id, $notif_message);
+                        
+                        if ($stmt->execute() && $notify_user->execute()) {
+                            $conn->commit();
+                            echo json_encode([
+                                "success" => true,
+                                "message" => "Reservation approved successfully."
+                            ]);
+                            exit;
+                        } else {
+                            $conn->rollback();
+                            echo json_encode([
+                                "success" => false,
+                                "message" => "Failed to process reservation."
+                            ]);
+                            exit;
+                        }
+                    }
+                    
+                    $_SESSION['success_msg'] = "Reservation approved successfully!";
                 } else {
                     throw new Exception("Failed to update reservation status");
                 }
@@ -136,6 +175,36 @@ if (isset($_POST['action']) && isset($_POST['reservation_id'])) {
         $stmt->bind_param("si", $status, $reservation_id);
         
         if ($stmt->execute()) {
+            // Get the reservation details first
+            $stmt = $conn->prepare("SELECT * FROM reservations WHERE id = ?");
+            $stmt->bind_param("i", $reservation_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $reservation = $result->fetch_assoc();
+            $stmt->close();
+            
+            // Get user_id from the reservation
+            $user_query = $conn->prepare("SELECT u.id, u.first_name, u.last_name 
+                                      FROM reservations r 
+                                      JOIN users u ON r.idno = u.id_no 
+                                      WHERE r.id = ?");
+            $user_query->bind_param("i", $reservation_id);
+            $user_query->execute();
+            $user_result = $user_query->get_result();
+            $user_data = $user_result->fetch_assoc();
+            
+            if ($user_data) {
+                $user_id = $user_data['id'];
+                $notif_message = "Your reservation for Laboratory " . $reservation['laboratory'] . " has been declined";
+                
+                // Create notification for the user
+                $notify_user = $conn->prepare("INSERT INTO notifications (USER_ID, RESERVATION_ID, MESSAGE, IS_READ) VALUES (?, ?, ?, 0)");
+                $notify_user->bind_param("iis", $user_id, $reservation_id, $notif_message);
+                $notify_user->execute();
+            }
+            
+            $_SESSION['success_msg'] = "Reservation declined successfully!";
+
             // Insert into reservation_logs for disapproval
             $stmt = $conn->prepare("SELECT * FROM reservations WHERE id = ?");
             $stmt->bind_param("i", $reservation_id);
@@ -230,11 +299,17 @@ $logs_result = $logs_query->get_result();
     <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/js/config.js"></script>
 
     <style>
-        /* Add these styles to your existing styles section */
+        /* Update these styles to make PC cards smaller */
         .pc-grid {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 15px;
+            grid-template-columns: repeat(6, 1fr); /* Changed from 5 to 6 columns */
+            gap: 10px; /* Reduced gap from 15px to 10px */
+        }
+        
+        @media (max-width: 1200px) {
+            .pc-grid {
+                grid-template-columns: repeat(5, 1fr);
+            }
         }
         
         @media (max-width: 992px) {
@@ -267,24 +342,28 @@ $logs_result = $logs_query->get_result();
             transition: all 0.2s;
             position: relative;
             overflow: hidden;
+            padding: 8px; /* Added padding */
+            font-size: 0.85rem; /* Reduced base font size */
         }
         
         .pc-card .pc-icon {
-            font-size: 1.75rem;
-            margin-bottom: 0.5rem;
+            font-size: 1.25rem; /* Reduced from 1.75rem */
+            margin-bottom: 0.25rem; /* Reduced from 0.5rem */
             color: #697a8d;
         }
         
         .pc-card .pc-number {
             font-weight: 600;
-            margin-bottom: 0.25rem;
+            margin-bottom: 0.1rem; /* Reduced from 0.25rem */
+            font-size: 0.9rem; /* Added specific font size */
         }
         
         .pc-card .pc-status {
-            font-size: 0.75rem;
-            margin-bottom: 0.5rem;
+            font-size: 0.7rem; /* Reduced from 0.75rem */
+            margin-bottom: 0.25rem; /* Reduced from 0.5rem */
         }
         
+        /* Maintain remaining styles for colors */
         .pc-card.available {
             border-color: #71dd37;
             background-color: #f6fff4;
@@ -313,11 +392,11 @@ $logs_result = $logs_query->get_result();
         }
         
         .pc-card .pc-user {
-            font-size: 0.75rem;
-            margin-bottom: 0.5rem;
+            font-size: 0.7rem; /* Reduced from 0.75rem */
+            margin-bottom: 0.25rem; /* Reduced from 0.5rem */
             text-align: center;
             width: 100%;
-            padding: 0 0.5rem;
+            padding: 0 0.25rem; /* Reduced from 0.5rem */
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -325,60 +404,42 @@ $logs_result = $logs_query->get_result();
         
         .pc-card .pc-actions {
             display: flex;
-            gap: 0.5rem;
+            gap: 0.25rem; /* Reduced from 0.5rem */
         }
         
-        /* For the teacher's table representation */
-        .teacher-desk {
-            background-color: #f6f8fa;
-            border-radius: 0.375rem;
-            padding: 1rem;
-            margin-bottom: 1.5rem;
-            text-align: center;
-            border: 1px dashed #d9dee3;
+        .pc-card .pc-actions .btn-sm {
+            padding: 0.2rem 0.4rem; /* Make buttons smaller */
+            font-size: 0.7rem;
         }
-
-        /* Add these styles to your existing styles section */
+        
+        /* Make the grid container more compact */
         .pc-grid-container {
-            max-height: 500px;
+            max-height: 450px; /* Reduced from 500px */
             overflow-y: auto;
-            padding: 10px;
+            padding: 8px; /* Reduced from 10px */
             border-radius: 0.375rem;
             background-color: #f9fafb;
             margin-bottom: 1rem;
         }
-
-        /* Customize scrollbar for modern browsers */
-        .pc-grid-container::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .pc-grid-container::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 4px;
-        }
-
-        .pc-grid-container::-webkit-scrollbar-thumb {
-            background: #c1c1c1;
-            border-radius: 4px;
-        }
-
-        .pc-grid-container::-webkit-scrollbar-thumb:hover {
-            background: #a8a8a8;
-        }
         
+        /* Make toggle button smaller */
         .pc-toggle-btn {
             position: absolute;
-            top: 5px;
-            right: 5px;
-            width: 24px;
-            height: 24px;
+            top: 2px; /* Reduced from 5px */
+            right: 2px; /* Reduced from 5px */
+            width: 20px; /* Reduced from 24px */
+            height: 20px; /* Reduced from 24px */
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
+            font-size: 10px; /* Reduced from 12px */
             z-index: 10;
+            padding: 0; /* Remove padding */
+        }
+
+        .pc-toggle-btn i {
+            font-size: 8px; /* Even smaller icons */
         }
     </style>
 </head>

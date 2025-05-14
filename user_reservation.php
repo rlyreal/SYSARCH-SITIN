@@ -2,13 +2,22 @@
 session_start();
 include 'db.php';
 
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
-    header('Location: index.php');
-    exit();
-}
+// Fetch user details first, before processing any forms
+$user_id = $_SESSION['user_id'];
+$stmt = $conn->prepare("SELECT id_no, last_name, first_name, middle_name, course, year_level, profile_picture FROM users WHERE id = ?");
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$stmt->bind_result($id_no, $last_name, $first_name, $middle_name, $course, $year_level, $profile_picture);
+$stmt->fetch();
+$stmt->close();
 
-// Add this before processing the form submission
+// Format full name
+$full_name = "$last_name, $first_name " . ($middle_name ? "$middle_name" : "");
+
+// Check if profile picture exists, otherwise use default
+$profile_picture = (!empty($profile_picture) && file_exists($profile_picture)) ? $profile_picture : "profile.jpg";
+
+// Now process the form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Check if user has active session
     $stmt = $conn->prepare("SELECT id FROM sit_in WHERE idno = ? AND time_out IS NULL");
@@ -59,6 +68,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt->bind_param("ssssssssss", $id_no, $full_name, $course, $year_level, $purpose, $laboratory, $date, $time_in, $pc_number, $status);
     
     if ($stmt->execute()) {
+        // Get the last inserted reservation ID
+        $reservation_id = $conn->insert_id;
+        
+        // Create notification for admin
+        $notif_message = "New reservation request for Laboratory $laboratory by " . htmlspecialchars("$first_name $last_name");
+
+        // Get admin users from the admin table instead of looking for a role column
+        $admin_query = $conn->prepare("SELECT id FROM admin");
+        $admin_query->execute();
+        $admin_result = $admin_query->get_result();
+
+        while ($admin = $admin_result->fetch_assoc()) {
+            // Create notification for each admin
+            $notify_admin = $conn->prepare("INSERT INTO notifications (USER_ID, RESERVATION_ID, MESSAGE, IS_READ) VALUES (?, ?, ?, 0)");
+            $notify_admin->bind_param("iis", $admin['id'], $reservation_id, $notif_message);
+            $notify_admin->execute();
+        }
+
+        // Create a notification for the user
+        $user_notif_message = "You've submitted a reservation request for Laboratory $laboratory";
+        $notify_user = $conn->prepare("INSERT INTO notifications (USER_ID, RESERVATION_ID, MESSAGE, IS_READ) VALUES (?, ?, ?, 0)");
+        $notify_user->bind_param("iis", $user_id, $reservation_id, $user_notif_message);
+        $notify_user->execute();
+        
+        // Show success message
         echo "<script>
             document.addEventListener('DOMContentLoaded', function() {
                 showSuccessModal();
@@ -73,21 +107,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $stmt->close();
 }
-
-// Fetch user details
-$user_id = $_SESSION['user_id'];
-$stmt = $conn->prepare("SELECT id_no, last_name, first_name, middle_name, course, year_level, profile_picture FROM users WHERE id = ?");
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$stmt->bind_result($id_no, $last_name, $first_name, $middle_name, $course, $year_level, $profile_picture);
-$stmt->fetch();
-$stmt->close();
-
-// Format full name
-$full_name = "$last_name, $first_name " . ($middle_name ? "$middle_name" : "");
-
-// Check if profile picture exists, otherwise use default
-$profile_picture = (!empty($profile_picture) && file_exists($profile_picture)) ? $profile_picture : "profile.jpg";
 
 // Fetch session count
 $stmt = $conn->prepare("SELECT 
@@ -284,6 +303,14 @@ $stmt->close();
                         <a href="user_reservation.php" class="menu-link">
                             <i class="menu-icon bi bi-calendar-check"></i>
                             <div data-i18n="Reservation">Reservation</div>
+                        </a>
+                    </li>
+
+                    <!-- Schedule -->
+                    <li class="menu-item">
+                        <a href="user_sched.php" class="menu-link">
+                            <i class="menu-icon bi bi-calendar3"></i>
+                            <div data-i18n="Schedule">Schedule</div>
                         </a>
                     </li>
 

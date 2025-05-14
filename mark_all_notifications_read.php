@@ -1,4 +1,5 @@
 <?php
+// filepath: c:\xampp\htdocs\SYSARCH-SITIN\mark_all_notifications_read.php
 session_start();
 include 'db.php';
 
@@ -9,8 +10,8 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
-// Mark clicked notifications as read
-$stmt = $conn->prepare("UPDATE notifications SET IS_READ = 1 WHERE USER_ID = ? AND IS_READ = 0");
+// Mark all notifications as read
+$stmt = $conn->prepare("UPDATE notifications SET IS_READ = 1 WHERE USER_ID = ?");
 $stmt->bind_param("i", $user_id);
 
 if ($stmt->execute()) {

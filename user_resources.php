@@ -172,6 +172,14 @@ $profile_picture = !empty($user_data['profile_picture']) ? $user_data['profile_p
                         </a>
                     </li>
 
+                    <!-- Schedule -->
+                    <li class="menu-item">
+                        <a href="user_sched.php" class="menu-link">
+                            <i class="menu-icon bi bi-calendar3"></i>
+                            <div data-i18n="Schedule">Schedule</div>
+                        </a>
+                    </li>
+
                     <!-- Resources -->
                     <li class="menu-item active">
                         <a href="user_resources.php" class="menu-link">
