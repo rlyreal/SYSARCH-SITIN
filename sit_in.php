@@ -311,7 +311,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_point'])) {
                     <li class="menu-item">
                         <a href="admin_reservation.php" class="menu-link">
                             <i class="menu-icon bi bi-calendar-check"></i>
-                            <div>Reservation</div>
+                            <div data-i18n="Reservation">Reservation</div>
+                        </a>
+                    </li>
+
+                    <!-- Schedule - New Item Added -->
+                    <li class="menu-item">
+                        <a href="admin_sched.php" class="menu-link">
+                            <i class="menu-icon bi bi-calendar3"></i>
+                            <div data-i18n="Schedule">Schedule</div>
                         </a>
                     </li>
 
@@ -319,7 +327,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_point'])) {
                     <li class="menu-item">
                         <a href="reports.php" class="menu-link">
                             <i class="menu-icon bi bi-file-earmark-bar-graph"></i>
-                            <div>Reports</div>
+                            <div data-i18n="Reports">Reports</div>
                         </a>
                     </li>
 

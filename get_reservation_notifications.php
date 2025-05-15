@@ -1,5 +1,5 @@
 <?php
-
+// filepath: c:\xampp\htdocs\SYSARCH-SITIN\get_reservation_notifications.php
 session_start();
 include 'db.php';
 
@@ -9,7 +9,14 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     exit;
 }
 
-// Fetch only reservation notifications for admin
+// Direct count query for unread notifications
+$count_query = "SELECT COUNT(*) as count FROM notifications 
+                WHERE ADMIN_NOTIFICATION = 1 
+                AND IS_READ = 0";
+$count_result = $conn->query($count_query);
+$unread_count = ($count_result) ? (int)$count_result->fetch_assoc()['count'] : 0;
+
+// Fetch notifications
 $query = "SELECT 
             n.NOTIF_ID, 
             n.USER_ID,
@@ -39,14 +46,9 @@ $query = "SELECT
 $result = $conn->query($query);
 
 $notifications = [];
-$unread_count = 0;
 
 if ($result && $result->num_rows > 0) {
     while ($row = $result->fetch_assoc()) {
-        // Count unread notifications
-        if ($row['IS_READ'] == 0) {
-            $unread_count++;
-        }
         $notifications[] = $row;
     }
 }

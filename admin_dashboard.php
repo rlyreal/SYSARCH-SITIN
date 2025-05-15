@@ -395,9 +395,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <ul class="navbar-nav flex-row align-items-center ms-auto">
               <!-- Notification Dropdown -->
               <li class="nav-item dropdown-notifications navbar-dropdown dropdown me-3 me-xl-1">
-                <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                <a class="nav-link dropdown-toggle hide-arrow position-relative" href="javascript:void(0);" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
                   <i class="bi bi-bell bi-middle"></i>
-                  <span class="badge bg-danger rounded-pill badge-notifications" id="notification-badge" style="display: none;"></span>
+                  <span class="badge bg-danger rounded-pill badge-notifications position-absolute top-0 end-0" id="notification-badge" style="display: none;"></span>
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end py-0">
                   <li class="dropdown-menu-header border-bottom">
@@ -1138,23 +1138,34 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       }
     }
     
-    // Modify the loadReservationNotifications function
+    // Fix the loadReservationNotifications function in admin_dashboard.php
     function loadReservationNotifications() {
+      console.log('Loading notifications...');
+      
       fetch('get_reservation_notifications.php')
         .then(response => response.json())
         .then(data => {
+          console.log('Notification data:', data); // Debug output
+          
           const notificationList = document.getElementById('notification-list');
           const badge = document.getElementById('notification-badge');
           
           // Clear existing notifications
           notificationList.innerHTML = '';
           
-          // Update badge
-          if (data.unread_count > 0) {
-            badge.textContent = data.unread_count;
+          // Update badge - with proper type checking
+          const unreadCount = parseInt(data.unread_count) || 0;
+          console.log('Parsed unread count:', unreadCount);
+          
+          if (unreadCount > 0) {
+            badge.textContent = unreadCount;
             badge.style.display = 'inline-block';
+            badge.style.position = 'absolute';
+            badge.style.transform = 'translate(50%, -50%)';
+            console.log('Badge should be visible with count:', unreadCount);
           } else {
             badge.style.display = 'none';
+            console.log('Badge should be hidden');
           }
           
           // Add notifications to the list
@@ -1201,7 +1212,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 </div>
               `;
               
-              // Add click event to the notification item (not the read button)
               li.addEventListener('click', function(e) {
                 // Only navigate if the click wasn't on the read button
                 if (!e.target.closest('.dropdown-notifications-read')) {
@@ -1221,7 +1231,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         .catch(error => {
           console.error('Error loading notifications:', error);
           document.getElementById('notification-list').innerHTML = 
-            '<li class="list-group-item list-group-item-action dropdown-notifications-item text-center text-danger">Failed to load notifications</li>';
+            '<li class="list-group-item list-group-item-action dropdown-notifications-item text-center text-danger p-3">Failed to load notifications</li>';
         });
     }
 
@@ -1247,6 +1257,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 
     function markAllNotificationsAsRead() {
+      console.log('Marking all notifications as read...');
+      
       fetch('mark_all_reservation_notifications_read.php', {
         method: 'POST',
         headers: {
@@ -1255,12 +1267,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       })
       .then(response => response.json())
       .then(data => {
+        console.log('Mark all read response:', data);
+        
         if (data.success) {
           // Reload notifications to update the UI
           loadReservationNotifications();
+        } else {
+          console.error('Failed to mark all as read:', data.message);
         }
       })
-      .catch(error => console.error('Error marking all notifications as read:', error));
+      .catch(error => {
+        console.error('Error marking all notifications as read:', error);
+      });
     }
 
     // Make sure the logout button works

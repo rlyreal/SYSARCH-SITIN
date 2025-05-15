@@ -125,6 +125,14 @@ $admin_username = $_SESSION['username'] ?? 'Admin User';
                         </a>
                     </li>
 
+                    <!-- Schedule - New Item Added -->
+                    <li class="menu-item">
+                        <a href="admin_sched.php" class="menu-link">
+                            <i class="menu-icon bi bi-calendar3"></i>
+                            <div data-i18n="Schedule">Schedule</div>
+                        </a>
+                    </li>
+
                     <!-- Reports -->
                     <li class="menu-item">
                         <a href="reports.php" class="menu-link">
@@ -495,6 +503,7 @@ $admin_username = $_SESSION['username'] ?? 'Admin User';
                 const description = document.getElementById('description').value;
                 const resourceLink = document.getElementById('resourceLink').value;
                 const coverImage = document.getElementById('coverImage').files[0];
+                const resourceId = document.getElementById('resourceId')?.value; // Optional for updates
                 
                 if (!title || !professor || !description || !resourceLink) {
                     alert('Please fill in all required fields');
@@ -509,7 +518,14 @@ $admin_username = $_SESSION['username'] ?? 'Admin User';
                 if (coverImage) {
                     formData.append('cover_image', coverImage);
                 }
-                formData.append('action', 'add_resource');
+                
+                // If resourceId exists, this is an update operation
+                if (resourceId) {
+                    formData.append('id', resourceId);
+                    formData.append('action', 'update_resource');
+                } else {
+                    formData.append('action', 'add_resource');
+                }
                 
                 try {
                     const response = await fetch('handle_resource.php', {
@@ -522,6 +538,14 @@ $admin_username = $_SESSION['username'] ?? 'Admin User';
                     if (data.success) {
                         addResourceModal.hide();
                         loadResources();
+                        // Reset the form after successful operation
+                        form.reset();
+                        // Reset modal title and button text
+                        document.getElementById('modalTitle').textContent = 'Add New Resource';
+                        document.getElementById('saveResource').textContent = 'Save Resource';
+                        // Remove resource ID if it exists
+                        const resourceIdInput = document.getElementById('resourceId');
+                        if (resourceIdInput) resourceIdInput.remove();
                     } else {
                         alert('Error: ' + data.message);
                     }
@@ -622,8 +646,51 @@ $admin_username = $_SESSION['username'] ?? 'Admin User';
                         }
                         
                         noResourcesMsg.style.display = 'none';
-                        // Use the same rendering logic as loadResources
-                        // The code to render table rows is the same
+                        tbody.innerHTML = data.map(resource => `
+                            <tr>
+                                <td>
+                                    <div class="d-flex">
+                                        <div class="avatar avatar-sm flex-shrink-0 me-3">
+                                            ${resource.cover_image ? 
+                                                `<img src="${resource.cover_image}" alt="${resource.title}" class="rounded">` : 
+                                                `<span class="avatar-initial rounded bg-label-primary"><i class="bi bi-file-earmark-text"></i></span>`
+                                            }
+                                        </div>
+                                        <div class="d-flex flex-column">
+                                            <h6 class="mb-0">${resource.title}</h6>
+                                            <small class="text-truncate" style="max-width: 150px;">${resource.resource_link}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>${resource.professor}</td>
+                                <td>
+                                    <span class="text-truncate d-inline-block" style="max-width: 200px;">${resource.description}</span>
+                                </td>
+                                <td>${new Date(resource.created_at).toLocaleDateString('en-US', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric'
+                                })}</td>
+                                <td>
+                                    <div class="dropdown">
+                                        <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                                            <i class="bi bi-three-dots-vertical"></i>
+                                        </button>
+                                        <div class="dropdown-menu">
+                                            <a class="dropdown-item" href="${resource.resource_link}" target="_blank">
+                                                <i class="bi bi-box-arrow-up-right me-2"></i> Open
+                                            </a>
+                                            <a class="dropdown-item" href="javascript:void(0);" onclick="editResource(${resource.id})">
+                                                <i class="bi bi-pencil me-2"></i> Edit
+                                            </a>
+                                            <a class="dropdown-item text-danger" href="javascript:void(0);" onclick="deleteResource(${resource.id})">
+                                                <i class="bi bi-trash me-2"></i> Delete
+                                            </a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        `).join('');
                     })
                     .catch(error => {
                         console.error('Error:', error);
@@ -673,15 +740,27 @@ $admin_username = $_SESSION['username'] ?? 'Admin User';
                         
                         // Add resource ID for update
                         const form = document.getElementById('resourceForm');
+                        // Check if ID input already exists and remove it to prevent duplicates
+                        const existingIdInput = document.getElementById('resourceId');
+                        if (existingIdInput) {
+                            existingIdInput.remove();
+                        }
+                        
                         const idInput = document.createElement('input');
                         idInput.type = 'hidden';
                         idInput.id = 'resourceId';
-                        idInput.value = resource.id;
+                        idInput.name = 'id'; // Make sure this matches what your server expects
+                        idInput.value = id;
                         form.appendChild(idInput);
                         
                         // Show modal
                         document.getElementById('modalTitle').textContent = 'Edit Resource';
+                        document.getElementById('saveResource').textContent = 'Update Resource';
                         addResourceModal.show();
+                    })
+                    .catch(error => {
+                        console.error('Error fetching resource:', error);
+                        alert('Failed to load resource information');
                     });
             };
 

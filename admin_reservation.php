@@ -529,6 +529,14 @@ $logs_result = $logs_query->get_result();
                         </a>
                     </li>
 
+                    <!-- Schedule - New Item Added -->
+                    <li class="menu-item">
+                        <a href="admin_sched.php" class="menu-link">
+                            <i class="menu-icon bi bi-calendar3"></i>
+                            <div data-i18n="Schedule">Schedule</div>
+                        </a>
+                    </li>
+
                     <!-- Reports -->
                     <li class="menu-item">
                         <a href="reports.php" class="menu-link">
