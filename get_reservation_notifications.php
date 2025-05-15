@@ -9,14 +9,15 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     exit;
 }
 
-// Direct count query for unread notifications
+// Direct count query for unread admin notifications from reservations only
 $count_query = "SELECT COUNT(*) as count FROM notifications 
                 WHERE ADMIN_NOTIFICATION = 1 
-                AND IS_READ = 0";
+                AND IS_READ = 0
+                AND RESERVATION_ID IS NOT NULL";
 $count_result = $conn->query($count_query);
 $unread_count = ($count_result) ? (int)$count_result->fetch_assoc()['count'] : 0;
 
-// Fetch notifications
+// Fetch notifications for display - only reservation related notifications
 $query = "SELECT 
             n.NOTIF_ID, 
             n.USER_ID,
@@ -46,7 +47,6 @@ $query = "SELECT
 $result = $conn->query($query);
 
 $notifications = [];
-
 if ($result && $result->num_rows > 0) {
     while ($row = $result->fetch_assoc()) {
         $notifications[] = $row;

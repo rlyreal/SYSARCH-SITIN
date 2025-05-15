@@ -246,6 +246,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       .scrollable-container::-webkit-scrollbar-thumb:hover {
         background: #696cff;
       }
+
+      /* Add to your existing style block in admin_dashboard.php */
+      .badge-notifications {
+        position: absolute;
+        top: 0;
+        right: 0;
+        transform: translate(50%, -50%);
+        z-index: 5;
+      }
     </style>
 </head>
 <body>
@@ -397,7 +406,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
               <li class="nav-item dropdown-notifications navbar-dropdown dropdown me-3 me-xl-1">
                 <a class="nav-link dropdown-toggle hide-arrow position-relative" href="javascript:void(0);" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
                   <i class="bi bi-bell bi-middle"></i>
-                  <span class="badge bg-danger rounded-pill badge-notifications position-absolute top-0 end-0" id="notification-badge" style="display: none;"></span>
+                  <span class="badge bg-danger rounded-pill badge-notifications" id="notification-badge" style="display:none;"></span>
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end py-0">
                   <li class="dropdown-menu-header border-bottom">
@@ -1138,12 +1147,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       }
     }
     
-    // Fix the loadReservationNotifications function in admin_dashboard.php
+    // Replace your existing loadReservationNotifications function with this version
     function loadReservationNotifications() {
       console.log('Loading notifications...');
       
       fetch('get_reservation_notifications.php')
-        .then(response => response.json())
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          return response.json();
+        })
         .then(data => {
           console.log('Notification data:', data); // Debug output
           
@@ -1153,42 +1167,37 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
           // Clear existing notifications
           notificationList.innerHTML = '';
           
-          // Update badge - with proper type checking
+          // Update badge with the direct count from the backend
           const unreadCount = parseInt(data.unread_count) || 0;
-          console.log('Parsed unread count:', unreadCount);
+          console.log('Unread count:', unreadCount);
           
+          // Set badge display and text
           if (unreadCount > 0) {
             badge.textContent = unreadCount;
             badge.style.display = 'inline-block';
             badge.style.position = 'absolute';
+            badge.style.top = '0';
+            badge.style.right = '0';
             badge.style.transform = 'translate(50%, -50%)';
             console.log('Badge should be visible with count:', unreadCount);
           } else {
             badge.style.display = 'none';
-            console.log('Badge should be hidden');
+            console.log('Badge should be hidden - no unread notifications');
           }
           
-          // Add notifications to the list
+          // Display notifications
           if (data.notifications && data.notifications.length > 0) {
             data.notifications.forEach(notification => {
-              const li = document.createElement('li');
-              li.className = `list-group-item list-group-item-action dropdown-notifications-item ${notification.IS_READ == 0 ? 'bg-light' : ''}`;
-              
-              // Format date for display
               const date = new Date(notification.CREATED_AT);
               const timeAgo = getTimeAgo(date);
               
-              // Determine status color
-              let statusBadge = '';
-              if (notification.status === 'pending') {
-                statusBadge = '<span class="badge bg-warning">Pending</span>';
-              } else if (notification.status === 'approved') {
-                statusBadge = '<span class="badge bg-success">Approved</span>';
-              } else if (notification.status === 'disapproved') {
-                statusBadge = '<span class="badge bg-danger">Disapproved</span>';
+              const item = document.createElement('li');
+              item.className = 'list-group-item list-group-item-action dropdown-notifications-item';
+              if (notification.IS_READ == 0) {
+                item.classList.add('bg-light');
               }
               
-              li.innerHTML = `
+              item.innerHTML = `
                 <div class="d-flex">
                   <div class="flex-shrink-0 me-3">
                     <div class="avatar">
@@ -1198,34 +1207,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     </div>
                   </div>
                   <div class="flex-grow-1">
-                    <h6 class="mb-1">${notification.first_name} ${notification.last_name} ${statusBadge}</h6>
+                    <h6 class="mb-1">${notification.first_name} ${notification.last_name}</h6>
                     <p class="mb-0">${notification.MESSAGE}</p>
                     <small class="text-muted">${timeAgo}</small>
                   </div>
-                  ${notification.IS_READ == 0 ? `
                   <div class="flex-shrink-0 dropdown-notifications-actions">
                     <a href="javascript:void(0)" class="dropdown-notifications-read" onclick="markSingleNotificationAsRead(event, ${notification.NOTIF_ID})">
-                      <span class="badge badge-dot bg-primary"></span>
+                      <span class="badge ${notification.IS_READ == 0 ? 'badge-dot bg-danger' : 'bg-label-secondary'}"></span>
                     </a>
                   </div>
-                  ` : ''}
                 </div>
               `;
               
-              li.addEventListener('click', function(e) {
-                // Only navigate if the click wasn't on the read button
-                if (!e.target.closest('.dropdown-notifications-read')) {
-                  window.location.href = `admin_reservation.php?view=${notification.RESERVATION_ID}`;
-                }
-              });
-              
-              notificationList.appendChild(li);
+              notificationList.appendChild(item);
             });
           } else {
-            const li = document.createElement('li');
-            li.className = 'list-group-item list-group-item-action dropdown-notifications-item text-center';
-            li.innerHTML = '<p class="m-0 py-2">No notifications</p>';
-            notificationList.appendChild(li);
+            notificationList.innerHTML = '<li class="list-group-item list-group-item-action dropdown-notifications-item text-center p-3"><p class="mb-0">No notifications</p></li>';
           }
         })
         .catch(error => {
