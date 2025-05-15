@@ -95,6 +95,35 @@ if (isset($_POST['action']) && isset($_POST['reservation_id'])) {
                     $user_result = $user_query->get_result();
                     $user_data = $user_result->fetch_assoc();
                     
+                    // Insert into reservation_logs
+                    $stmt = $conn->prepare("INSERT INTO reservation_logs (
+                        reservation_id, idno, full_name, course, year_level, 
+                        purpose, laboratory, date, time_in, pc_number, 
+                        status, action_type, action_by, action_date
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+                    
+                    $action_type = "Approved";
+                    $stmt->bind_param("isssssssssssi", 
+                        $reservation_id,
+                        $reservation['idno'],
+                        $reservation['full_name'],
+                        $reservation['course'],
+                        $reservation['year_level'],
+                        $reservation['purpose'],
+                        $reservation['laboratory'],
+                        $reservation['date'],
+                        $reservation['time_in'],
+                        $reservation['pc_number'],
+                        $status,
+                        $action_type,
+                        $_SESSION['admin_id']
+                    );
+                    
+                    if (!$stmt->execute()) {
+                        throw new Exception("Failed to insert into reservation_logs: " . $stmt->error);
+                    }
+                    
+                    // Continue with user notification
                     if ($user_data) {
                         $user_id = $user_data['id'];
                         $notif_message = "Your reservation for Laboratory {$reservation['laboratory']} has been approved";
@@ -103,55 +132,21 @@ if (isset($_POST['action']) && isset($_POST['reservation_id'])) {
                         $notify_user = $conn->prepare("INSERT INTO notifications (USER_ID, RESERVATION_ID, MESSAGE, IS_READ) VALUES (?, ?, ?, 0)");
                         $notify_user->bind_param("iis", $user_id, $reservation_id, $notif_message);
                         
-                        if ($stmt->execute() && $notify_user->execute()) {
-                            $conn->commit();
-                            echo json_encode([
-                                "success" => true,
-                                "message" => "Reservation approved successfully."
-                            ]);
-                            exit;
-                        } else {
-                            $conn->rollback();
-                            echo json_encode([
-                                "success" => false,
-                                "message" => "Failed to process reservation."
-                            ]);
-                            exit;
+                        if (!$notify_user->execute()) {
+                            throw new Exception("Failed to create notification: " . $notify_user->error);
                         }
+                        
+                        $conn->commit();
+                        echo json_encode([
+                            "success" => true,
+                            "message" => "Reservation approved successfully."
+                        ]);
+                        exit;
                     }
                     
                     $_SESSION['success_msg'] = "Reservation approved successfully!";
                 } else {
                     throw new Exception("Failed to update reservation status");
-                }
-                $stmt->close();
-
-                // Insert into reservation_logs
-                $stmt = $conn->prepare("INSERT INTO reservation_logs (
-                    reservation_id, idno, full_name, course, year_level, 
-                    purpose, laboratory, date, time_in, pc_number, 
-                    status, action_type, action_by, action_date
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
-                
-                $action_type = "Approved";
-                $stmt->bind_param("isssssssssssi", 
-                    $reservation_id,
-                    $reservation['idno'],
-                    $reservation['full_name'],
-                    $reservation['course'],
-                    $reservation['year_level'],
-                    $reservation['purpose'],
-                    $reservation['laboratory'],
-                    $reservation['date'],
-                    $reservation['time_in'],
-                    $reservation['pc_number'],
-                    $status,
-                    $action_type,
-                    $_SESSION['admin_id']
-                );
-                
-                if (!$stmt->execute()) {
-                    throw new Exception("Failed to insert into reservation_logs: " . $stmt->error);
                 }
                 $stmt->close();
 
@@ -185,36 +180,7 @@ if (isset($_POST['action']) && isset($_POST['reservation_id'])) {
             $reservation = $result->fetch_assoc();
             $stmt->close();
             
-            // Get user_id from the reservation
-            $user_query = $conn->prepare("SELECT u.id, u.first_name, u.last_name 
-                                      FROM reservations r 
-                                      JOIN users u ON r.idno = u.id_no 
-                                      WHERE r.id = ?");
-            $user_query->bind_param("i", $reservation_id);
-            $user_query->execute();
-            $user_result = $user_query->get_result();
-            $user_data = $user_result->fetch_assoc();
-            
-            if ($user_data) {
-                $user_id = $user_data['id'];
-                $notif_message = "Your reservation for Laboratory " . $reservation['laboratory'] . " has been declined";
-                
-                // Create notification for the user
-                $notify_user = $conn->prepare("INSERT INTO notifications (USER_ID, RESERVATION_ID, MESSAGE, IS_READ) VALUES (?, ?, ?, 0)");
-                $notify_user->bind_param("iis", $user_id, $reservation_id, $notif_message);
-                $notify_user->execute();
-            }
-            
-            $_SESSION['success_msg'] = "Reservation declined successfully!";
-
             // Insert into reservation_logs for disapproval
-            $stmt = $conn->prepare("SELECT * FROM reservations WHERE id = ?");
-            $stmt->bind_param("i", $reservation_id);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            $reservation = $result->fetch_assoc();
-            $stmt->close();
-            
             if ($reservation) {
                 $stmt = $conn->prepare("INSERT INTO reservation_logs (
                     reservation_id, idno, full_name, course, year_level, 
@@ -238,8 +204,31 @@ if (isset($_POST['action']) && isset($_POST['reservation_id'])) {
                     $action_type,
                     $_SESSION['admin_id']
                 );
-                $stmt->execute();
-                $stmt->close();
+                
+                if (!$stmt->execute()) {
+                    echo json_encode([
+                        "success" => false,
+                        "message" => "Failed to log reservation action: " . $stmt->error
+                    ]);
+                    exit;
+                }
+            }
+            
+            // Get user_id from the reservation
+            $user_query = $conn->prepare("SELECT u.id FROM reservations r JOIN users u ON r.idno = u.id_no WHERE r.id = ?");
+            $user_query->bind_param("i", $reservation_id);
+            $user_query->execute();
+            $user_result = $user_query->get_result();
+            $user_data = $user_result->fetch_assoc();
+            
+            if ($user_data) {
+                $user_id = $user_data['id'];
+                $notif_message = "Your reservation for Laboratory " . $reservation['laboratory'] . " has been declined";
+                
+                // Create notification for the user
+                $notify_user = $conn->prepare("INSERT INTO notifications (USER_ID, RESERVATION_ID, MESSAGE, IS_READ) VALUES (?, ?, ?, 0)");
+                $notify_user->bind_param("iis", $user_id, $reservation_id, $notif_message);
+                $notify_user->execute();
             }
             
             echo json_encode([
