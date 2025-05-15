@@ -37,6 +37,7 @@ function fetchUserNotifications($conn, $user_id) {
               LEFT JOIN reservations r ON n.RESERVATION_ID = r.id
               LEFT JOIN announcements a ON n.ANNOUNCEMENT_ID = a.id
               WHERE n.USER_ID = ?
+              AND n.ADMIN_NOTIFICATION = 0  /* Add this line to filter out admin notifications */
               ORDER BY n.CREATED_AT DESC
               LIMIT 10";
               

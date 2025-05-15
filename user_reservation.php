@@ -91,6 +91,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $notify_user = $conn->prepare("INSERT INTO notifications (USER_ID, RESERVATION_ID, MESSAGE, IS_READ) VALUES (?, ?, ?, 0)");
         $notify_user->bind_param("iis", $user_id, $reservation_id, $user_notif_message);
         $notify_user->execute();
+
+        // Create notification for admin with ADMIN_NOTIFICATION set to 1
+        $message = "New reservation request for " . $laboratory . " on " . $date;
+        $notif_query = $conn->prepare("INSERT INTO notifications (USER_ID, RESERVATION_ID, MESSAGE, IS_READ, ADMIN_NOTIFICATION) VALUES (?, ?, ?, 0, 1)");
+        $notif_query->bind_param("iis", $user_id, $reservation_id, $message);
+        $notif_query->execute();
         
         // Show success message
         echo "<script>

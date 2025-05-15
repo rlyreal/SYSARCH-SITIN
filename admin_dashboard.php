@@ -62,6 +62,60 @@ while($row = $purposeResult->fetch_assoc()) {
     $purposeCounts[] = $row['count'];
 }
 
+// Function to fetch only reservation notifications 
+function getReservationNotifications($conn) {
+    $query = "SELECT 
+                n.NOTIF_ID, 
+                n.USER_ID,
+                n.RESERVATION_ID, 
+                n.MESSAGE, 
+                n.IS_READ, 
+                n.CREATED_AT,
+                n.ADMIN_NOTIFICATION,
+                u.first_name,
+                u.last_name,
+                r.laboratory,
+                r.purpose,
+                r.date,
+                r.status
+              FROM 
+                notifications n
+              JOIN 
+                users u ON n.USER_ID = u.id
+              JOIN 
+                reservations r ON n.RESERVATION_ID = r.id
+              WHERE 
+                n.ADMIN_NOTIFICATION = 1 
+                AND n.RESERVATION_ID IS NOT NULL
+              ORDER BY 
+                n.CREATED_AT DESC 
+              LIMIT 10";
+                
+    $result = $conn->query($query);
+    
+    $notifications = [];
+    if ($result && $result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
+            $notifications[] = $row;
+        }
+    }
+    
+    $unread_count = 0;
+    foreach ($notifications as $notification) {
+        if ($notification['IS_READ'] == 0) {
+            $unread_count++;
+        }
+    }
+    
+    return [
+        'notifications' => $notifications,
+        'unread_count' => $unread_count
+    ];
+}
+
+// Get reservation notifications
+$reservation_notifications = getReservationNotifications($conn);
+
 // Update the leaderboard query to get top 5 based on points
 $leaderboardQuery = "
     SELECT 
@@ -166,6 +220,33 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <!-- Helpers -->
     <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/vendor/js/helpers.js"></script>
     <script src="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/assets/js/config.js"></script>
+
+    <style>
+      /* Add custom scrollbar styling to notifications */
+      .dropdown-notifications-list {
+        max-height: 350px;
+        overflow-y: auto;
+      }
+      
+      /* Custom scrollbar styling */
+      .scrollable-container::-webkit-scrollbar {
+        width: 6px;
+      }
+      
+      .scrollable-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+      }
+      
+      .scrollable-container::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 10px;
+      }
+      
+      .scrollable-container::-webkit-scrollbar-thumb:hover {
+        background: #696cff;
+      }
+    </style>
 </head>
 <body>
   <!-- Layout wrapper -->
@@ -312,6 +393,37 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <!-- /Search -->
 
             <ul class="navbar-nav flex-row align-items-center ms-auto">
+              <!-- Notification Dropdown -->
+              <li class="nav-item dropdown-notifications navbar-dropdown dropdown me-3 me-xl-1">
+                <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                  <i class="bi bi-bell bi-middle"></i>
+                  <span class="badge bg-danger rounded-pill badge-notifications" id="notification-badge" style="display: none;"></span>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end py-0">
+                  <li class="dropdown-menu-header border-bottom">
+                    <div class="dropdown-header d-flex align-items-center py-3">
+                      <h5 class="text-body mb-0 me-auto">Notifications</h5>
+                      <a href="javascript:void(0)" class="dropdown-notifications-all text-body" data-bs-toggle="tooltip" title="Mark all as read" onclick="markAllNotificationsAsRead()">
+                        <i class="bi bi-check2-all"></i>
+                      </a>
+                    </div>
+                  </li>
+                  <li class="dropdown-notifications-list scrollable-container">
+                    <ul class="list-group list-group-flush" id="notification-list">
+                      <li class="list-group-item list-group-item-action dropdown-notifications-item text-center p-3">
+                        <p class="mb-0">Loading notifications...</p>
+                      </li>
+                    </ul>
+                  </li>
+                  <li class="dropdown-menu-footer border-top">
+                    <a href="admin_reservation.php" class="dropdown-item d-flex justify-content-center p-3">
+                      View all reservations
+                    </a>
+                  </li>
+                </ul>
+              </li>
+              <!-- /Notification Dropdown -->
+
               <!-- Admin dropdown -->
               <li class="nav-item navbar-dropdown dropdown-user dropdown">
                 <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown">
@@ -891,6 +1003,33 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       }
     });
     
+    // Format relative time
+    function getTimeAgo(date) {
+      const now = new Date();
+      const diffMs = now - date;
+      const diffSecs = Math.floor(diffMs / 1000);
+      const diffMins = Math.floor(diffSecs / 60);
+      const diffHours = Math.floor(diffMins / 60);
+      const diffDays = Math.floor(diffHours / 24);
+      
+      if (diffSecs < 60) {
+        return 'just now';
+      } else if (diffMins < 60) {
+        return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+      } else if (diffHours < 24) {
+        return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+      } else if (diffDays < 7) {
+        return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+      } else {
+        // Format date for older notifications
+        return date.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        });
+      }
+    }
+    
     // Handle announcements
     function loadAnnouncements() {
       fetch('get_announcements.php')
@@ -999,19 +1138,148 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       }
     }
     
-    // Logout modal
-    document.getElementById('logoutBtn').addEventListener('click', function() {
-      const logoutModal = new bootstrap.Modal(document.getElementById('logoutModal'));
-      logoutModal.show();
+    // Modify the loadReservationNotifications function
+    function loadReservationNotifications() {
+      fetch('get_reservation_notifications.php')
+        .then(response => response.json())
+        .then(data => {
+          const notificationList = document.getElementById('notification-list');
+          const badge = document.getElementById('notification-badge');
+          
+          // Clear existing notifications
+          notificationList.innerHTML = '';
+          
+          // Update badge
+          if (data.unread_count > 0) {
+            badge.textContent = data.unread_count;
+            badge.style.display = 'inline-block';
+          } else {
+            badge.style.display = 'none';
+          }
+          
+          // Add notifications to the list
+          if (data.notifications && data.notifications.length > 0) {
+            data.notifications.forEach(notification => {
+              const li = document.createElement('li');
+              li.className = `list-group-item list-group-item-action dropdown-notifications-item ${notification.IS_READ == 0 ? 'bg-light' : ''}`;
+              
+              // Format date for display
+              const date = new Date(notification.CREATED_AT);
+              const timeAgo = getTimeAgo(date);
+              
+              // Determine status color
+              let statusBadge = '';
+              if (notification.status === 'pending') {
+                statusBadge = '<span class="badge bg-warning">Pending</span>';
+              } else if (notification.status === 'approved') {
+                statusBadge = '<span class="badge bg-success">Approved</span>';
+              } else if (notification.status === 'disapproved') {
+                statusBadge = '<span class="badge bg-danger">Disapproved</span>';
+              }
+              
+              li.innerHTML = `
+                <div class="d-flex">
+                  <div class="flex-shrink-0 me-3">
+                    <div class="avatar">
+                      <span class="avatar-initial rounded-circle bg-label-primary">
+                        <i class="bi bi-calendar-check"></i>
+                      </span>
+                    </div>
+                  </div>
+                  <div class="flex-grow-1">
+                    <h6 class="mb-1">${notification.first_name} ${notification.last_name} ${statusBadge}</h6>
+                    <p class="mb-0">${notification.MESSAGE}</p>
+                    <small class="text-muted">${timeAgo}</small>
+                  </div>
+                  ${notification.IS_READ == 0 ? `
+                  <div class="flex-shrink-0 dropdown-notifications-actions">
+                    <a href="javascript:void(0)" class="dropdown-notifications-read" onclick="markSingleNotificationAsRead(event, ${notification.NOTIF_ID})">
+                      <span class="badge badge-dot bg-primary"></span>
+                    </a>
+                  </div>
+                  ` : ''}
+                </div>
+              `;
+              
+              // Add click event to the notification item (not the read button)
+              li.addEventListener('click', function(e) {
+                // Only navigate if the click wasn't on the read button
+                if (!e.target.closest('.dropdown-notifications-read')) {
+                  window.location.href = `admin_reservation.php?view=${notification.RESERVATION_ID}`;
+                }
+              });
+              
+              notificationList.appendChild(li);
+            });
+          } else {
+            const li = document.createElement('li');
+            li.className = 'list-group-item list-group-item-action dropdown-notifications-item text-center';
+            li.innerHTML = '<p class="m-0 py-2">No notifications</p>';
+            notificationList.appendChild(li);
+          }
+        })
+        .catch(error => {
+          console.error('Error loading notifications:', error);
+          document.getElementById('notification-list').innerHTML = 
+            '<li class="list-group-item list-group-item-action dropdown-notifications-item text-center text-danger">Failed to load notifications</li>';
+        });
+    }
+
+    function markSingleNotificationAsRead(event, notificationId) {
+      // Prevent the click from propagating to the notification item
+      event.stopPropagation();
+      
+      fetch('mark_single_notification_read.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ notification_id: notificationId })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // Reload notifications to update the UI
+          loadReservationNotifications();
+        }
+      })
+      .catch(error => console.error('Error marking notification as read:', error));
+    }
+
+    function markAllNotificationsAsRead() {
+      fetch('mark_all_reservation_notifications_read.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // Reload notifications to update the UI
+          loadReservationNotifications();
+        }
+      })
+      .catch(error => console.error('Error marking all notifications as read:', error));
+    }
+
+    // Make sure the logout button works
+    document.addEventListener('DOMContentLoaded', function() {
+      // Load notifications and other existing code
+      loadReservationNotifications();
+      
+      // Fix logout button functionality
+      const logoutBtn = document.getElementById('logoutBtn');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', function() {
+          const logoutModal = new bootstrap.Modal(document.getElementById('logoutModal'));
+          logoutModal.show();
+        });
+      }
+      
+      // Refresh notifications every 60 seconds
+      setInterval(loadReservationNotifications, 60000);
     });
-    
-    // Responsive chart resizing
-    window.addEventListener('resize', function() {
-      statsChart.resize();
-    });
-    
-    // Keep this part if you want periodic refreshes
-    setInterval(loadAnnouncements, 60000);
   </script>
 </body>
 </html>
